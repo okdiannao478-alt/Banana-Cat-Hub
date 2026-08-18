@@ -85,21 +85,21 @@ end)
 
 local Window = WindUI:CreateWindow({
     Title         = "Banana Cat Hub - Blox Fruit",
-    Icon          = "https://raw.githubusercontent.com/okdiannao478-alt/Banana-Cat-Hub/main/BananaToggleClosed.png?v=4",
+    Icon          = nil,
     IconSize      = 28,
     IconRadius    = 999,
-    Author        = "2026最新自動獵賞",
+    Author        = "",
     Folder        = "Auto Bounty",
-    Size          = UDim2.fromOffset(650, 520),
+    Size          = UDim2.fromOffset(780, 430),
     Transparent   = true,
     Theme         = "Amber",
     Acrylic       = true,
     HideSearchBar = false,
-    SideBarWidth  = 190,
+    SideBarWidth  = 220,
     NewElements   = true,
     Radius        = 14,
     ElementsRadius = 12,
-    Topbar        = { Height = 56, ButtonsType = "Default" },
+    Topbar        = { Height = 52, ButtonsType = "Default" },
     HidePanelBackground = false,
     User = {
         Enabled   = false,
@@ -162,7 +162,7 @@ pcall(function()
 
     local titleFrame = Instance.new("Frame")
     titleFrame.Name = "BananaCatCenteredTitle"
-    titleFrame.Size = UDim2.fromOffset(310, 56)
+    titleFrame.Size = UDim2.fromOffset(360, 52)
     titleFrame.BackgroundTransparency = 1
     titleFrame.LayoutOrder = 1
     titleFrame.Parent = holder
@@ -183,14 +183,88 @@ pcall(function()
 
     local titleText = Instance.new("TextLabel")
     titleText.Name = "TitleText"
-    titleText.Size = UDim2.fromOffset(260, 32)
+    titleText.Size = UDim2.fromOffset(300, 32)
     titleText.BackgroundTransparency = 1
     titleText.Text = "Banana Cat Hub - Blox Fruit"
     titleText.TextColor3 = Color3.fromRGB(255, 244, 190)
-    titleText.TextSize = 16
+    titleText.TextSize = 18
     titleText.Font = Enum.Font.GothamSemibold
     titleText.TextXAlignment = Enum.TextXAlignment.Left
     titleText.Parent = titleFrame
+
+    -- 直接在主視窗容器建立第二層置中標題，避免不同 WindUI 版本忽略 Topbar.Center。
+    local mainTitle = Instance.new("Frame")
+    mainTitle.Name = "BananaCatHubMainTitle"
+    mainTitle.AnchorPoint = Vector2.new(0.5, 0)
+    mainTitle.Position = UDim2.new(0.5, 0, 0, 1)
+    mainTitle.Size = UDim2.fromOffset(390, 50)
+    mainTitle.BackgroundTransparency = 1
+    mainTitle.ZIndex = 20
+    mainTitle.Parent = mainRoot
+
+    local mainTitleLayout = Instance.new("UIListLayout")
+    mainTitleLayout.FillDirection = Enum.FillDirection.Horizontal
+    mainTitleLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+    mainTitleLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+    mainTitleLayout.Padding = UDim.new(0, 8)
+    mainTitleLayout.Parent = mainTitle
+
+    local mainTitleIcon = Instance.new("ImageLabel")
+    mainTitleIcon.Name = "BananaCatMainIcon"
+    mainTitleIcon.Size = UDim2.fromOffset(34, 34)
+    mainTitleIcon.BackgroundTransparency = 1
+    mainTitleIcon.Image = "https://raw.githubusercontent.com/okdiannao478-alt/Banana-Cat-Hub/main/BananaToggleClosed.png?v=4"
+    mainTitleIcon.ZIndex = 21
+    mainTitleIcon.Parent = mainTitle
+
+    local mainTitleText = Instance.new("TextLabel")
+    mainTitleText.Name = "BananaCatMainText"
+    mainTitleText.Size = UDim2.fromOffset(330, 36)
+    mainTitleText.BackgroundTransparency = 1
+    mainTitleText.Text = "Banana Cat Hub - Blox Fruit"
+    mainTitleText.TextColor3 = Color3.fromRGB(255, 214, 92)
+    mainTitleText.TextSize = 18
+    mainTitleText.Font = Enum.Font.GothamBold
+    mainTitleText.TextXAlignment = Enum.TextXAlignment.Left
+    mainTitleText.ZIndex = 21
+    mainTitleText.Parent = mainTitle
+
+    -- 參考圖式橫向雙欄底層：只承擔視覺容器，不攔截任何功能元件輸入。
+    local referenceShell = Instance.new("Frame")
+    referenceShell.Name = "BananaCatReferenceShell"
+    referenceShell.Size = UDim2.new(1, -20, 1, -64)
+    referenceShell.Position = UDim2.fromOffset(10, 58)
+    referenceShell.BackgroundTransparency = 1
+    referenceShell.Active = false
+    referenceShell.ZIndex = 0
+    referenceShell.Parent = mainRoot
+
+    local function makeShellCard(name, position, size, color, transparency)
+        local card = Instance.new("Frame")
+        card.Name = name
+        card.Position = position
+        card.Size = size
+        card.BackgroundColor3 = color
+        card.BackgroundTransparency = transparency
+        card.BorderSizePixel = 0
+        card.Active = false
+        card.ZIndex = 0
+        card.Parent = referenceShell
+
+        local corner = Instance.new("UICorner")
+        corner.CornerRadius = UDim.new(0, 10)
+        corner.Parent = card
+
+        local stroke = Instance.new("UIStroke")
+        stroke.Color = Color3.fromRGB(177, 112, 28)
+        stroke.Transparency = 0.72
+        stroke.Thickness = 1
+        stroke.Parent = card
+        return card
+    end
+
+    makeShellCard("ReferenceSidebar", UDim2.fromOffset(0, 0), UDim2.new(0, 220, 1, 0), Color3.fromRGB(35, 25, 14), 0.12)
+    makeShellCard("ReferenceContent", UDim2.fromOffset(230, 0), UDim2.new(1, -230, 1, 0), Color3.fromRGB(20, 20, 20), 0.16)
 
     -- WindUI 會在初始化時重算 Topbar.Center，延後再套一次確保實際置中
     task.defer(function()
@@ -4322,6 +4396,54 @@ Tabs.Settings:Toggle({
         MarkConfigDirty()
     end
 })
+
+-- 參考圖最終外觀層：WindUI 建完所有功能後再套用，避免初始化時被預設樣式覆蓋。
+local function ApplyReferenceUIStyle()
+    pcall(function()
+        WindUI:SetTheme("Amber")
+    end)
+
+    local root = Window.UIElements and Window.UIElements.Main and Window.UIElements.Main.Main
+    if not root then return end
+
+    for _, obj in ipairs(root:GetDescendants()) do
+        local name = string.lower(obj.Name or "")
+        if name:find("user", 1, true) or name:find("footer", 1, true) or name == "fullscreen" or name == "minimize" or name == "close" then
+            if obj:IsA("GuiObject") then
+                obj.Visible = false
+            end
+        end
+
+        if obj:IsA("TextButton") then
+            obj.BackgroundColor3 = Color3.fromRGB(217, 151, 35)
+            obj.BackgroundTransparency = 0.05
+            obj.TextColor3 = Color3.fromRGB(255, 248, 226)
+            obj.AutoButtonColor = true
+            if not obj:FindFirstChildOfClass("UICorner") then
+                local corner = Instance.new("UICorner")
+                corner.CornerRadius = UDim.new(0, 8)
+                corner.Parent = obj
+            end
+        elseif obj:IsA("ScrollingFrame") then
+            obj.ScrollBarImageColor3 = Color3.fromRGB(214, 145, 24)
+            obj.ScrollBarImageTransparency = 0.15
+        elseif obj:IsA("TextLabel") and obj.Name ~= "BananaCatMainText" then
+            obj.TextColor3 = Color3.fromRGB(255, 246, 220)
+        end
+    end
+
+    local topbar = root:FindFirstChild("Topbar")
+    if topbar then
+        local right = topbar:FindFirstChild("Right")
+        if right then right.Visible = false end
+        local left = topbar:FindFirstChild("Left")
+        if left then left.Visible = false end
+    end
+end
+
+ApplyReferenceUIStyle()
+task.defer(ApplyReferenceUIStyle)
+task.delay(1, ApplyReferenceUIStyle)
 
 --初始化狀態
 task.spawn(function()
