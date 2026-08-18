@@ -22,6 +22,241 @@ local mainUI = playerGui and playerGui:FindFirstChild("Main")
 local bottomHUD = mainUI and mainUI:FindFirstChild("BottomHUDList")
 local inCombatUI = bottomHUD and bottomHUD:FindFirstChild("InCombat")
 
+----------------------------------------
+-- 卡密驗證：只有清單內卡密可以載入舊 PVP 功能
+----------------------------------------
+local AuthorizedKeys = {
+    ["a280e1a1317df7c7f09eae15"] = true,
+    ["57cef1bfd206cb7243ed1e8e"] = true,
+    ["03f5c374c1245c30ec3fc2ff"] = true,
+    ["89a6de3c5076c3e80b031a85"] = true,
+    ["c60a6fae09c2d40a26be988d"] = true,
+    ["7849e0b8f00c2a1a255040a8"] = true,
+    ["fc2a0382fd4329f785a0bec5"] = true,
+    ["67990662adbf04af0ec3821e"] = true,
+    ["fecba112c1fb6ab5b07fb274"] = true,
+    ["c5fcd1aee1857ce0dd62b4df"] = true,
+    ["54a829d9ab227eed988f862c"] = true,
+    ["5fd71af2554904fbebc15b6b"] = true,
+    ["844b3064f3478e5c86bc9633"] = true,
+    ["72ff65c124449c34a1f0aa55"] = true,
+    ["073b4a3ed9ce1ce9bda81dd1"] = true,
+    ["84ac2026c70e7495f8512fe5"] = true,
+    ["fa257e0b5e78c97ad75529b0"] = true,
+    ["33e1df1da0a4f2b5441f3f43"] = true,
+    ["a65e1493211bb37aa7f6c5ff"] = true,
+    ["4d36d22b05c7f825b5d6c9b9"] = true,
+    ["201a397553e5d15c7d2368c5"] = true,
+    ["23af7e9531f9a57f13ef1576"] = true,
+    ["ef88ddb108393a0cf45c9c94"] = true,
+    ["99784e1f6973a45aa4360673"] = true,
+    ["c29d040003fc6909bab512bb"] = true,
+    ["521320f9bc7195b525bf7421"] = true,
+    ["de9c8c9254c8f9e4c085a783"] = true,
+    ["c310c786ceb59365026d40f1"] = true,
+    ["6e4a0c7177a27465bab87c50"] = true,
+    ["0e00fbc9d02a519dc256191f"] = true,
+    ["3bde7cb5f4f211cb711ec5c2"] = true,
+    ["2657b7c3e41cc79d98fac99f"] = true,
+    ["04ecfd354b938006b003bef6"] = true,
+    ["803db31cea7e4e7f46f6e33b"] = true,
+    ["65d85e7e53b071ea0f5b3067"] = true,
+    ["65ee1748e2d18ab0d4f9d37f"] = true,
+    ["30e95e5d1cc473af38da81ca"] = true,
+    ["95b9057aef5862b819d730a2"] = true,
+    ["9f833e72a1787ada4ee5b65a"] = true,
+    ["6c21e34c1b395bb8e11fe037"] = true,
+    ["6f7f89e44f4f8ec429c045d6"] = true,
+    ["030dd80cda102f83ea398a60"] = true,
+    ["a30941f612338dd6722775b6"] = true,
+    ["ca32640683b39eac834dd16f"] = true,
+    ["ac963eb3dab3bf1da0c66e94"] = true,
+    ["430a59d9ee694790a697ca6b"] = true,
+    ["7a132d9720cc7edf68fbbbc3"] = true,
+    ["b7cc4649b2d86b4062ef35b7"] = true,
+    ["905437c965264e29649fb7a9"] = true,
+    ["b4486341691866869f236048"] = true,
+    ["3c851a90226641014e760a63"] = true,
+    ["6e2e149a1fadd7e3a95b8125"] = true,
+    ["f8ebde8cb82df19bb6da8732"] = true,
+    ["4343c62b469a752c3d011133"] = true,
+    ["85027d03469e9e31702af816"] = true,
+    ["287fe634c6c7f5523138c1cd"] = true,
+    ["1a6f24ba5a6447eb064f4a18"] = true,
+    ["248205df8390f9ed74ad3b4c"] = true,
+    ["80c330ec80278599da2c6c47"] = true,
+    ["c4de75b84fd4f4cf8cfce7c4"] = true,
+    ["671cbbf987d42e18836948c0"] = true,
+    ["e981ffa5c0c16f5fb578cd36"] = true,
+    ["1b5371a05ab6f9d125e42044"] = true,
+    ["630dcb0c293e70e1eb096ccf"] = true,
+    ["16fc5fbe5333bbc42d6b77c3"] = true,
+    ["3f4d5c1c8d77ed08d38a75bf"] = true,
+    ["f358d278c033b7ffd7c865bf"] = true,
+    ["f9aaa6c5d71595397257c2ed"] = true,
+    ["6b8d09ea65409915c65ec93c"] = true,
+    ["69828f2039a7bdb00f2a365e"] = true,
+    ["3fddeec06252abdcf41dde44"] = true,
+    ["6190860d7f56faf719adf386"] = true,
+    ["b74bdf88827a0b1d9d2cd8d8"] = true,
+    ["4634022d70a2f389bc866ef4"] = true,
+    ["9f0f4020a1edc992507f8ec3"] = true,
+    ["4e6b0d3947c7aefa9868e6e1"] = true,
+    ["6b810535b7a39765249d2e62"] = true,
+    ["83f322811564dacaa27f60bf"] = true,
+    ["ac7b0e1ff6e0731a6e968ed4"] = true,
+    ["c8ce216104271d97b14535b9"] = true,
+    ["453ef28daeaf3d3724581fe1"] = true,
+    ["c8ead96684cfcb4164953544"] = true,
+    ["4a9e9dd11dd9fb0895d2c7f9"] = true,
+    ["d99589d9ef422dd2ec86bea6"] = true,
+    ["76056ad5ab15a3e4b83d613f"] = true,
+    ["d4d943da3a1f6bd0a2a5b039"] = true,
+    ["c9243a79d7413f53e268f34a"] = true,
+    ["2b53970f840bd3507a4304e8"] = true,
+    ["7d89cfad05b6ca03630c6f36"] = true,
+    ["fe0d19b8a3ff08ae8a7a0f73"] = true,
+    ["9c1c1b0439ccab500bf06b99"] = true,
+    ["4e96246ae71de5d38914bc50"] = true,
+    ["4ced52726899009cbd32b259"] = true,
+    ["e319742108e0253b2a56092f"] = true,
+    ["b23adb6f9f48ce7880619a13"] = true,
+    ["f2c662c7106263dd3a379416"] = true,
+    ["073a947fb850a47a20560471"] = true,
+    ["c2927ffb9ca57f906156120e"] = true,
+    ["51c60e98e83f9576a2889764"] = true,
+    ["916d739b7ea35b646dfa14be"] = true,
+}
+
+local function normalizeKey(value)
+    return string.lower(tostring(value or "")):gsub("%s+", "")
+end
+
+local function kickForKey(reason)
+    LocalPlayer:Kick(reason or "請至官方 Discord 索取卡密\nhttps://discord.gg/dgh7qJ4wA")
+end
+
+local function showKeyPrompt()
+    local keyGui = Instance.new("ScreenGui")
+    keyGui.Name = "BananaCatHubKeyGate"
+    keyGui.ResetOnSpawn = false
+    keyGui.IgnoreGuiInset = true
+    keyGui.DisplayOrder = 10000
+    keyGui.Parent = game:GetService("CoreGui")
+
+    local backdrop = Instance.new("Frame")
+    backdrop.Size = UDim2.fromScale(1, 1)
+    backdrop.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    backdrop.BackgroundTransparency = 0.35
+    backdrop.Parent = keyGui
+
+    local card = Instance.new("Frame")
+    card.AnchorPoint = Vector2.new(0.5, 0.5)
+    card.Position = UDim2.fromScale(0.5, 0.5)
+    card.Size = UDim2.fromOffset(330, 190)
+    card.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+    card.Parent = backdrop
+    Instance.new("UICorner", card).CornerRadius = UDim.new(0, 10)
+
+    local title = Instance.new("TextLabel")
+    title.BackgroundTransparency = 1
+    title.Position = UDim2.fromOffset(18, 14)
+    title.Size = UDim2.new(1, -36, 0, 28)
+    title.Font = Enum.Font.GothamBold
+    title.Text = "Banana Cat Hub - PVP 卡密驗證"
+    title.TextColor3 = Color3.fromRGB(255, 255, 255)
+    title.TextSize = 16
+    title.Parent = card
+
+    local hint = Instance.new("TextLabel")
+    hint.BackgroundTransparency = 1
+    hint.Position = UDim2.fromOffset(18, 46)
+    hint.Size = UDim2.new(1, -36, 0, 32)
+    hint.Font = Enum.Font.Gotham
+    hint.Text = "請輸入有效卡密；沒有卡密請至官方 Discord 索取"
+    hint.TextColor3 = Color3.fromRGB(220, 220, 220)
+    hint.TextSize = 11
+    hint.TextWrapped = true
+    hint.Parent = card
+
+    local input = Instance.new("TextBox")
+    input.ClearTextOnFocus = false
+    input.PlaceholderText = "輸入卡密"
+    input.Text = tostring(getgenv().Key or "")
+    input.Position = UDim2.fromOffset(18, 86)
+    input.Size = UDim2.new(1, -36, 0, 34)
+    input.BackgroundColor3 = Color3.fromRGB(55, 55, 55)
+    input.TextColor3 = Color3.fromRGB(255, 255, 255)
+    input.PlaceholderColor3 = Color3.fromRGB(170, 170, 170)
+    input.Font = Enum.Font.Code
+    input.TextSize = 13
+    input.Parent = card
+    Instance.new("UICorner", input).CornerRadius = UDim.new(0, 6)
+
+    local submit = Instance.new("TextButton")
+    submit.Text = "驗證卡密"
+    submit.Position = UDim2.fromOffset(18, 132)
+    submit.Size = UDim2.new(1, -36, 0, 34)
+    submit.BackgroundColor3 = Color3.fromRGB(75, 75, 75)
+    submit.TextColor3 = Color3.fromRGB(255, 255, 255)
+    submit.Font = Enum.Font.GothamBold
+    submit.TextSize = 13
+    submit.Parent = card
+    Instance.new("UICorner", submit).CornerRadius = UDim.new(0, 6)
+
+    local result = Instance.new("TextLabel")
+    result.BackgroundTransparency = 1
+    result.Position = UDim2.fromOffset(18, 168)
+    result.Size = UDim2.new(1, -36, 0, 18)
+    result.Font = Enum.Font.Gotham
+    result.Text = ""
+    result.TextColor3 = Color3.fromRGB(255, 150, 150)
+    result.TextSize = 10
+    result.Parent = card
+
+    local accepted = false
+    local function verify()
+        local candidate = normalizeKey(input.Text)
+        if AuthorizedKeys[candidate] then
+            getgenv().Key = candidate
+            accepted = true
+            keyGui:Destroy()
+        else
+            result.Text = "卡密無效，請至官方 Discord 索取卡密"
+            task.delay(1.5, function()
+                if keyGui and keyGui.Parent then
+                    keyGui:Destroy()
+                    kickForKey("請至官方 Discord 索取卡密\nhttps://discord.gg/dgh7qJ4wA")
+                end
+            end)
+        end
+    end
+
+    submit.Activated:Connect(verify)
+    input.FocusLost:Connect(function(enterPressed)
+        if enterPressed then verify() end
+    end)
+
+    repeat task.wait() until accepted or not keyGui.Parent
+    return accepted
+end
+
+local suppliedKey = normalizeKey(getgenv().Key)
+if suppliedKey ~= "" then
+    if AuthorizedKeys[suppliedKey] then
+        getgenv().Key = suppliedKey
+    else
+        kickForKey("卡密無效，請至官方 Discord 索取卡密\nhttps://discord.gg/dgh7qJ4wA")
+        return
+    end
+else
+    if not showKeyPrompt() then
+        kickForKey("請至官方 Discord 索取卡密\nhttps://discord.gg/dgh7qJ4wA")
+        return
+    end
+end
+
+
 -- Fast Attack Serve
 local Modules = ReplicatedStorage:WaitForChild("Modules", 10)
 local Net = Modules and Modules:WaitForChild("Net", 10)
