@@ -193,9 +193,95 @@ end)
 
 BananaCatHubToggleGui.Parent = game:GetService("CoreGui")
 
+-- 右下角 UI 訊息：取代原本黑色通知條，電腦／手機共用，無外框
+local BananaCatHubToastGui = Instance.new("ScreenGui")
+BananaCatHubToastGui.Name = "BananaCatHubToastGui"
+BananaCatHubToastGui.ResetOnSpawn = false
+BananaCatHubToastGui.IgnoreGuiInset = true
+BananaCatHubToastGui.DisplayOrder = 10000
+BananaCatHubToastGui.Parent = game:GetService("CoreGui")
+
+local function BananaCatHubShowToast(title, content, duration)
+    duration = duration or 5
+    pcall(function()
+        local oldToast = BananaCatHubToastGui:FindFirstChild("BananaCatHubToast")
+        if oldToast then oldToast:Destroy() end
+
+        local toast = Instance.new("Frame")
+        toast.Name = "BananaCatHubToast"
+        toast.AnchorPoint = Vector2.new(1, 1)
+        toast.Position = UDim2.new(1, -16, 1, -16)
+        toast.Size = UDim2.new(0.88, 0, 0, 78)
+        toast.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+        toast.BackgroundTransparency = 0
+        toast.BorderSizePixel = 0
+        toast.Parent = BananaCatHubToastGui
+
+        local toastCorner = Instance.new("UICorner")
+        toastCorner.CornerRadius = UDim.new(0, 14)
+        toastCorner.Parent = toast
+
+        local toastPadding = Instance.new("UIPadding")
+        toastPadding.PaddingLeft = UDim.new(0, 14)
+        toastPadding.PaddingRight = UDim.new(0, 38)
+        toastPadding.PaddingTop = UDim.new(0, 10)
+        toastPadding.PaddingBottom = UDim.new(0, 8)
+        toastPadding.Parent = toast
+
+        local titleLabel = Instance.new("TextLabel")
+        titleLabel.Name = "Title"
+        titleLabel.BackgroundTransparency = 1
+        titleLabel.Size = UDim2.new(1, 0, 0, 24)
+        titleLabel.Font = Enum.Font.GothamBold
+        titleLabel.Text = tostring(title or "UI訊息")
+        titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+        titleLabel.TextSize = 17
+        titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+        titleLabel.Parent = toast
+
+        local contentLabel = Instance.new("TextLabel")
+        contentLabel.Name = "Content"
+        contentLabel.BackgroundTransparency = 1
+        contentLabel.Position = UDim2.fromOffset(0, 25)
+        contentLabel.Size = UDim2.new(1, 0, 1, -25)
+        contentLabel.Font = Enum.Font.Gotham
+        contentLabel.Text = tostring(content or "")
+        contentLabel.TextColor3 = Color3.fromRGB(245, 245, 245)
+        contentLabel.TextSize = 14
+        contentLabel.TextWrapped = true
+        contentLabel.TextXAlignment = Enum.TextXAlignment.Left
+        contentLabel.TextYAlignment = Enum.TextYAlignment.Top
+        contentLabel.Parent = toast
+
+        local closeButton = Instance.new("TextButton")
+        closeButton.Name = "Close"
+        closeButton.AnchorPoint = Vector2.new(1, 0)
+        closeButton.Position = UDim2.new(1, -4, 0, 5)
+        closeButton.Size = UDim2.fromOffset(26, 26)
+        closeButton.BackgroundTransparency = 1
+        closeButton.BorderSizePixel = 0
+        closeButton.Font = Enum.Font.Gotham
+        closeButton.Text = "×"
+        closeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+        closeButton.TextSize = 24
+        closeButton.Parent = toast
+        closeButton.Activated:Connect(function()
+            if toast then toast:Destroy() end
+        end)
+
+        task.delay(duration, function()
+            if toast and toast.Parent then toast:Destroy() end
+        end)
+    end)
+end
+
+-- 腳本載入後立即顯示一次右下角 UI 訊息
+BananaCatHubShowToast("UI訊息", "Banana Cat Hub 已載入，按左下角香蕉貓按鈕開啟介面", 6)
+
 Window:OnDestroy(function()
     pcall(function()
         if BananaCatHubToggleGui then BananaCatHubToggleGui:Destroy() end
+        if BananaCatHubToastGui then BananaCatHubToastGui:Destroy() end
     end)
     getgenv().AutoBountyLoaded = nil
 end)
@@ -3368,11 +3454,7 @@ local function startAutoHideTimer()
     task.delay(3, function()
         if _G.AutoHideEnabled then
             Window:Toggle(false)
-            WindUI:Notify({ 
-                Title = "系統通知", 
-                Content = "介面已自動隱藏，可按快捷鍵重新開啟", 
-                Duration = 5 
-            })
+            BananaCatHubShowToast("UI訊息", "介面已自動隱藏，可按快捷鍵重新開啟", 5)
         end
     end)
 end
