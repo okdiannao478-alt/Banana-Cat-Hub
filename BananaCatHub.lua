@@ -125,7 +125,7 @@ end)
 
 -- 從 GitHub 取得使用者提供的香蕉貓圖片，使用執行器本地素材載入
 local BananaCatHubIconUrl = "https://raw.githubusercontent.com/okdiannao478-alt/Banana-Cat-Hub/main/IMG_6868.PNG"
-local BananaCatHubIconPath = "BananaCatHubIcon.png"
+local BananaCatHubIconPath = "BananaCatHubIcon_6868.png"
 local BananaCatHubIconAsset = nil
 
 pcall(function()
