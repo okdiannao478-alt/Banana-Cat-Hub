@@ -124,25 +124,28 @@ pcall(function()
 end)
 
 -- 使用者提供的兩張圖片：第一張為關閉 UI，第二張為開啟 UI
-local BananaCatHubClosedUrl = "https://raw.githubusercontent.com/okdiannao478-alt/Banana-Cat-Hub/main/BananaToggleClosed.png"
-local BananaCatHubOpenUrl = "https://raw.githubusercontent.com/okdiannao478-alt/Banana-Cat-Hub/main/BananaToggleOpen.png"
-local BananaCatHubClosedPath = "BananaCatHubToggleClosed.png"
-local BananaCatHubOpenPath = "BananaCatHubToggleOpen.png"
+local BananaCatHubClosedUrl = "https://raw.githubusercontent.com/okdiannao478-alt/Banana-Cat-Hub/main/BananaToggleClosed.png?v=4"
+local BananaCatHubOpenUrl = "https://raw.githubusercontent.com/okdiannao478-alt/Banana-Cat-Hub/main/BananaToggleOpen.png?v=4"
+-- 使用版本化檔名，避免電腦／手機執行器繼續讀取舊的灰邊快取
+local BananaCatHubClosedPath = "BananaCatHubToggleClosed_v4.png"
+local BananaCatHubOpenPath = "BananaCatHubToggleOpen_v4.png"
 local BananaCatHubClosedAsset = nil
 local BananaCatHubOpenAsset = nil
 
 local function BananaCatHubLoadAsset(assetUrl, assetPath)
     local result = nil
     pcall(function()
-        if isfile and writefile and getsynasset then
+        local assetGetter = getsynasset or getcustomasset
+        local httpRequest = request or http_request
+        if isfile and writefile and assetGetter and httpRequest then
             if not isfile(assetPath) then
-                local response = request({ Url = assetUrl })
+                local response = httpRequest({ Url = assetUrl, Method = "GET" })
                 if response and response.Body then
                     writefile(assetPath, response.Body)
                 end
             end
             if isfile(assetPath) then
-                result = getsynasset(assetPath)
+                result = assetGetter(assetPath)
             end
         end
     end)
@@ -178,7 +181,7 @@ BananaCatHubToggleStroke.Parent = BananaCatHubToggleButton
 local BananaCatHubIsOpen = false
 Window:Toggle(false)
 
-BananaCatHubToggleButton.MouseButton1Click:Connect(function()
+BananaCatHubToggleButton.Activated:Connect(function()
     BananaCatHubIsOpen = not BananaCatHubIsOpen
     Window:Toggle(BananaCatHubIsOpen)
     if BananaCatHubIsOpen then
