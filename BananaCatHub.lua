@@ -242,6 +242,12 @@ BananaCatHubWelcome.Activated:Connect(function()
     BananaCatHubToggleButton.Image = BananaCatHubOpenAsset or BananaCatHubClosedAsset or ""
 end)
 
+-- 歡迎通知顯示 5 秒後自動消失；左下角 60×60 按鈕不受影響
+ task.delay(5, function()
+    if BananaCatHubWelcome and BananaCatHubWelcome.Parent then
+        BananaCatHubWelcome.Visible = false
+    end
+end)
 
 Window:OnDestroy(function()
     pcall(function()
