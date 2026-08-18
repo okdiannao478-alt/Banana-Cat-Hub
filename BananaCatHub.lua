@@ -242,8 +242,8 @@ local function showKeyPrompt()
 end
 
 -- 严格验证执行前设置的 getgenv().BananaCatHubKey；不接受脚本内默认卡密
+-- 保留变量，让自动换服务器或自动重载时可以再次验证同一组有效卡密
 local suppliedKey = normalizeKey(getgenv().BananaCatHubKey)
-getgenv().BananaCatHubKey = nil
 
 if suppliedKey == "" or not AuthorizedKeys[suppliedKey] then
     kickForKey("卡密错误，请先设置有效 BananaCatHubKey\n请至官方 Discord 索取卡密：https://discord.gg/dgh7qJ4wA")
