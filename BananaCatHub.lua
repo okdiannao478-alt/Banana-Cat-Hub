@@ -123,37 +123,46 @@ pcall(function()
     if oldGui then oldGui:Destroy() end
 end)
 
--- 從 GitHub 取得使用者提供的香蕉貓圖片，使用執行器本地素材載入
-local BananaCatHubIconUrl = "https://raw.githubusercontent.com/okdiannao478-alt/Banana-Cat-Hub/main/IMG_6868.PNG"
-local BananaCatHubIconPath = "BananaCatHubIcon_6868.png"
-local BananaCatHubIconAsset = nil
+-- 使用者提供的兩張圖片：第一張為關閉 UI，第二張為開啟 UI
+local BananaCatHubClosedUrl = "https://raw.githubusercontent.com/okdiannao478-alt/Banana-Cat-Hub/main/BananaToggleClosed.jpg"
+local BananaCatHubOpenUrl = "https://raw.githubusercontent.com/okdiannao478-alt/Banana-Cat-Hub/main/BananaToggleOpen.jpg"
+local BananaCatHubClosedPath = "BananaCatHubToggleClosed.jpg"
+local BananaCatHubOpenPath = "BananaCatHubToggleOpen.jpg"
+local BananaCatHubClosedAsset = nil
+local BananaCatHubOpenAsset = nil
 
-pcall(function()
-    if isfile and writefile and getsynasset then
-        if not isfile(BananaCatHubIconPath) then
-            local iconResponse = request({ Url = BananaCatHubIconUrl })
-            if iconResponse and iconResponse.Body then
-                writefile(BananaCatHubIconPath, iconResponse.Body)
+local function BananaCatHubLoadAsset(assetUrl, assetPath)
+    local result = nil
+    pcall(function()
+        if isfile and writefile and getsynasset then
+            if not isfile(assetPath) then
+                local response = request({ Url = assetUrl })
+                if response and response.Body then
+                    writefile(assetPath, response.Body)
+                end
+            end
+            if isfile(assetPath) then
+                result = getsynasset(assetPath)
             end
         end
-        if isfile(BananaCatHubIconPath) then
-            BananaCatHubIconAsset = getsynasset(BananaCatHubIconPath)
-        end
-    end
-end)
+    end)
+    return result
+end
 
--- 左下角圓形香蕉貓開關：使用使用者提供的 IMG_6868.PNG，只負責顯示/隱藏 UI
+BananaCatHubClosedAsset = BananaCatHubLoadAsset(BananaCatHubClosedUrl, BananaCatHubClosedPath)
+BananaCatHubOpenAsset = BananaCatHubLoadAsset(BananaCatHubOpenUrl, BananaCatHubOpenPath)
+
+-- 左下角按鈕只使用使用者提供的兩張圖片，不使用舊圖示或備援 Emoji
 local BananaCatHubToggleButton = Instance.new("ImageButton")
 BananaCatHubToggleButton.Name = "BananaCatToggle"
 BananaCatHubToggleButton.AnchorPoint = Vector2.new(0, 1)
 BananaCatHubToggleButton.Position = UDim2.new(0, 18, 1, -18)
 BananaCatHubToggleButton.Size = UDim2.fromOffset(68, 68)
-BananaCatHubToggleButton.BackgroundColor3 = Color3.fromRGB(28, 28, 34)
-BananaCatHubToggleButton.BackgroundTransparency = 0.05
+BananaCatHubToggleButton.BackgroundTransparency = 1
 BananaCatHubToggleButton.BorderSizePixel = 0
-BananaCatHubToggleButton.Image = BananaCatHubIconAsset or ""
+BananaCatHubToggleButton.Image = BananaCatHubClosedAsset or ""
 BananaCatHubToggleButton.ScaleType = Enum.ScaleType.Fit
-BananaCatHubToggleButton.AutoButtonColor = true
+BananaCatHubToggleButton.AutoButtonColor = false
 BananaCatHubToggleButton.ZIndex = 20
 BananaCatHubToggleButton.Parent = BananaCatHubToggleGui
 
@@ -162,73 +171,9 @@ BananaCatHubToggleCorner.CornerRadius = UDim.new(1, 0)
 BananaCatHubToggleCorner.Parent = BananaCatHubToggleButton
 
 local BananaCatHubToggleStroke = Instance.new("UIStroke")
-BananaCatHubToggleStroke.Thickness = 2
-BananaCatHubToggleStroke.Color = Color3.fromRGB(255, 255, 255)
-BananaCatHubToggleStroke.Transparency = 0.05
+BananaCatHubToggleStroke.Thickness = 0
+BananaCatHubToggleStroke.Transparency = 1
 BananaCatHubToggleStroke.Parent = BananaCatHubToggleButton
-
--- 若執行器不支援 getsynasset，至少顯示名稱而不影響開關功能
-if not BananaCatHubIconAsset then
-    local BananaCatHubFallback = Instance.new("TextLabel")
-    BananaCatHubFallback.BackgroundTransparency = 1
-    BananaCatHubFallback.Size = UDim2.fromScale(1, 1)
-    BananaCatHubFallback.Text = "🍌"
-    BananaCatHubFallback.TextSize = 30
-    BananaCatHubFallback.Font = Enum.Font.GothamBold
-    BananaCatHubFallback.TextColor3 = Color3.fromRGB(255, 224, 80)
-    BananaCatHubFallback.ZIndex = 21
-    BananaCatHubFallback.Parent = BananaCatHubToggleButton
-end
-
--- 圖示旁的載入通知：自訂外觀，不改動 WindUI 或任何功能邏輯
-local BananaCatHubHint = Instance.new("Frame")
-BananaCatHubHint.Name = "BananaCatHubHint"
-BananaCatHubHint.AnchorPoint = Vector2.new(0, 1)
-BananaCatHubHint.Position = UDim2.new(0, 98, 1, -22)
-BananaCatHubHint.Size = UDim2.fromOffset(238, 58)
-BananaCatHubHint.BackgroundColor3 = Color3.fromRGB(31, 31, 38)
-BananaCatHubHint.BackgroundTransparency = 0.08
-BananaCatHubHint.BorderSizePixel = 0
-BananaCatHubHint.ZIndex = 19
-BananaCatHubHint.Parent = BananaCatHubToggleGui
-
-local BananaCatHubHintCorner = Instance.new("UICorner")
-BananaCatHubHintCorner.CornerRadius = UDim.new(0, 12)
-BananaCatHubHintCorner.Parent = BananaCatHubHint
-
-local BananaCatHubHintStroke = Instance.new("UIStroke")
-BananaCatHubHintStroke.Thickness = 1
-BananaCatHubHintStroke.Color = Color3.fromRGB(255, 255, 255)
-BananaCatHubHintStroke.Transparency = 0.72
-BananaCatHubHintStroke.Parent = BananaCatHubHint
-
-local BananaCatHubHintIcon = Instance.new("ImageLabel")
-BananaCatHubHintIcon.BackgroundTransparency = 1
-BananaCatHubHintIcon.Position = UDim2.fromOffset(8, 7)
-BananaCatHubHintIcon.Size = UDim2.fromOffset(44, 44)
-BananaCatHubHintIcon.Image = BananaCatHubIconAsset or ""
-BananaCatHubHintIcon.ScaleType = Enum.ScaleType.Fit
-BananaCatHubHintIcon.ZIndex = 20
-BananaCatHubHintIcon.Parent = BananaCatHubHint
-
-local BananaCatHubHintText = Instance.new("TextLabel")
-BananaCatHubHintText.BackgroundTransparency = 1
-BananaCatHubHintText.Position = UDim2.fromOffset(58, 7)
-BananaCatHubHintText.Size = UDim2.new(1, -66, 1, -14)
-BananaCatHubHintText.Font = Enum.Font.GothamSemibold
-BananaCatHubHintText.Text = "點擊左下角香蕉貓\n開啟 / 關閉 UI"
-BananaCatHubHintText.TextColor3 = Color3.fromRGB(255, 255, 255)
-BananaCatHubHintText.TextSize = 14
-BananaCatHubHintText.TextXAlignment = Enum.TextXAlignment.Left
-BananaCatHubHintText.TextYAlignment = Enum.TextYAlignment.Center
-BananaCatHubHintText.ZIndex = 20
-BananaCatHubHintText.Parent = BananaCatHubHint
-
-task.delay(7, function()
-    if BananaCatHubHint and BananaCatHubHint.Parent then
-        BananaCatHubHint:Destroy()
-    end
-end)
 
 local BananaCatHubIsOpen = false
 Window:Toggle(false)
@@ -236,6 +181,11 @@ Window:Toggle(false)
 BananaCatHubToggleButton.MouseButton1Click:Connect(function()
     BananaCatHubIsOpen = not BananaCatHubIsOpen
     Window:Toggle(BananaCatHubIsOpen)
+    if BananaCatHubIsOpen then
+        BananaCatHubToggleButton.Image = BananaCatHubOpenAsset or BananaCatHubClosedAsset or ""
+    else
+        BananaCatHubToggleButton.Image = BananaCatHubClosedAsset or ""
+    end
 end)
 
 BananaCatHubToggleGui.Parent = game:GetService("CoreGui")
