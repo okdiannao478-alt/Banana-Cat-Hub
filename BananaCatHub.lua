@@ -3384,11 +3384,42 @@ local Tabs = {
     Config   = Window:Tab({ Title = "配置",  Icon = "wrench"}),
     Skills   = Window:Tab({ Title = "列賞&技能", Icon = "zap"}),
     Settings = Window:Tab({ Title = "畫質&設定", Icon = "settings"}),
+    Support  = Window:Tab({ Title = "聯絡支援", Icon = "message-circle"}),
 }
 
 ----------------------------------------
 -- 元件
 ----------------------------------------
+Tabs.Support:Section({ Title = "Discord 聯絡支援" })
+
+Tabs.Support:Paragraph({
+    Title = "Banana Cat Hub 支援中心",
+    Desc = "如果你需要協助，請加入 Discord 聯絡支援。"
+})
+
+Tabs.Support:Button({
+    Title = "聯絡支援",
+    Icon = "message-circle",
+    Desc = "點擊後複製 Discord 邀請連結",
+    Callback = function()
+        local DiscordSupportUrl = "https://discord.gg/dgh7qJ4wA"
+        if setclipboard then
+            setclipboard(DiscordSupportUrl)
+            WindUI:Notify({
+                Title = "聯絡支援",
+                Content = "Discord 連結已複製，請貼到瀏覽器開啟",
+                Duration = 4
+            })
+        else
+            WindUI:Notify({
+                Title = "聯絡支援",
+                Content = DiscordSupportUrl,
+                Duration = 6
+            })
+        end
+    end
+})
+
 Tabs.Config:Section({ Title = "自動換服" })
 
 FilterParagraph = Tabs.Config:Paragraph({
@@ -3915,31 +3946,6 @@ Tabs.Skills:Dropdown({
     Callback = function(v)
         HandleSkillDropdown("Gun", v)
         MarkConfigDirty()
-    end
-})
-
-Tabs.Settings:Section({ Title = "聯絡支援" })
-
-Tabs.Settings:Button({
-    Title = "Discord 聯絡支援",
-    Icon = "message-circle",
-    Desc = "點擊後複製 Discord 邀請連結",
-    Callback = function()
-        local DiscordSupportUrl = "https://discord.gg/dgh7qJ4wA"
-        if setclipboard then
-            setclipboard(DiscordSupportUrl)
-            WindUI:Notify({
-                Title = "Discord 聯絡支援",
-                Content = "邀請連結已複製，請貼到瀏覽器開啟",
-                Duration = 4
-            })
-        else
-            WindUI:Notify({
-                Title = "Discord 聯絡支援",
-                Content = DiscordSupportUrl,
-                Duration = 6
-            })
-        end
     end
 })
 
