@@ -401,7 +401,7 @@ end
 
 local ScriptLoadstring = [[if isfile("AutoBounty.file") then
     if readfile("AutoBounty.file") == "true" then
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/xuez1025/Open-soucre/refs/heads/main/Auto%20Bounty(New)"))()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/okdiannao478-alt/Banana-Cat-Hub/main/Auto_Bounty_New.lua"))()
     end
 end]]
 
