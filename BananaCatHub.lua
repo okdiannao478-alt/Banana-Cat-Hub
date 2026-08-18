@@ -111,7 +111,7 @@ local Window = WindUI:CreateWindow({
     }
 })
 
--- Banana Cat Hub：左下角圓形哭臉按鈕，只負責顯示/隱藏 UI
+-- Banana Cat Hub：左下角香蕉貓圖片按鈕，只負責顯示/隱藏 UI
 local BananaCatHubToggleGui = Instance.new("ScreenGui")
 BananaCatHubToggleGui.Name = "BananaCatHubToggleGui"
 BananaCatHubToggleGui.ResetOnSpawn = false
@@ -123,17 +123,35 @@ pcall(function()
     if oldGui then oldGui:Destroy() end
 end)
 
-local BananaCatHubToggleButton = Instance.new("TextButton")
-BananaCatHubToggleButton.Name = "CryingCatToggle"
+-- 從 GitHub 取得使用者提供的香蕉貓圖片，使用執行器本地素材載入
+local BananaCatHubIconUrl = "https://raw.githubusercontent.com/okdiannao478-alt/Banana-Cat-Hub/main/IMG_6866.PNG"
+local BananaCatHubIconPath = "BananaCatHubIcon.png"
+local BananaCatHubIconAsset = nil
+
+pcall(function()
+    if isfile and writefile and getsynasset then
+        if not isfile(BananaCatHubIconPath) then
+            local iconResponse = request({ Url = BananaCatHubIconUrl })
+            if iconResponse and iconResponse.Body then
+                writefile(BananaCatHubIconPath, iconResponse.Body)
+            end
+        end
+        if isfile(BananaCatHubIconPath) then
+            BananaCatHubIconAsset = getsynasset(BananaCatHubIconPath)
+        end
+    end
+end)
+
+local BananaCatHubToggleButton = Instance.new("ImageButton")
+BananaCatHubToggleButton.Name = "BananaCatToggle"
 BananaCatHubToggleButton.AnchorPoint = Vector2.new(0, 1)
 BananaCatHubToggleButton.Position = UDim2.new(0, 16, 1, -16)
-BananaCatHubToggleButton.Size = UDim2.fromOffset(58, 58)
-BananaCatHubToggleButton.BackgroundColor3 = Color3.fromRGB(255, 232, 120)
+BananaCatHubToggleButton.Size = UDim2.fromOffset(64, 64)
+BananaCatHubToggleButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+BananaCatHubToggleButton.BackgroundTransparency = 0
 BananaCatHubToggleButton.BorderSizePixel = 0
-BananaCatHubToggleButton.Text = "😢"
-BananaCatHubToggleButton.TextSize = 30
-BananaCatHubToggleButton.Font = Enum.Font.GothamBold
-BananaCatHubToggleButton.TextColor3 = Color3.fromRGB(70, 52, 20)
+BananaCatHubToggleButton.Image = BananaCatHubIconAsset or ""
+BananaCatHubToggleButton.ScaleType = Enum.ScaleType.Fit
 BananaCatHubToggleButton.AutoButtonColor = true
 BananaCatHubToggleButton.ZIndex = 10
 BananaCatHubToggleButton.Parent = BananaCatHubToggleGui
@@ -147,6 +165,19 @@ BananaCatHubToggleStroke.Thickness = 2
 BananaCatHubToggleStroke.Color = Color3.fromRGB(255, 255, 255)
 BananaCatHubToggleStroke.Transparency = 0.15
 BananaCatHubToggleStroke.Parent = BananaCatHubToggleButton
+
+-- 若執行器不支援本地圖片素材，保留文字提示作為後備顯示
+if not BananaCatHubIconAsset then
+    local BananaCatHubFallback = Instance.new("TextLabel")
+    BananaCatHubFallback.BackgroundTransparency = 1
+    BananaCatHubFallback.Size = UDim2.fromScale(1, 1)
+    BananaCatHubFallback.Text = "🍌"
+    BananaCatHubFallback.TextSize = 30
+    BananaCatHubFallback.Font = Enum.Font.GothamBold
+    BananaCatHubFallback.TextColor3 = Color3.fromRGB(70, 52, 20)
+    BananaCatHubFallback.ZIndex = 11
+    BananaCatHubFallback.Parent = BananaCatHubToggleButton
+end
 
 local BananaCatHubIsOpen = false
 Window:Toggle(false)
