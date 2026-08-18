@@ -91,7 +91,7 @@ local WindUI = loadstring(request({
 WindUI:SetTheme(_G.Theme)
 
 local Window = WindUI:CreateWindow({
-Title         = "Banana Cat Hub - Blox Fruit",
+    Title         = "Banana Cat Hub - Blox Fruit",
     Icon          = "https://raw.githubusercontent.com/okdiannao478-alt/Banana-Cat-Hub/main/IMG_6868.PNG",
     Author        = "2026最新自動獵賞",
     Folder        = "Auto Bounty",
@@ -142,17 +142,19 @@ pcall(function()
     end
 end)
 
-local BananaCatHubToggleButton = Instance.new("TextButton")
+-- 左下角圓形香蕉貓開關：使用使用者提供的 IMG_6868.PNG，只負責顯示/隱藏 UI
+local BananaCatHubToggleButton = Instance.new("ImageButton")
 BananaCatHubToggleButton.Name = "BananaCatToggle"
 BananaCatHubToggleButton.AnchorPoint = Vector2.new(0, 1)
-BananaCatHubToggleButton.Position = UDim2.new(0, 16, 1, -16)
-BananaCatHubToggleButton.Size = UDim2.fromOffset(64, 64)
-BananaCatHubToggleButton.BackgroundColor3 = Color3.fromRGB(112, 224, 144)
-BananaCatHubToggleButton.BackgroundTransparency = 0
+BananaCatHubToggleButton.Position = UDim2.new(0, 18, 1, -18)
+BananaCatHubToggleButton.Size = UDim2.fromOffset(68, 68)
+BananaCatHubToggleButton.BackgroundColor3 = Color3.fromRGB(28, 28, 34)
+BananaCatHubToggleButton.BackgroundTransparency = 0.05
 BananaCatHubToggleButton.BorderSizePixel = 0
-BananaCatHubToggleButton.Text = ""
+BananaCatHubToggleButton.Image = BananaCatHubIconAsset or ""
+BananaCatHubToggleButton.ScaleType = Enum.ScaleType.Fit
 BananaCatHubToggleButton.AutoButtonColor = true
-BananaCatHubToggleButton.ZIndex = 10
+BananaCatHubToggleButton.ZIndex = 20
 BananaCatHubToggleButton.Parent = BananaCatHubToggleGui
 
 local BananaCatHubToggleCorner = Instance.new("UICorner")
@@ -160,54 +162,72 @@ BananaCatHubToggleCorner.CornerRadius = UDim.new(1, 0)
 BananaCatHubToggleCorner.Parent = BananaCatHubToggleButton
 
 local BananaCatHubToggleStroke = Instance.new("UIStroke")
-BananaCatHubToggleStroke.Thickness = 3
-BananaCatHubToggleStroke.Color = Color3.fromRGB(245, 255, 245)
-BananaCatHubToggleStroke.Transparency = 0
+BananaCatHubToggleStroke.Thickness = 2
+BananaCatHubToggleStroke.Color = Color3.fromRGB(255, 255, 255)
+BananaCatHubToggleStroke.Transparency = 0.05
 BananaCatHubToggleStroke.Parent = BananaCatHubToggleButton
 
--- 模擬遊戲左下角圓形指南針外觀；只作為 UI 開關，不改變任何原有功能
-local BananaCatHubCompass = Instance.new("TextLabel")
-BananaCatHubCompass.BackgroundTransparency = 1
-BananaCatHubCompass.Size = UDim2.fromScale(1, 1)
-BananaCatHubCompass.Text = "◆"
-BananaCatHubCompass.TextSize = 33
-BananaCatHubCompass.Font = Enum.Font.GothamBold
-BananaCatHubCompass.TextColor3 = Color3.fromRGB(255, 255, 255)
-BananaCatHubCompass.ZIndex = 11
-BananaCatHubCompass.Parent = BananaCatHubToggleButton
+-- 若執行器不支援 getsynasset，至少顯示名稱而不影響開關功能
+if not BananaCatHubIconAsset then
+    local BananaCatHubFallback = Instance.new("TextLabel")
+    BananaCatHubFallback.BackgroundTransparency = 1
+    BananaCatHubFallback.Size = UDim2.fromScale(1, 1)
+    BananaCatHubFallback.Text = "🍌"
+    BananaCatHubFallback.TextSize = 30
+    BananaCatHubFallback.Font = Enum.Font.GothamBold
+    BananaCatHubFallback.TextColor3 = Color3.fromRGB(255, 224, 80)
+    BananaCatHubFallback.ZIndex = 21
+    BananaCatHubFallback.Parent = BananaCatHubToggleButton
+end
 
-local BananaCatHubCompassNeedle = Instance.new("TextLabel")
-BananaCatHubCompassNeedle.BackgroundTransparency = 1
-BananaCatHubCompassNeedle.Position = UDim2.fromScale(0, -0.02)
-BananaCatHubCompassNeedle.Size = UDim2.fromScale(1, 1)
-BananaCatHubCompassNeedle.Text = "▲"
-BananaCatHubCompassNeedle.TextSize = 19
-BananaCatHubCompassNeedle.Font = Enum.Font.GothamBold
-BananaCatHubCompassNeedle.TextColor3 = Color3.fromRGB(255, 92, 92)
-BananaCatHubCompassNeedle.ZIndex = 12
-BananaCatHubCompassNeedle.Parent = BananaCatHubToggleButton
+-- 圖示旁的載入通知：自訂外觀，不改動 WindUI 或任何功能邏輯
+local BananaCatHubHint = Instance.new("Frame")
+BananaCatHubHint.Name = "BananaCatHubHint"
+BananaCatHubHint.AnchorPoint = Vector2.new(0, 1)
+BananaCatHubHint.Position = UDim2.new(0, 98, 1, -22)
+BananaCatHubHint.Size = UDim2.fromOffset(238, 58)
+BananaCatHubHint.BackgroundColor3 = Color3.fromRGB(31, 31, 38)
+BananaCatHubHint.BackgroundTransparency = 0.08
+BananaCatHubHint.BorderSizePixel = 0
+BananaCatHubHint.ZIndex = 19
+BananaCatHubHint.Parent = BananaCatHubToggleGui
 
-local BananaCatHubCompassNeedleBottom = Instance.new("TextLabel")
-BananaCatHubCompassNeedleBottom.BackgroundTransparency = 1
-BananaCatHubCompassNeedleBottom.Position = UDim2.fromScale(0, 0.19)
-BananaCatHubCompassNeedleBottom.Size = UDim2.fromScale(1, 1)
-BananaCatHubCompassNeedleBottom.Text = "▼"
-BananaCatHubCompassNeedleBottom.TextSize = 19
-BananaCatHubCompassNeedleBottom.Font = Enum.Font.GothamBold
-BananaCatHubCompassNeedleBottom.TextColor3 = Color3.fromRGB(240, 240, 240)
-BananaCatHubCompassNeedleBottom.ZIndex = 12
-BananaCatHubCompassNeedleBottom.Parent = BananaCatHubToggleButton
+local BananaCatHubHintCorner = Instance.new("UICorner")
+BananaCatHubHintCorner.CornerRadius = UDim.new(0, 12)
+BananaCatHubHintCorner.Parent = BananaCatHubHint
 
--- 加入遊戲後顯示右下角提示，告知使用者左下角開關位置
- task.defer(function()
-    task.wait(0.5)
-    pcall(function()
-        WindUI:Notify({
-            Title = "Banana Cat Hub",
-            Content = "UI 已載入，請點擊左下角圓形指南針按鈕開啟介面",
-            Duration = 6
-        })
-    end)
+local BananaCatHubHintStroke = Instance.new("UIStroke")
+BananaCatHubHintStroke.Thickness = 1
+BananaCatHubHintStroke.Color = Color3.fromRGB(255, 255, 255)
+BananaCatHubHintStroke.Transparency = 0.72
+BananaCatHubHintStroke.Parent = BananaCatHubHint
+
+local BananaCatHubHintIcon = Instance.new("ImageLabel")
+BananaCatHubHintIcon.BackgroundTransparency = 1
+BananaCatHubHintIcon.Position = UDim2.fromOffset(8, 7)
+BananaCatHubHintIcon.Size = UDim2.fromOffset(44, 44)
+BananaCatHubHintIcon.Image = BananaCatHubIconAsset or ""
+BananaCatHubHintIcon.ScaleType = Enum.ScaleType.Fit
+BananaCatHubHintIcon.ZIndex = 20
+BananaCatHubHintIcon.Parent = BananaCatHubHint
+
+local BananaCatHubHintText = Instance.new("TextLabel")
+BananaCatHubHintText.BackgroundTransparency = 1
+BananaCatHubHintText.Position = UDim2.fromOffset(58, 7)
+BananaCatHubHintText.Size = UDim2.new(1, -66, 1, -14)
+BananaCatHubHintText.Font = Enum.Font.GothamSemibold
+BananaCatHubHintText.Text = "點擊左下角香蕉貓\n開啟 / 關閉 UI"
+BananaCatHubHintText.TextColor3 = Color3.fromRGB(255, 255, 255)
+BananaCatHubHintText.TextSize = 14
+BananaCatHubHintText.TextXAlignment = Enum.TextXAlignment.Left
+BananaCatHubHintText.TextYAlignment = Enum.TextYAlignment.Center
+BananaCatHubHintText.ZIndex = 20
+BananaCatHubHintText.Parent = BananaCatHubHint
+
+task.delay(7, function()
+    if BananaCatHubHint and BananaCatHubHint.Parent then
+        BananaCatHubHint:Destroy()
+    end
 end)
 
 local BananaCatHubIsOpen = false
