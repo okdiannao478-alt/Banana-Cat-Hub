@@ -76,15 +76,16 @@ WindUI:SetTheme(_G.Theme)
 
 local Window = WindUI:CreateWindow({
     Title         = "Banana Cat Hub - Blox Fruit",
-    Icon          = "https://raw.githubusercontent.com/okdiannao478-alt/Banana-Cat-Hub/main/IMG_6868.PNG",
+    -- 參考圖片風格：標題列使用香蕉貓圖示，主面板採半透明 Acrylic 深色分欄布局
+    Icon          = "https://raw.githubusercontent.com/okdiannao478-alt/Banana-Cat-Hub/main/BananaToggleClosed.png?v=4",
     Author        = "2026最新自動獵賞",
     Folder        = "Auto Bounty",
-    Size          = UDim2.fromOffset(640, 560),
-    Transparent   = false,
+    Size          = UDim2.fromOffset(650, 520),
+    Transparent   = true,
     Theme         = "Dark",
-    Acrylic       = false,
+    Acrylic       = true,
     HideSearchBar = false,
-    SideBarWidth  = 180,
+    SideBarWidth  = 190,
     User = {
         Enabled   = true, Anonymous = false,
         Callback  = function() notify(LocalPlayer.Name, "ID: "..LocalPlayer.UserId, 3) end
