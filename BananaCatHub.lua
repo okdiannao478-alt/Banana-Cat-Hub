@@ -242,13 +242,30 @@ local function showKeyPrompt()
 end
 
 -- 严格验证执行前设置的 getgenv().BananaCatHubKey；不接受脚本内默认卡密
--- 保留变量，让自动换服务器或自动重载时可以再次验证同一组有效卡密
+-- 若换服务器导致 getgenv() 被重置，则尝试从执行器本地保存的卡密恢复
+local KeyFileName = "BananaCatHub.key"
 local suppliedKey = normalizeKey(getgenv().BananaCatHubKey)
+
+if suppliedKey == "" and isfile and readfile then
+    pcall(function()
+        if isfile(KeyFileName) then
+            suppliedKey = normalizeKey(readfile(KeyFileName))
+        end
+    end)
+end
 
 if suppliedKey == "" or not AuthorizedKeys[suppliedKey] then
     kickForKey("卡密错误，请先设置有效 BananaCatHubKey\n请至官方 Discord 索取卡密：https://discord.gg/dgh7qJ4wA")
     return
 end
+
+-- 首次验证成功后保存卡密，供自动换服务器重载使用；不覆盖有效性检查
+if writefile then
+    pcall(function()
+        writefile(KeyFileName, suppliedKey)
+    end)
+end
+getgenv().BananaCatHubKey = suppliedKey
 
 
 -- Fast Attack Serve
