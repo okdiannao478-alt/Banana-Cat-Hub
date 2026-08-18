@@ -3918,6 +3918,31 @@ Tabs.Skills:Dropdown({
     end
 })
 
+Tabs.Settings:Section({ Title = "聯絡支援" })
+
+Tabs.Settings:Button({
+    Title = "Discord 聯絡支援",
+    Icon = "message-circle",
+    Desc = "點擊後複製 Discord 邀請連結",
+    Callback = function()
+        local DiscordSupportUrl = "https://discord.gg/dgh7qJ4wA"
+        if setclipboard then
+            setclipboard(DiscordSupportUrl)
+            WindUI:Notify({
+                Title = "Discord 聯絡支援",
+                Content = "邀請連結已複製，請貼到瀏覽器開啟",
+                Duration = 4
+            })
+        else
+            WindUI:Notify({
+                Title = "Discord 聯絡支援",
+                Content = DiscordSupportUrl,
+                Duration = 6
+            })
+        end
+    end
+})
+
 Tabs.Settings:Section({ Title = "重置腳本" })
 
 Tabs.Settings:Button({
