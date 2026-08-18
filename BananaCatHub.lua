@@ -182,7 +182,7 @@ local function showKeyPrompt()
     local input = Instance.new("TextBox")
     input.ClearTextOnFocus = false
     input.PlaceholderText = "輸入卡密"
-    input.Text = tostring(getgenv().Key or "")
+    input.Text = tostring(getgenv().BananaCatHubKey or "")
     input.Position = UDim2.fromOffset(18, 86)
     input.Size = UDim2.new(1, -36, 0, 34)
     input.BackgroundColor3 = Color3.fromRGB(55, 55, 55)
@@ -218,7 +218,7 @@ local function showKeyPrompt()
     local function verify()
         local candidate = normalizeKey(input.Text)
         if AuthorizedKeys[candidate] then
-            getgenv().Key = candidate
+            getgenv().BananaCatHubKey = candidate
             accepted = true
             keyGui:Destroy()
         else
@@ -241,10 +241,10 @@ local function showKeyPrompt()
     return accepted
 end
 
-local suppliedKey = normalizeKey(getgenv().Key)
+local suppliedKey = normalizeKey(getgenv().BananaCatHubKey)
 if suppliedKey ~= "" then
     if AuthorizedKeys[suppliedKey] then
-        getgenv().Key = suppliedKey
+        getgenv().BananaCatHubKey = suppliedKey
     else
         kickForKey("卡密無效，請至官方 Discord 索取卡密\nhttps://discord.gg/dgh7qJ4wA")
         return
