@@ -32,9 +32,13 @@ local RemoteSeed = Net and Net:FindFirstChild("seed")
 ----------------------------------------
 -- 防重複啟用
 ----------------------------------------
-if getgenv().AutoBountyLoaded then
-    return
-end
+-- 允許重新載入最新版本，先清理上一個左下角 UI，避免舊歡迎卡片殘留
+pcall(function()
+    local oldToggleGui = game:GetService("CoreGui"):FindFirstChild("BananaCatHubToggleGui")
+    if oldToggleGui then
+        oldToggleGui:Destroy()
+    end
+end)
 
 getgenv().AutoBountyLoaded = true
 
@@ -141,7 +145,7 @@ local BananaCatHubToggleButton = Instance.new("ImageButton")
 BananaCatHubToggleButton.Name = "BananaCatToggle"
 BananaCatHubToggleButton.AnchorPoint = Vector2.new(0, 1)
 BananaCatHubToggleButton.Position = UDim2.new(0, 18, 1, -18)
-BananaCatHubToggleButton.Size = UDim2.fromOffset(60, 60)
+BananaCatHubToggleButton.Size = UDim2.fromOffset(45, 45)
 BananaCatHubToggleButton.BackgroundTransparency = 1
 BananaCatHubToggleButton.BorderSizePixel = 0
 BananaCatHubToggleButton.Image = BananaCatHubClosedAsset or ""
@@ -242,10 +246,13 @@ BananaCatHubWelcome.Activated:Connect(function()
     BananaCatHubToggleButton.Image = BananaCatHubOpenAsset or BananaCatHubClosedAsset or ""
 end)
 
--- 歡迎通知顯示 5 秒後自動消失；左下角 60×60 按鈕不受影響
- task.delay(5, function()
+-- 歡迎通知顯示 5 秒後自動消失；左下角 45×45 按鈕不受影響
+-- 使用 task.spawn + task.wait，避免部分執行器對 task.delay 的相容性問題
+ task.spawn(function()
+    task.wait(5)
     if BananaCatHubWelcome and BananaCatHubWelcome.Parent then
         BananaCatHubWelcome.Visible = false
+        BananaCatHubWelcome.Active = false
     end
 end)
 
