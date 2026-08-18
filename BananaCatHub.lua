@@ -72,13 +72,23 @@ local WindUI = loadstring(request({
     Url = "https://raw.githubusercontent.com/Footagesus/WindUI/main/dist/main.lua"
 }).Body)()
 
-WindUI:SetTheme(_G.Theme)
+-- 參考圖的暖黃色外觀固定使用 Amber；設定頁仍可讓使用者自行切換主題
+WindUI:SetTheme("Amber")
+
+-- 若重複執行 loadstring，先清理上一個主視窗，避免舊 UI 疊在新版上
+pcall(function()
+    local oldWindow = getgenv().BananaCatHubWindow
+    if oldWindow and oldWindow.Destroy then
+        oldWindow:Destroy()
+    end
+end)
 
 local Window = WindUI:CreateWindow({
-    -- 標題改由下方自訂置中標題列顯示，避免 WindUI 預設左側標題與參考圖不同
-    Title         = "",
-    Icon          = nil,
-    Author        = "",
+    Title         = "Banana Cat Hub - Blox Fruit",
+    Icon          = "https://raw.githubusercontent.com/okdiannao478-alt/Banana-Cat-Hub/main/BananaToggleClosed.png?v=4",
+    IconSize      = 28,
+    IconRadius    = 999,
+    Author        = "2026最新自動獵賞",
     Folder        = "Auto Bounty",
     Size          = UDim2.fromOffset(650, 520),
     Transparent   = true,
@@ -89,62 +99,113 @@ local Window = WindUI:CreateWindow({
     NewElements   = true,
     Radius        = 14,
     ElementsRadius = 12,
-    Topbar        = { Height = 52, ButtonsType = "Default" },
+    Topbar        = { Height = 56, ButtonsType = "Default" },
     HidePanelBackground = false,
-    -- 移除參考圖中不存在的底部帳號／使用者區塊
     User = {
         Enabled   = false,
         Anonymous = true,
     },
-    -- 隱藏 WindUI 原本的頂部開啟按鈕，改用左下角自訂圓形按鈕
     OpenButton = {
         Enabled = false,
     }
 })
+getgenv().BananaCatHubWindow = Window
 
--- 自訂置中標題列：只改外觀，不接觸任何功能元件或回呼
+-- WindUI 官方提供的穩定方法：移除右上角全螢幕、最小化與關閉符號
 pcall(function()
-    local root = Window.UIElements and Window.UIElements.Main
-    local mainFrame = root and root:FindFirstChild("Main")
-    local topbar = mainFrame and mainFrame:FindFirstChild("Topbar")
-    if topbar then
-        local oldLeft = topbar:FindFirstChild("Left")
-        if oldLeft then oldLeft.Visible = false end
+    Window:DisableTopbarButtons({"Fullscreen", "Minimize", "Close"})
+end)
 
-        local centerTitle = Instance.new("Frame")
-        centerTitle.Name = "BananaCatCenteredTitle"
-        centerTitle.Size = UDim2.new(0, 300, 1, 0)
-        centerTitle.Position = UDim2.fromScale(0.5, 0.5)
-        centerTitle.AnchorPoint = Vector2.new(0.5, 0.5)
-        centerTitle.BackgroundTransparency = 1
-        centerTitle.ZIndex = 100
-        centerTitle.Parent = topbar
-
-        local titleLayout = Instance.new("UIListLayout")
-        titleLayout.FillDirection = Enum.FillDirection.Horizontal
-        titleLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-        titleLayout.VerticalAlignment = Enum.VerticalAlignment.Center
-        titleLayout.Padding = UDim.new(0, 8)
-        titleLayout.Parent = centerTitle
-
-        local titleIcon = Instance.new("ImageLabel")
-        titleIcon.Name = "BananaCatIcon"
-        titleIcon.Size = UDim2.fromOffset(28, 28)
-        titleIcon.BackgroundTransparency = 1
-        titleIcon.Image = "https://raw.githubusercontent.com/okdiannao478-alt/Banana-Cat-Hub/main/BananaToggleClosed.png?v=4"
-        titleIcon.Parent = centerTitle
-
-        local titleText = Instance.new("TextLabel")
-        titleText.Name = "TitleText"
-        titleText.Size = UDim2.new(0, 220, 0, 30)
-        titleText.BackgroundTransparency = 1
-        titleText.Text = "Banana Cat Hub - Blox Fruit"
-        titleText.TextColor3 = Color3.fromRGB(255, 244, 190)
-        titleText.TextSize = 16
-        titleText.Font = Enum.Font.GothamSemibold
-        titleText.TextXAlignment = Enum.TextXAlignment.Left
-        titleText.Parent = centerTitle
+-- 移除底部帳號區；WindUI 某些版本會在 User=false 時仍建立物件，因此再明確停用一次
+pcall(function()
+    if Window.User and Window.User.Disable then
+        Window.User:Disable()
     end
+end)
+
+-- 把標題與香蕉貓圖示放入 WindUI 真正的 Topbar.Center，避免只在錯誤層級新增空白 Frame
+pcall(function()
+    local topbar = Window.UIElements
+        and Window.UIElements.Main
+        and Window.UIElements.Main.Main
+        and Window.UIElements.Main.Main:FindFirstChild("Topbar")
+    if not topbar then return end
+
+    local left = topbar:FindFirstChild("Left")
+    if left then left.Visible = false end
+
+    local right = topbar:FindFirstChild("Right")
+    if right then right.Visible = false end
+
+    local center = topbar:FindFirstChild("Center")
+    if not center then return end
+    center.Visible = true
+    center.AnchorPoint = Vector2.new(0.5, 0.5)
+    center.Position = UDim2.fromScale(0.5, 0.5)
+    center.Size = UDim2.fromOffset(310, 56)
+
+    local holder = center:FindFirstChild("Holder") or center
+    local holderLayout = holder:FindFirstChildOfClass("UIListLayout")
+    if holderLayout then
+        holderLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+    end
+
+    -- WindUI 不同版本的 User/Footer 物件名稱略有差異，全部以名稱做安全隱藏
+    local mainRoot = Window.UIElements.Main.Main
+    for _, descendant in ipairs(mainRoot:GetDescendants()) do
+        if descendant.Name == "UserIcon" or descendant.Name == "DisplayName" or descendant.Name == "UserName" then
+            if descendant:IsA("GuiObject") then
+                descendant.Visible = false
+            end
+        end
+    end
+
+    local titleFrame = Instance.new("Frame")
+    titleFrame.Name = "BananaCatCenteredTitle"
+    titleFrame.Size = UDim2.fromOffset(310, 56)
+    titleFrame.BackgroundTransparency = 1
+    titleFrame.LayoutOrder = 1
+    titleFrame.Parent = holder
+
+    local titleLayout = Instance.new("UIListLayout")
+    titleLayout.FillDirection = Enum.FillDirection.Horizontal
+    titleLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+    titleLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+    titleLayout.Padding = UDim.new(0, 7)
+    titleLayout.Parent = titleFrame
+
+    local titleIcon = Instance.new("ImageLabel")
+    titleIcon.Name = "BananaCatIcon"
+    titleIcon.Size = UDim2.fromOffset(30, 30)
+    titleIcon.BackgroundTransparency = 1
+    titleIcon.Image = "https://raw.githubusercontent.com/okdiannao478-alt/Banana-Cat-Hub/main/BananaToggleClosed.png?v=4"
+    titleIcon.Parent = titleFrame
+
+    local titleText = Instance.new("TextLabel")
+    titleText.Name = "TitleText"
+    titleText.Size = UDim2.fromOffset(260, 32)
+    titleText.BackgroundTransparency = 1
+    titleText.Text = "Banana Cat Hub - Blox Fruit"
+    titleText.TextColor3 = Color3.fromRGB(255, 244, 190)
+    titleText.TextSize = 16
+    titleText.Font = Enum.Font.GothamSemibold
+    titleText.TextXAlignment = Enum.TextXAlignment.Left
+    titleText.Parent = titleFrame
+
+    -- WindUI 會在初始化時重算 Topbar.Center，延後再套一次確保實際置中
+    task.defer(function()
+        pcall(function()
+            center.Visible = true
+            center.AnchorPoint = Vector2.new(0.5, 0.5)
+            center.Position = UDim2.fromScale(0.5, 0.5)
+            center.Size = UDim2.fromOffset(310, 56)
+            if holderLayout then
+                holderLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+            end
+            if left then left.Visible = false end
+            if right then right.Visible = false end
+        end)
+    end)
 end)
 
 -- Banana Cat Hub：左下角香蕉貓圖片按鈕，只負責顯示/隱藏 UI
