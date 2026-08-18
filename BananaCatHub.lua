@@ -75,26 +75,77 @@ local WindUI = loadstring(request({
 WindUI:SetTheme(_G.Theme)
 
 local Window = WindUI:CreateWindow({
-    Title         = "Banana Cat Hub - Blox Fruit",
-    -- 參考圖片風格：標題列使用香蕉貓圖示，主面板採半透明 Acrylic 深色分欄布局
-    Icon          = "https://raw.githubusercontent.com/okdiannao478-alt/Banana-Cat-Hub/main/BananaToggleClosed.png?v=4",
-    Author        = "2026最新自動獵賞",
+    -- 標題改由下方自訂置中標題列顯示，避免 WindUI 預設左側標題與參考圖不同
+    Title         = "",
+    Icon          = nil,
+    Author        = "",
     Folder        = "Auto Bounty",
     Size          = UDim2.fromOffset(650, 520),
     Transparent   = true,
-    Theme         = "Dark",
+    Theme         = "Amber",
     Acrylic       = true,
     HideSearchBar = false,
     SideBarWidth  = 190,
+    NewElements   = true,
+    Radius        = 14,
+    ElementsRadius = 12,
+    Topbar        = { Height = 52, ButtonsType = "Default" },
+    HidePanelBackground = false,
+    -- 移除參考圖中不存在的底部帳號／使用者區塊
     User = {
-        Enabled   = true, Anonymous = false,
-        Callback  = function() notify(LocalPlayer.Name, "ID: "..LocalPlayer.UserId, 3) end
+        Enabled   = false,
+        Anonymous = true,
     },
     -- 隱藏 WindUI 原本的頂部開啟按鈕，改用左下角自訂圓形按鈕
     OpenButton = {
         Enabled = false,
     }
 })
+
+-- 自訂置中標題列：只改外觀，不接觸任何功能元件或回呼
+pcall(function()
+    local root = Window.UIElements and Window.UIElements.Main
+    local mainFrame = root and root:FindFirstChild("Main")
+    local topbar = mainFrame and mainFrame:FindFirstChild("Topbar")
+    if topbar then
+        local oldLeft = topbar:FindFirstChild("Left")
+        if oldLeft then oldLeft.Visible = false end
+
+        local centerTitle = Instance.new("Frame")
+        centerTitle.Name = "BananaCatCenteredTitle"
+        centerTitle.Size = UDim2.new(0, 300, 1, 0)
+        centerTitle.Position = UDim2.fromScale(0.5, 0.5)
+        centerTitle.AnchorPoint = Vector2.new(0.5, 0.5)
+        centerTitle.BackgroundTransparency = 1
+        centerTitle.ZIndex = 100
+        centerTitle.Parent = topbar
+
+        local titleLayout = Instance.new("UIListLayout")
+        titleLayout.FillDirection = Enum.FillDirection.Horizontal
+        titleLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+        titleLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+        titleLayout.Padding = UDim.new(0, 8)
+        titleLayout.Parent = centerTitle
+
+        local titleIcon = Instance.new("ImageLabel")
+        titleIcon.Name = "BananaCatIcon"
+        titleIcon.Size = UDim2.fromOffset(28, 28)
+        titleIcon.BackgroundTransparency = 1
+        titleIcon.Image = "https://raw.githubusercontent.com/okdiannao478-alt/Banana-Cat-Hub/main/BananaToggleClosed.png?v=4"
+        titleIcon.Parent = centerTitle
+
+        local titleText = Instance.new("TextLabel")
+        titleText.Name = "TitleText"
+        titleText.Size = UDim2.new(0, 220, 0, 30)
+        titleText.BackgroundTransparency = 1
+        titleText.Text = "Banana Cat Hub - Blox Fruit"
+        titleText.TextColor3 = Color3.fromRGB(255, 244, 190)
+        titleText.TextSize = 16
+        titleText.Font = Enum.Font.GothamSemibold
+        titleText.TextXAlignment = Enum.TextXAlignment.Left
+        titleText.Parent = centerTitle
+    end
+end)
 
 -- Banana Cat Hub：左下角香蕉貓圖片按鈕，只負責顯示/隱藏 UI
 local BananaCatHubToggleGui = Instance.new("ScreenGui")
