@@ -97,6 +97,7 @@ BananaCatHubToggleGui.Name = "BananaCatHubToggleGui"
 BananaCatHubToggleGui.ResetOnSpawn = false
 BananaCatHubToggleGui.IgnoreGuiInset = true
 BananaCatHubToggleGui.DisplayOrder = 9999
+BananaCatHubToggleGui.Enabled = true
 
 pcall(function()
     local oldGui = game:GetService("CoreGui"):FindFirstChild("BananaCatHubToggleGui")
@@ -185,6 +186,8 @@ BananaCatHubWelcome.BorderSizePixel = 0
 BananaCatHubWelcome.AutoButtonColor = false
 BananaCatHubWelcome.Text = ""
 BananaCatHubWelcome.ZIndex = 30
+BananaCatHubWelcome.Visible = true
+BananaCatHubWelcome.Active = true
 BananaCatHubWelcome.Parent = BananaCatHubToggleGui
 
 local BananaCatHubWelcomeSize = Instance.new("UISizeConstraint")
@@ -239,11 +242,6 @@ BananaCatHubWelcome.Activated:Connect(function()
     BananaCatHubToggleButton.Image = BananaCatHubOpenAsset or BananaCatHubClosedAsset or ""
 end)
 
-task.delay(8, function()
-    if BananaCatHubWelcome and BananaCatHubWelcome.Parent then
-        BananaCatHubWelcome.Visible = false
-    end
-end)
 
 Window:OnDestroy(function()
     pcall(function()
