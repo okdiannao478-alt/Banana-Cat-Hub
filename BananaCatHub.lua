@@ -124,10 +124,10 @@ pcall(function()
 end)
 
 -- 使用者提供的兩張圖片：第一張為關閉 UI，第二張為開啟 UI
-local BananaCatHubClosedUrl = "https://raw.githubusercontent.com/okdiannao478-alt/Banana-Cat-Hub/main/BananaToggleClosed.jpg"
-local BananaCatHubOpenUrl = "https://raw.githubusercontent.com/okdiannao478-alt/Banana-Cat-Hub/main/BananaToggleOpen.jpg"
-local BananaCatHubClosedPath = "BananaCatHubToggleClosed.jpg"
-local BananaCatHubOpenPath = "BananaCatHubToggleOpen.jpg"
+local BananaCatHubClosedUrl = "https://raw.githubusercontent.com/okdiannao478-alt/Banana-Cat-Hub/main/BananaToggleClosed.png"
+local BananaCatHubOpenUrl = "https://raw.githubusercontent.com/okdiannao478-alt/Banana-Cat-Hub/main/BananaToggleOpen.png"
+local BananaCatHubClosedPath = "BananaCatHubToggleClosed.png"
+local BananaCatHubOpenPath = "BananaCatHubToggleOpen.png"
 local BananaCatHubClosedAsset = nil
 local BananaCatHubOpenAsset = nil
 
@@ -157,7 +157,7 @@ local BananaCatHubToggleButton = Instance.new("ImageButton")
 BananaCatHubToggleButton.Name = "BananaCatToggle"
 BananaCatHubToggleButton.AnchorPoint = Vector2.new(0, 1)
 BananaCatHubToggleButton.Position = UDim2.new(0, 18, 1, -18)
-BananaCatHubToggleButton.Size = UDim2.fromOffset(68, 68)
+BananaCatHubToggleButton.Size = UDim2.fromOffset(88, 88)
 BananaCatHubToggleButton.BackgroundTransparency = 1
 BananaCatHubToggleButton.BorderSizePixel = 0
 BananaCatHubToggleButton.Image = BananaCatHubClosedAsset or ""
