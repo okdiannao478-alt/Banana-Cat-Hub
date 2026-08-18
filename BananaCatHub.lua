@@ -25,9 +25,6 @@ local inCombatUI = bottomHUD and bottomHUD:FindFirstChild("InCombat")
 ----------------------------------------
 -- 卡密驗證：只有清單內卡密可以載入舊 PVP 功能
 ----------------------------------------
--- 直接在脚本顶部填写卡密；请将 XXX 替换为 AuthorizedKeys 中的有效卡密
-local ScriptEnteredKey = "a280e1a1317df7c7f09eae15"
-
 local AuthorizedKeys = {
     ["a280e1a1317df7c7f09eae15"] = true,
     ["57cef1bfd206cb7243ed1e8e"] = true,
@@ -244,14 +241,14 @@ local function showKeyPrompt()
     return accepted
 end
 
--- 严格验证脚本顶部填写的卡密；不再接受旧的全局变量或残留卡密
-local suppliedKey = normalizeKey(ScriptEnteredKey)
+-- 严格验证执行前设置的 getgenv().BananaCatHubKey；不接受脚本内默认卡密
+local suppliedKey = normalizeKey(getgenv().BananaCatHubKey)
+getgenv().BananaCatHubKey = nil
+
 if suppliedKey == "" or not AuthorizedKeys[suppliedKey] then
-    kickForKey("卡密错误，请在脚本顶部填写有效卡密\n请至官方 Discord 索取卡密：https://discord.gg/dgh7qJ4wA")
+    kickForKey("卡密错误，请先设置有效 BananaCatHubKey\n请至官方 Discord 索取卡密：https://discord.gg/dgh7qJ4wA")
     return
 end
-
-getgenv().BananaCatHubKey = suppliedKey
 
 
 -- Fast Attack Serve
