@@ -92,7 +92,7 @@ WindUI:SetTheme(_G.Theme)
 
 local Window = WindUI:CreateWindow({
     Title         = "Banana Cat Hub",
-    Icon          = "badge-dollar-sign",
+    Icon          = "https://raw.githubusercontent.com/okdiannao478-alt/Banana-Cat-Hub/main/IMG_6868.PNG",
     Author        = "by Xu&Kismile",
     Folder        = "Auto Bounty",
     Size          = UDim2.fromOffset(700, 800),
