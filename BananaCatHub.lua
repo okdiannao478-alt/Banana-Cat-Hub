@@ -173,9 +173,81 @@ end)
 
 BananaCatHubToggleGui.Parent = game:GetService("CoreGui")
 
+-- 載入時顯示的左下角歡迎 UI：使用目前香蕉貓圖片與指定文字
+local BananaCatHubWelcome = Instance.new("TextButton")
+BananaCatHubWelcome.Name = "BananaCatHubWelcome"
+BananaCatHubWelcome.AnchorPoint = Vector2.new(0, 1)
+BananaCatHubWelcome.Position = UDim2.new(0, 18, 1, -86)
+BananaCatHubWelcome.Size = UDim2.new(0.82, 0, 0, 64)
+BananaCatHubWelcome.BackgroundColor3 = Color3.fromRGB(32, 32, 32)
+BananaCatHubWelcome.BackgroundTransparency = 0.08
+BananaCatHubWelcome.BorderSizePixel = 0
+BananaCatHubWelcome.AutoButtonColor = false
+BananaCatHubWelcome.Text = ""
+BananaCatHubWelcome.ZIndex = 30
+BananaCatHubWelcome.Parent = BananaCatHubToggleGui
+
+local BananaCatHubWelcomeSize = Instance.new("UISizeConstraint")
+BananaCatHubWelcomeSize.MinSize = Vector2.new(220, 64)
+BananaCatHubWelcomeSize.MaxSize = Vector2.new(286, 64)
+BananaCatHubWelcomeSize.Parent = BananaCatHubWelcome
+
+local BananaCatHubWelcomeCorner = Instance.new("UICorner")
+BananaCatHubWelcomeCorner.CornerRadius = UDim.new(0, 12)
+BananaCatHubWelcomeCorner.Parent = BananaCatHubWelcome
+
+local BananaCatHubWelcomeIcon = Instance.new("ImageLabel")
+BananaCatHubWelcomeIcon.Name = "BananaCatIcon"
+BananaCatHubWelcomeIcon.BackgroundTransparency = 1
+BananaCatHubWelcomeIcon.Position = UDim2.fromOffset(9, 13)
+BananaCatHubWelcomeIcon.Size = UDim2.fromOffset(38, 38)
+BananaCatHubWelcomeIcon.Image = BananaCatHubClosedAsset or ""
+BananaCatHubWelcomeIcon.ScaleType = Enum.ScaleType.Fit
+BananaCatHubWelcomeIcon.ZIndex = 31
+BananaCatHubWelcomeIcon.Parent = BananaCatHubWelcome
+
+local BananaCatHubWelcomeTitle = Instance.new("TextLabel")
+BananaCatHubWelcomeTitle.Name = "Title"
+BananaCatHubWelcomeTitle.BackgroundTransparency = 1
+BananaCatHubWelcomeTitle.Position = UDim2.fromOffset(56, 10)
+BananaCatHubWelcomeTitle.Size = UDim2.new(1, -66, 0, 22)
+BananaCatHubWelcomeTitle.Font = Enum.Font.GothamBold
+BananaCatHubWelcomeTitle.Text = "歡迎使用 Banana Cat Hub"
+BananaCatHubWelcomeTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+BananaCatHubWelcomeTitle.TextSize = 14
+BananaCatHubWelcomeTitle.TextXAlignment = Enum.TextXAlignment.Left
+BananaCatHubWelcomeTitle.ZIndex = 31
+BananaCatHubWelcomeTitle.Parent = BananaCatHubWelcome
+
+local BananaCatHubWelcomeHint = Instance.new("TextLabel")
+BananaCatHubWelcomeHint.Name = "Hint"
+BananaCatHubWelcomeHint.BackgroundTransparency = 1
+BananaCatHubWelcomeHint.Position = UDim2.fromOffset(56, 34)
+BananaCatHubWelcomeHint.Size = UDim2.new(1, -66, 0, 20)
+BananaCatHubWelcomeHint.Font = Enum.Font.Gotham
+BananaCatHubWelcomeHint.Text = "點擊下列 UI 開始使用"
+BananaCatHubWelcomeHint.TextColor3 = Color3.fromRGB(225, 225, 225)
+BananaCatHubWelcomeHint.TextSize = 11
+BananaCatHubWelcomeHint.TextXAlignment = Enum.TextXAlignment.Left
+BananaCatHubWelcomeHint.ZIndex = 31
+BananaCatHubWelcomeHint.Parent = BananaCatHubWelcome
+
+BananaCatHubWelcome.Activated:Connect(function()
+    BananaCatHubWelcome.Visible = false
+    BananaCatHubIsOpen = true
+    Window:Toggle(true)
+    BananaCatHubToggleButton.Image = BananaCatHubOpenAsset or BananaCatHubClosedAsset or ""
+end)
+
+task.delay(8, function()
+    if BananaCatHubWelcome and BananaCatHubWelcome.Parent then
+        BananaCatHubWelcome.Visible = false
+    end
+end)
 
 Window:OnDestroy(function()
     pcall(function()
+        if BananaCatHubWelcome then BananaCatHubWelcome:Destroy() end
         if BananaCatHubToggleGui then BananaCatHubToggleGui:Destroy() end
     end)
     getgenv().AutoBountyLoaded = nil
