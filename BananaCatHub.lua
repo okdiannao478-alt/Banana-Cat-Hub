@@ -3010,11 +3010,13 @@ local function ForceStandUp()
     if not myHum or myHum.Health <= 0 then return end
 
     if myHum.Sit then
+        -- 只解除坐姿，不要強制 Jump/Physics，避免切斷正常走路與技能動畫。
         myHum.Sit = false
-        pcall(function() myHum.Jump = true end)
-        pcall(function() myHum:ChangeState(Enum.HumanoidStateType.GettingUp) end)
-        pcall(function() myHum:ChangeState(Enum.HumanoidStateType.Physics) end)
-    end
+        pcall(function()
+            myHum.AutoRotate = true
+            myHum:ChangeState(Enum.HumanoidStateType.GettingUp)
+        end)
+    end    end
 
     if myHRP then
         for _, child in ipairs(myHRP:GetChildren()) do
