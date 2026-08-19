@@ -3016,7 +3016,7 @@ local function ForceStandUp()
             myHum.AutoRotate = true
             myHum:ChangeState(Enum.HumanoidStateType.GettingUp)
         end)
-    end    end
+    end
 
     if myHRP then
         for _, child in ipairs(myHRP:GetChildren()) do
