@@ -311,30 +311,65 @@ local WindUI = loadstring(request({
     Url = "https://raw.githubusercontent.com/Footagesus/WindUI/main/dist/main.lua"
 }).Body)()
 
-WindUI:SetTheme(_G.Theme)
+-- 最後一張參考圖的 Banana Cat Hub 黃色／淺黃色主題：只調整外觀，不改動功能。
+WindUI:AddTheme({
+    Name = "BananaYellow",
+    Accent = Color3.fromRGB(255, 214, 64),
+    Dialog = Color3.fromRGB(48, 39, 18),
+    Text = Color3.fromRGB(255, 249, 218),
+    Placeholder = Color3.fromRGB(210, 184, 90),
+    Background = Color3.fromRGB(20, 18, 12),
+    Button = Color3.fromRGB(255, 214, 64),
+    Icon = Color3.fromRGB(255, 224, 92),
+    Toggle = Color3.fromRGB(255, 214, 64),
+    Slider = Color3.fromRGB(255, 198, 42),
+    Checkbox = Color3.fromRGB(255, 214, 64),
+    PanelBackground = Color3.fromRGB(255, 255, 255),
+    PanelBackgroundTransparency = 0.93,
+    ElementBackground = Color3.fromRGB(42, 38, 27),
+    ElementBackgroundTransparency = 0.08,
+})
+WindUI:SetTheme("BananaYellow")
 
 local Window = WindUI:CreateWindow({
     Title         = "Banana Cat Hub - Blox Fruit",
-    -- 參考圖片風格：標題列使用香蕉貓圖示，主面板採半透明 Acrylic 深色分欄布局
     Icon          = "https://raw.githubusercontent.com/okdiannao478-alt/Banana-Cat-Hub/main/BananaToggleClosed.png?v=4",
-    IconSize      = 26,
-    Author        = "2026最新自動獵賞",
+    IconSize      = 22,
+    Author        = "",
     Folder        = "Auto Bounty",
-    Size          = UDim2.fromOffset(650, 520),
+    Size          = UDim2.fromOffset(700, 405),
     Transparent   = true,
-    Theme         = "Dark",
-    Acrylic       = true,
+    Theme         = "BananaYellow",
+    Acrylic       = false,
+    Resizable     = false,
     HideSearchBar = false,
-    SideBarWidth  = 190,
-    User = {
-        Enabled   = true, Anonymous = false,
-        Callback  = function() notify(LocalPlayer.Name, "ID: "..LocalPlayer.UserId, 3) end
+    SideBarWidth  = 185,
+    ElementsRadius = 5,
+    Radius        = 5,
+    Topbar        = {
+        Height = 38,
+        ButtonsType = "Default",
     },
-    -- 隱藏 WindUI 原本的頂部開啟按鈕，改用左下角自訂圓形按鈕
     OpenButton = {
         Enabled = false,
     }
 })
+
+-- 參考圖沒有帳號列，也沒有右上角控制鍵；只隱藏 UI 元件，不改任何功能回呼。
+pcall(function()
+    local topbar = Window.UIElements.Main.Main.Topbar
+    local right = topbar and topbar:FindFirstChild("Right")
+    if right then
+        right.Visible = false
+        right.Active = false
+        for _, child in ipairs(right:GetChildren()) do
+            if child:IsA("GuiObject") then
+                child.Visible = false
+                child.Active = false
+            end
+        end
+    end
+end)
 
 -- Banana Cat Hub：左下角香蕉貓圖片按鈕，只負責顯示/隱藏 UI
 local BananaCatHubToggleGui = Instance.new("ScreenGui")
@@ -749,8 +784,8 @@ local ScriptLoadstring = [[if isfile("AutoBounty.file") and readfile("AutoBounty
     loadstring(game:HttpGet("https://raw.githubusercontent.com/okdiannao478-alt/Banana-Cat-Hub/main/BananaCatHub.lua"))()
 end]]
 
---主題
-_G.Theme = "Dark"
+--主題：以最後一張參考圖的黃色 Banana Cat Hub 為預設。
+_G.Theme = "BananaYellow"
 
 local availableThemes = WindUI:GetThemes()
 local themeList = {}
