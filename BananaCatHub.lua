@@ -430,7 +430,7 @@ BananaCatHubOpenAsset = BananaCatHubLoadAsset(BananaCatHubOpenUrl, BananaCatHubO
 local BananaCatHubToggleButton = Instance.new("ImageButton")
 BananaCatHubToggleButton.Name = "BananaCatToggle"
 BananaCatHubToggleButton.AnchorPoint = Vector2.new(0, 1)
-BananaCatHubToggleButton.Position = UDim2.new(0, 18, 1, -18)
+BananaCatHubToggleButton.Position = UDim2.new(0, 8, 1, -8)
 BananaCatHubToggleButton.Size = UDim2.fromOffset(50, 50)
 BananaCatHubToggleButton.BackgroundTransparency = 1
 BananaCatHubToggleButton.BorderSizePixel = 0
@@ -468,7 +468,7 @@ BananaCatHubToggleGui.Parent = game:GetService("CoreGui")
 local BananaCatHubWelcome = Instance.new("TextButton")
 BananaCatHubWelcome.Name = "BananaCatHubWelcome"
 BananaCatHubWelcome.AnchorPoint = Vector2.new(0, 1)
-BananaCatHubWelcome.Position = UDim2.new(0, 18, 1, -86)
+BananaCatHubWelcome.Position = UDim2.new(0, 8, 1, -76)
 BananaCatHubWelcome.Size = UDim2.new(0.82, 0, 0, 64)
 BananaCatHubWelcome.BackgroundColor3 = Color3.fromRGB(32, 32, 32)
 BananaCatHubWelcome.BackgroundTransparency = 0.08
@@ -2983,9 +2983,12 @@ local function FlyToTargetLogic2(plr)
 
     _G.FTP2_LinearVelocity.VectorVelocity = dir.Unit * flySpeed
 
-    local lookAt = Vector3.new(rawTargetPos.X, myHRP.Position.Y, rawTargetPos.Z)
-    if (lookAt - myHRP.Position).Magnitude > 0.1 then
-        myHRP.CFrame = CFrame.new(myHRP.Position, lookAt)
+    -- 觸控裝置不要每幀強制旋轉角色；否則 Roblox 會重算 TouchControl 的前進方向，造成搖桿閃爍或前後顛倒。
+    if not UserInputService.TouchEnabled then
+        local lookAt = Vector3.new(rawTargetPos.X, myHRP.Position.Y, rawTargetPos.Z)
+        if (lookAt - myHRP.Position).Magnitude > 0.1 then
+            myHRP.CFrame = CFrame.new(myHRP.Position, lookAt)
+        end
     end
 end
 
@@ -3073,9 +3076,7 @@ local function StartFTPFlight2()
     if type(setPlatformStand) == "function" then setPlatformStand(false) end
     
     local hum = char and char:FindFirstChildOfClass("Humanoid")
-    if type(_G.SetNoclipState) == "function" then _G.SetNoclipState(true) end
-
-    _G.FTP2_PlayerLeaveConn = Players.PlayerRemoving:Connect(function(plr)
+        _G.FTP2_PlayerLeaveConn = Players.PlayerRemoving:Connect(function(plr)
         _G.TargetHistory[plr] = nil
         _G.FTP2_Blacklist[plr] = nil
         if _G.FTP2_CurrentTarget == plr then
@@ -3094,7 +3095,10 @@ local function StartFTPFlight2()
         local currentChar = LocalPlayer.Character
         local currentHum = currentChar and currentChar:FindFirstChildOfClass("Humanoid")
 
-        ForceStandUp()
+        -- 只有真的坐下或進入 PlatformStand 才恢復狀態；不要每幀重設輸入控制。
+        if currentHum and (currentHum.Sit or currentHum.PlatformStand) then
+            ForceStandUp()
+        end
 
         if _G.AutoFlee and currentHum and currentHum.Health > 0 then
             local hpPercent = (currentHum.Health / currentHum.MaxHealth) * 100
@@ -3138,8 +3142,6 @@ local function StartFTPFlight2()
             UpdatePositionHistory()
         end
 
-        if type(_G.SetNoclipState) == "function" then _G.SetNoclipState(true) end
-
         pcall(function()
             local myChar = LocalPlayer.Character
             if myChar then
@@ -3162,11 +3164,7 @@ local function StartFTPFlight2()
                     end
                 end
 
-                -- LinearVelocity 負責 FTP2 位移；不要每幀強制 PlatformStand，否則手機搖桿會被重置
-                if myHum and myHum.PlatformStand then
-                    myHum.PlatformStand = false
-                    pcall(function() myHum:ChangeState(Enum.HumanoidStateType.GettingUp) end)
-                end
+                -- 不在每幀循環中切換 PlatformStand 或 GettingUp，避免重置手機輸入狀態。
             end
         end)
 
