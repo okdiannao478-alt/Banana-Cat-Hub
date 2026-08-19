@@ -1,4504 +1,1653 @@
------v0.014(修復重置腳本)
----------------------------------------
---服務
-----------------------------------------
-repeat task.wait(0.1) until game:IsLoaded() and game:GetService("Players").LocalPlayer
-
-local Settings = ...
-
-local HttpService = game:GetService("HttpService")
-local Players = game:GetService("Players")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local LocalPlayer = Players.LocalPlayer
-local UserInputService = game:GetService("UserInputService")
-local RunService = game:GetService("RunService")
-local Camera = workspace.CurrentCamera
-local VirtualInputManager = game:GetService("VirtualInputManager")
-local Workspace = game:GetService("Workspace")
-local Lighting = game:GetService("Lighting")
-local Stats = game:GetService("Stats")
-local playerGui = LocalPlayer:FindFirstChild("PlayerGui")
-local mainUI = playerGui and playerGui:FindFirstChild("Main")
-local bottomHUD = mainUI and mainUI:FindFirstChild("BottomHUDList")
-local inCombatUI = bottomHUD and bottomHUD:FindFirstChild("InCombat")
-
-----------------------------------------
--- 卡密驗證：只有清單內卡密可以載入舊 PVP 功能
-----------------------------------------
-local AuthorizedKeys = {
-    ["a280e1a1317df7c7f09eae15"] = true,
-    ["57cef1bfd206cb7243ed1e8e"] = true,
-    ["03f5c374c1245c30ec3fc2ff"] = true,
-    ["89a6de3c5076c3e80b031a85"] = true,
-    ["c60a6fae09c2d40a26be988d"] = true,
-    ["7849e0b8f00c2a1a255040a8"] = true,
-    ["fc2a0382fd4329f785a0bec5"] = true,
-    ["67990662adbf04af0ec3821e"] = true,
-    ["fecba112c1fb6ab5b07fb274"] = true,
-    ["c5fcd1aee1857ce0dd62b4df"] = true,
-    ["54a829d9ab227eed988f862c"] = true,
-    ["5fd71af2554904fbebc15b6b"] = true,
-    ["844b3064f3478e5c86bc9633"] = true,
-    ["72ff65c124449c34a1f0aa55"] = true,
-    ["073b4a3ed9ce1ce9bda81dd1"] = true,
-    ["84ac2026c70e7495f8512fe5"] = true,
-    ["fa257e0b5e78c97ad75529b0"] = true,
-    ["33e1df1da0a4f2b5441f3f43"] = true,
-    ["a65e1493211bb37aa7f6c5ff"] = true,
-    ["4d36d22b05c7f825b5d6c9b9"] = true,
-    ["201a397553e5d15c7d2368c5"] = true,
-    ["23af7e9531f9a57f13ef1576"] = true,
-    ["ef88ddb108393a0cf45c9c94"] = true,
-    ["99784e1f6973a45aa4360673"] = true,
-    ["c29d040003fc6909bab512bb"] = true,
-    ["521320f9bc7195b525bf7421"] = true,
-    ["de9c8c9254c8f9e4c085a783"] = true,
-    ["c310c786ceb59365026d40f1"] = true,
-    ["6e4a0c7177a27465bab87c50"] = true,
-    ["0e00fbc9d02a519dc256191f"] = true,
-    ["3bde7cb5f4f211cb711ec5c2"] = true,
-    ["2657b7c3e41cc79d98fac99f"] = true,
-    ["04ecfd354b938006b003bef6"] = true,
-    ["803db31cea7e4e7f46f6e33b"] = true,
-    ["65d85e7e53b071ea0f5b3067"] = true,
-    ["65ee1748e2d18ab0d4f9d37f"] = true,
-    ["30e95e5d1cc473af38da81ca"] = true,
-    ["95b9057aef5862b819d730a2"] = true,
-    ["9f833e72a1787ada4ee5b65a"] = true,
-    ["6c21e34c1b395bb8e11fe037"] = true,
-    ["6f7f89e44f4f8ec429c045d6"] = true,
-    ["030dd80cda102f83ea398a60"] = true,
-    ["a30941f612338dd6722775b6"] = true,
-    ["ca32640683b39eac834dd16f"] = true,
-    ["ac963eb3dab3bf1da0c66e94"] = true,
-    ["430a59d9ee694790a697ca6b"] = true,
-    ["7a132d9720cc7edf68fbbbc3"] = true,
-    ["b7cc4649b2d86b4062ef35b7"] = true,
-    ["905437c965264e29649fb7a9"] = true,
-    ["b4486341691866869f236048"] = true,
-    ["3c851a90226641014e760a63"] = true,
-    ["6e2e149a1fadd7e3a95b8125"] = true,
-    ["f8ebde8cb82df19bb6da8732"] = true,
-    ["4343c62b469a752c3d011133"] = true,
-    ["85027d03469e9e31702af816"] = true,
-    ["287fe634c6c7f5523138c1cd"] = true,
-    ["1a6f24ba5a6447eb064f4a18"] = true,
-    ["248205df8390f9ed74ad3b4c"] = true,
-    ["80c330ec80278599da2c6c47"] = true,
-    ["c4de75b84fd4f4cf8cfce7c4"] = true,
-    ["671cbbf987d42e18836948c0"] = true,
-    ["e981ffa5c0c16f5fb578cd36"] = true,
-    ["1b5371a05ab6f9d125e42044"] = true,
-    ["630dcb0c293e70e1eb096ccf"] = true,
-    ["16fc5fbe5333bbc42d6b77c3"] = true,
-    ["3f4d5c1c8d77ed08d38a75bf"] = true,
-    ["f358d278c033b7ffd7c865bf"] = true,
-    ["f9aaa6c5d71595397257c2ed"] = true,
-    ["6b8d09ea65409915c65ec93c"] = true,
-    ["69828f2039a7bdb00f2a365e"] = true,
-    ["3fddeec06252abdcf41dde44"] = true,
-    ["6190860d7f56faf719adf386"] = true,
-    ["b74bdf88827a0b1d9d2cd8d8"] = true,
-    ["4634022d70a2f389bc866ef4"] = true,
-    ["9f0f4020a1edc992507f8ec3"] = true,
-    ["4e6b0d3947c7aefa9868e6e1"] = true,
-    ["6b810535b7a39765249d2e62"] = true,
-    ["83f322811564dacaa27f60bf"] = true,
-    ["ac7b0e1ff6e0731a6e968ed4"] = true,
-    ["c8ce216104271d97b14535b9"] = true,
-    ["453ef28daeaf3d3724581fe1"] = true,
-    ["c8ead96684cfcb4164953544"] = true,
-    ["4a9e9dd11dd9fb0895d2c7f9"] = true,
-    ["d99589d9ef422dd2ec86bea6"] = true,
-    ["76056ad5ab15a3e4b83d613f"] = true,
-    ["d4d943da3a1f6bd0a2a5b039"] = true,
-    ["c9243a79d7413f53e268f34a"] = true,
-    ["2b53970f840bd3507a4304e8"] = true,
-    ["7d89cfad05b6ca03630c6f36"] = true,
-    ["fe0d19b8a3ff08ae8a7a0f73"] = true,
-    ["9c1c1b0439ccab500bf06b99"] = true,
-    ["4e96246ae71de5d38914bc50"] = true,
-    ["4ced52726899009cbd32b259"] = true,
-    ["e319742108e0253b2a56092f"] = true,
-    ["b23adb6f9f48ce7880619a13"] = true,
-    ["f2c662c7106263dd3a379416"] = true,
-    ["073a947fb850a47a20560471"] = true,
-    ["c2927ffb9ca57f906156120e"] = true,
-    ["51c60e98e83f9576a2889764"] = true,
-    ["916d739b7ea35b646dfa14be"] = true,
-}
-
-local function normalizeKey(value)
-    return string.lower(tostring(value or "")):gsub("%s+", "")
-end
-
-local function kickForKey(reason)
-    LocalPlayer:Kick(reason or "請至官方 Discord 索取卡密\nhttps://discord.gg/dgh7qJ4wA")
-end
-
-local function showKeyPrompt()
-    local keyGui = Instance.new("ScreenGui")
-    keyGui.Name = "BananaCatHubKeyGate"
-    keyGui.ResetOnSpawn = false
-    keyGui.IgnoreGuiInset = true
-    keyGui.DisplayOrder = 10000
-    keyGui.Parent = game:GetService("CoreGui")
-
-    local backdrop = Instance.new("Frame")
-    backdrop.Size = UDim2.fromScale(1, 1)
-    backdrop.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-    backdrop.BackgroundTransparency = 0.35
-    backdrop.Parent = keyGui
-
-    local card = Instance.new("Frame")
-    card.AnchorPoint = Vector2.new(0.5, 0.5)
-    card.Position = UDim2.fromScale(0.5, 0.5)
-    card.Size = UDim2.fromOffset(330, 190)
-    card.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
-    card.Parent = backdrop
-    Instance.new("UICorner", card).CornerRadius = UDim.new(0, 10)
-
-    local title = Instance.new("TextLabel")
-    title.BackgroundTransparency = 1
-    title.Position = UDim2.fromOffset(18, 14)
-    title.Size = UDim2.new(1, -36, 0, 28)
-    title.Font = Enum.Font.GothamBold
-    title.Text = "Banana Cat Hub - PVP 卡密驗證"
-    title.TextColor3 = Color3.fromRGB(255, 255, 255)
-    title.TextSize = 16
-    title.Parent = card
-
-    local hint = Instance.new("TextLabel")
-    hint.BackgroundTransparency = 1
-    hint.Position = UDim2.fromOffset(18, 46)
-    hint.Size = UDim2.new(1, -36, 0, 32)
-    hint.Font = Enum.Font.Gotham
-    hint.Text = "請輸入有效卡密；沒有卡密請至官方 Discord 索取"
-    hint.TextColor3 = Color3.fromRGB(220, 220, 220)
-    hint.TextSize = 11
-    hint.TextWrapped = true
-    hint.Parent = card
-
-    local input = Instance.new("TextBox")
-    input.ClearTextOnFocus = false
-    input.PlaceholderText = "輸入卡密"
-    input.Text = tostring(getgenv().BananaCatHubKey or "")
-    input.Position = UDim2.fromOffset(18, 86)
-    input.Size = UDim2.new(1, -36, 0, 34)
-    input.BackgroundColor3 = Color3.fromRGB(55, 55, 55)
-    input.TextColor3 = Color3.fromRGB(255, 255, 255)
-    input.PlaceholderColor3 = Color3.fromRGB(170, 170, 170)
-    input.Font = Enum.Font.Code
-    input.TextSize = 13
-    input.Parent = card
-    Instance.new("UICorner", input).CornerRadius = UDim.new(0, 6)
-
-    local submit = Instance.new("TextButton")
-    submit.Text = "驗證卡密"
-    submit.Position = UDim2.fromOffset(18, 132)
-    submit.Size = UDim2.new(1, -36, 0, 34)
-    submit.BackgroundColor3 = Color3.fromRGB(75, 75, 75)
-    submit.TextColor3 = Color3.fromRGB(255, 255, 255)
-    submit.Font = Enum.Font.GothamBold
-    submit.TextSize = 13
-    submit.Parent = card
-    Instance.new("UICorner", submit).CornerRadius = UDim.new(0, 6)
-
-    local result = Instance.new("TextLabel")
-    result.BackgroundTransparency = 1
-    result.Position = UDim2.fromOffset(18, 168)
-    result.Size = UDim2.new(1, -36, 0, 18)
-    result.Font = Enum.Font.Gotham
-    result.Text = ""
-    result.TextColor3 = Color3.fromRGB(255, 150, 150)
-    result.TextSize = 10
-    result.Parent = card
-
-    local accepted = false
-    local function verify()
-        local candidate = normalizeKey(input.Text)
-        if AuthorizedKeys[candidate] then
-            getgenv().BananaCatHubKey = candidate
-            accepted = true
-            keyGui:Destroy()
-        else
-            result.Text = "卡密無效，請至官方 Discord 索取卡密"
-            task.delay(1.5, function()
-                if keyGui and keyGui.Parent then
-                    keyGui:Destroy()
-                    kickForKey("請至官方 Discord 索取卡密\nhttps://discord.gg/dgh7qJ4wA")
-                end
-            end)
-        end
-    end
-
-    submit.Activated:Connect(verify)
-    input.FocusLost:Connect(function(enterPressed)
-        if enterPressed then verify() end
-    end)
-
-    repeat task.wait() until accepted or not keyGui.Parent
-    return accepted
-end
-
--- 严格验证执行前设置的 getgenv().BananaCatHubKey；不接受脚本内默认卡密
--- 若换服务器导致 getgenv() 被重置，则尝试从执行器本地保存的卡密恢复
-local KeyFileName = "BananaCatHub.key"
-local suppliedKey = normalizeKey(getgenv().BananaCatHubKey)
-
-if suppliedKey == "" and isfile and readfile then
-    pcall(function()
-        if isfile(KeyFileName) then
-            suppliedKey = normalizeKey(readfile(KeyFileName))
-        end
-    end)
-end
-
-if suppliedKey == "" or not AuthorizedKeys[suppliedKey] then
-    kickForKey("卡密错误，请先设置有效 BananaCatHubKey\n请至官方 Discord 索取卡密：https://discord.gg/dgh7qJ4wA")
-    return
-end
-
--- 首次验证成功后保存卡密，供自动换服务器重载使用；不覆盖有效性检查
-if writefile then
-    pcall(function()
-        writefile(KeyFileName, suppliedKey)
-    end)
-end
-getgenv().BananaCatHubKey = suppliedKey
-
-
--- Fast Attack Serve
-local Modules = ReplicatedStorage:WaitForChild("Modules", 10)
-local Net = Modules and Modules:WaitForChild("Net", 10)
-local RegisterAttack = Net and Net:WaitForChild("RE/RegisterAttack", 10)
-local RegisterHit = Net and Net:WaitForChild("RE/RegisterHit", 10)
-local RemoteSeed = Net and Net:FindFirstChild("seed")
-
-----------------------------------------
--- 防重複啟用
-----------------------------------------
--- 允許重新載入最新版本，先清理上一個左下角 UI，避免舊歡迎卡片殘留
-pcall(function()
-    local oldToggleGui = game:GetService("CoreGui"):FindFirstChild("BananaCatHubToggleGui")
-    if oldToggleGui then
-        oldToggleGui:Destroy()
-    end
-end)
-
-getgenv().AutoBountyLoaded = true
-
--- ==========================================
--- 2. Hook Check (執行器檢測)
--- ==========================================
-local executorName = (identifyexecutor and identifyexecutor()) or "Unknown"
-local lowerName = string.lower(executorName)
-
-local unsupportedList = {"xeno", "solara"}
-local isUnsupportedName = false
-
-for _, name in ipairs(unsupportedList) do
-    if string.find(lowerName, name) then
-        isUnsupportedName = true
-        break
-    end
-end
-
-local isMissingFunctions = (hookmetamethod == nil) or (getrawmetatable == nil) or (setreadonly == nil)
-local disableHook = isUnsupportedName or isMissingFunctions
-
-if disableHook then
-    warn("[Anti-Crash] Detected limited executor (" .. executorName .. "). Silent Aim hooks have been disabled to prevent freezing.")
-end
-
-----------------------------------------
--- WindUI
-----------------------------------------
-local WindUI = loadstring(request({
-    Url = "https://raw.githubusercontent.com/Footagesus/WindUI/main/dist/main.lua"
-}).Body)()
-
-WindUI:SetTheme(_G.Theme)
-
-local Window = WindUI:CreateWindow({
-    Title         = "Banana Cat Hub - Blox Fruit",
-    -- 參考圖片風格：標題列使用香蕉貓圖示，主面板採半透明 Acrylic 深色分欄布局
-    Icon          = "https://raw.githubusercontent.com/okdiannao478-alt/Banana-Cat-Hub/main/BananaToggleClosed.png?v=4",
-    IconSize      = 26,
-    Author        = "2026最新自動獵賞",
-    Folder        = "Auto Bounty",
-    Size          = UDim2.fromOffset(650, 520),
-    Transparent   = true,
-    Theme         = "Dark",
-    Acrylic       = true,
-    HideSearchBar = false,
-    SideBarWidth  = 190,
-    User = {
-        Enabled   = true, Anonymous = false,
-        Callback  = function() notify(LocalPlayer.Name, "ID: "..LocalPlayer.UserId, 3) end
-    },
-    -- 隱藏 WindUI 原本的頂部開啟按鈕，改用左下角自訂圓形按鈕
-    OpenButton = {
-        Enabled = false,
-    }
-})
-
--- Banana Cat Hub：左下角香蕉貓圖片按鈕，只負責顯示/隱藏 UI
-local BananaCatHubToggleGui = Instance.new("ScreenGui")
-BananaCatHubToggleGui.Name = "BananaCatHubToggleGui"
-BananaCatHubToggleGui.ResetOnSpawn = false
-BananaCatHubToggleGui.IgnoreGuiInset = true
-BananaCatHubToggleGui.DisplayOrder = 9999
-BananaCatHubToggleGui.Enabled = true
-
-pcall(function()
-    local oldGui = game:GetService("CoreGui"):FindFirstChild("BananaCatHubToggleGui")
-    if oldGui then oldGui:Destroy() end
-end)
-
--- 使用者提供的兩張圖片：第一張為關閉 UI，第二張為開啟 UI
-local BananaCatHubClosedUrl = "https://raw.githubusercontent.com/okdiannao478-alt/Banana-Cat-Hub/main/BananaToggleClosed.png?v=4"
-local BananaCatHubOpenUrl = "https://raw.githubusercontent.com/okdiannao478-alt/Banana-Cat-Hub/main/BananaToggleOpen.png?v=4"
--- 使用版本化檔名，避免電腦／手機執行器繼續讀取舊的灰邊快取
-local BananaCatHubClosedPath = "BananaCatHubToggleClosed_v4.png"
-local BananaCatHubOpenPath = "BananaCatHubToggleOpen_v4.png"
-local BananaCatHubClosedAsset = nil
-local BananaCatHubOpenAsset = nil
-
-local function BananaCatHubLoadAsset(assetUrl, assetPath)
-    local result = nil
-    pcall(function()
-        local assetGetter = getsynasset or getcustomasset
-        local httpRequest = request or http_request
-        if isfile and writefile and assetGetter and httpRequest then
-            if not isfile(assetPath) then
-                local response = httpRequest({ Url = assetUrl, Method = "GET" })
-                if response and response.Body then
-                    writefile(assetPath, response.Body)
-                end
-            end
-            if isfile(assetPath) then
-                result = assetGetter(assetPath)
-            end
-        end
-    end)
-    return result
-end
-
-BananaCatHubClosedAsset = BananaCatHubLoadAsset(BananaCatHubClosedUrl, BananaCatHubClosedPath)
-BananaCatHubOpenAsset = BananaCatHubLoadAsset(BananaCatHubOpenUrl, BananaCatHubOpenPath)
-
--- 左下角按鈕只使用使用者提供的兩張圖片，不使用舊圖示或備援 Emoji
-local BananaCatHubToggleButton = Instance.new("ImageButton")
-BananaCatHubToggleButton.Name = "BananaCatToggle"
-BananaCatHubToggleButton.AnchorPoint = Vector2.new(0, 1)
-BananaCatHubToggleButton.Position = UDim2.new(0, 18, 1, -18)
-BananaCatHubToggleButton.Size = UDim2.fromOffset(50, 50)
-BananaCatHubToggleButton.BackgroundTransparency = 1
-BananaCatHubToggleButton.BorderSizePixel = 0
-BananaCatHubToggleButton.Image = BananaCatHubClosedAsset or ""
-BananaCatHubToggleButton.ScaleType = Enum.ScaleType.Fit
-BananaCatHubToggleButton.AutoButtonColor = false
-BananaCatHubToggleButton.ZIndex = 20
-BananaCatHubToggleButton.Parent = BananaCatHubToggleGui
-
-local BananaCatHubToggleCorner = Instance.new("UICorner")
-BananaCatHubToggleCorner.CornerRadius = UDim.new(1, 0)
-BananaCatHubToggleCorner.Parent = BananaCatHubToggleButton
-
-local BananaCatHubToggleStroke = Instance.new("UIStroke")
-BananaCatHubToggleStroke.Thickness = 0
-BananaCatHubToggleStroke.Transparency = 1
-BananaCatHubToggleStroke.Parent = BananaCatHubToggleButton
-
-local BananaCatHubIsOpen = false
-Window:Toggle(false)
-
-BananaCatHubToggleButton.Activated:Connect(function()
-    BananaCatHubIsOpen = not BananaCatHubIsOpen
-    Window:Toggle(BananaCatHubIsOpen)
-    if BananaCatHubIsOpen then
-        BananaCatHubToggleButton.Image = BananaCatHubOpenAsset or BananaCatHubClosedAsset or ""
-    else
-        BananaCatHubToggleButton.Image = BananaCatHubClosedAsset or ""
-    end
-end)
-
-BananaCatHubToggleGui.Parent = game:GetService("CoreGui")
-
--- 載入時顯示的左下角歡迎 UI：使用目前香蕉貓圖片與指定文字
-local BananaCatHubWelcome = Instance.new("TextButton")
-BananaCatHubWelcome.Name = "BananaCatHubWelcome"
-BananaCatHubWelcome.AnchorPoint = Vector2.new(0, 1)
-BananaCatHubWelcome.Position = UDim2.new(0, 18, 1, -86)
-BananaCatHubWelcome.Size = UDim2.new(0.82, 0, 0, 64)
-BananaCatHubWelcome.BackgroundColor3 = Color3.fromRGB(32, 32, 32)
-BananaCatHubWelcome.BackgroundTransparency = 0.08
-BananaCatHubWelcome.BorderSizePixel = 0
-BananaCatHubWelcome.AutoButtonColor = false
-BananaCatHubWelcome.Text = ""
-BananaCatHubWelcome.ZIndex = 30
-BananaCatHubWelcome.Visible = true
-BananaCatHubWelcome.Active = true
-BananaCatHubWelcome.Parent = BananaCatHubToggleGui
-
-local BananaCatHubWelcomeSize = Instance.new("UISizeConstraint")
-BananaCatHubWelcomeSize.MinSize = Vector2.new(220, 64)
-BananaCatHubWelcomeSize.MaxSize = Vector2.new(286, 64)
-BananaCatHubWelcomeSize.Parent = BananaCatHubWelcome
-
-local BananaCatHubWelcomeCorner = Instance.new("UICorner")
-BananaCatHubWelcomeCorner.CornerRadius = UDim.new(0, 12)
-BananaCatHubWelcomeCorner.Parent = BananaCatHubWelcome
-
-local BananaCatHubWelcomeIcon = Instance.new("ImageLabel")
-BananaCatHubWelcomeIcon.Name = "BananaCatIcon"
-BananaCatHubWelcomeIcon.BackgroundTransparency = 1
-BananaCatHubWelcomeIcon.Position = UDim2.fromOffset(9, 13)
-BananaCatHubWelcomeIcon.Size = UDim2.fromOffset(38, 38)
-BananaCatHubWelcomeIcon.Image = BananaCatHubClosedAsset or ""
-BananaCatHubWelcomeIcon.ScaleType = Enum.ScaleType.Fit
-BananaCatHubWelcomeIcon.ZIndex = 31
-BananaCatHubWelcomeIcon.Parent = BananaCatHubWelcome
-
-local BananaCatHubWelcomeTitle = Instance.new("TextLabel")
-BananaCatHubWelcomeTitle.Name = "Title"
-BananaCatHubWelcomeTitle.BackgroundTransparency = 1
-BananaCatHubWelcomeTitle.Position = UDim2.fromOffset(56, 10)
-BananaCatHubWelcomeTitle.Size = UDim2.new(1, -66, 0, 22)
-BananaCatHubWelcomeTitle.Font = Enum.Font.GothamBold
-BananaCatHubWelcomeTitle.Text = "歡迎使用 Banana Cat Hub"
-BananaCatHubWelcomeTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
-BananaCatHubWelcomeTitle.TextSize = 14
-BananaCatHubWelcomeTitle.TextXAlignment = Enum.TextXAlignment.Left
-BananaCatHubWelcomeTitle.ZIndex = 31
-BananaCatHubWelcomeTitle.Parent = BananaCatHubWelcome
-
-local BananaCatHubWelcomeHint = Instance.new("TextLabel")
-BananaCatHubWelcomeHint.Name = "Hint"
-BananaCatHubWelcomeHint.BackgroundTransparency = 1
-BananaCatHubWelcomeHint.Position = UDim2.fromOffset(56, 34)
-BananaCatHubWelcomeHint.Size = UDim2.new(1, -66, 0, 20)
-BananaCatHubWelcomeHint.Font = Enum.Font.Gotham
-BananaCatHubWelcomeHint.Text = "點擊下列 UI 開始使用"
-BananaCatHubWelcomeHint.TextColor3 = Color3.fromRGB(225, 225, 225)
-BananaCatHubWelcomeHint.TextSize = 11
-BananaCatHubWelcomeHint.TextXAlignment = Enum.TextXAlignment.Left
-BananaCatHubWelcomeHint.ZIndex = 31
-BananaCatHubWelcomeHint.Parent = BananaCatHubWelcome
-
-BananaCatHubWelcome.Activated:Connect(function()
-    BananaCatHubWelcome.Visible = false
-    BananaCatHubIsOpen = true
-    Window:Toggle(true)
-    BananaCatHubToggleButton.Image = BananaCatHubOpenAsset or BananaCatHubClosedAsset or ""
-end)
-
--- 歡迎通知顯示 5 秒後自動消失；左下角 50×50 按鈕不受影響
--- 使用 task.spawn + task.wait，避免部分執行器對 task.delay 的相容性問題
- task.spawn(function()
-    task.wait(5)
-    if BananaCatHubWelcome and BananaCatHubWelcome.Parent then
-        BananaCatHubWelcome.Visible = false
-        BananaCatHubWelcome.Active = false
-    end
-end)
-
-Window:OnDestroy(function()
-    pcall(function()
-        if BananaCatHubWelcome then BananaCatHubWelcome:Destroy() end
-        if BananaCatHubToggleGui then BananaCatHubToggleGui:Destroy() end
-    end)
-    getgenv().AutoBountyLoaded = nil
-end)
-
-----------------------------------------
---變數
-----------------------------------------
---自動換服
-_G.ServerRegion = "Singapore"
-_G.HopMinPlayers = 6
-_G.HopMaxPlayers = 7
-_G.HopMinBounty = 3000000
-_G.HopMaxBounty = math.huge
-
---選擇陣營
-_G.SelectTeam = "Pirates"
-
-local function SelectTeam()
-    local lp = game:GetService("Players").LocalPlayer
-    if not lp.Team or lp.Team.Name ~= _G.SelectTeam then
-        local args = {
-            "SetTeam2",
-            _G.SelectTeam
-        }
-        game:GetService("ReplicatedStorage"):WaitForChild("Remotes"):WaitForChild("CommF_"):InvokeServer(unpack(args))
-    end
-end
-
-local FilterParagraph = nil
-
--- Fast Attack
-_G.FastAttack = true
-_G.FastAttackMode = "模式2(部分帳號失效可使用)"
-_G.AttackDistance = 500
-_G.FastAttackSpeed = 0.05
-
---Fruit m1
-_G.FruitsM1Enable = true
-_G.FruitsM1DelayValue = 0.05
-
---ESP Players
-_G.ESP_Master         = true
-_G.ESP_ShowName       = true
-_G.ESP_ShowHealth     = true
-_G.ESP_ShowDistance   = true
-_G.ESP_TeamColor      = true
-_G.ESP_ShowLevel      = true
-_G.ESP_ShowPVPStatus  = true
-_G.ESP_ShowTracers    = false
-_G.ESP_TracerColor    = Color3.fromRGB(255, 255, 255)
-_G.ESP_HighlightColor = Color3.fromRGB(30, 30, 30)
-_G.ESP_FontSize       = 12
-
-local Tracers = {}
-
---Auto Enabled PVP
-_G.AutoEnablePVP = true
-
---Auto Buso
-_G.AutoBusoEnabled = true
-
---Auto V3
-_G.AutoV3_Enabled = true
-
---Auto V4
-_G.AutoV4_Enabled = true
-
---Auto Ken
-_G.AutoKenEnabled = true
-
---自動順步
-_G.AutoSoru = false
-local AutoSoruConn = nil
-local LastSoruTime = 0
-local SORU_COOLDOWN = 10
-local MAX_SORU_DISTANCE = 900
-
---Hitbox
-_G.Hitbox_Enabled = false
-_G.Hitbox_Size = 1
-_G.Hitbox_Transparency = 0.5
-
---Auto Flee
-_G.AutoFlee = true
-_G.AutoFleeHP = 30
-_G.AutoFleeConn = nil
-
--- 移除動作
-_G.RemoveAnim = true
-_G.RemoveAnimCharConn = nil
-_G.RemoveAnimTrackConn = nil
-
--- Walk on water
-_G.WaterWalkEnabled = true
-
---移除岩漿傷害
-_G.RemoveLavaEnabled = true
-local lavaRemoved = false
-
--- 移除鬼船傷害
-_G.RemoveGhostShipLavaEnabled = true
-local ghostShipLavaRemoved = false
-
---自動列賞
-_G.FTP2_Enabled = false
-_G.FTP2_FlightConn = nil
-_G.FTP2_PlayerLeaveConn = nil
-_G.FTP2_Attachment = nil
-_G.FTP2_LinearVelocity = nil
-_G.FTP2_AntiGravity = nil
-_G.FTP2_LastTeleportTicks = {}
-_G.FTP2_TeleportPauseUntil = 0
-_G.FTP2_TeleportFails = {}
-_G.FTP2_BlockedEntrances = {}
-_G.FTP2_Blacklist = {}
-_G.FTP2_HasTriggeredHop = false
-_G.FTP2_TimeoutLimit = 120
-
-_G.FTP2_HistoryWindow = 0.35
-_G.FTP2_ClearTimeout = 10
-_G.FTP2_FlySpeed = 275
-_G.FTP2_HeightOffset = 30
-_G.FTP2_OrbitRadius = 50
-_G.FTP2_OrbitInterval = 0.016
-_G.FTP2_LowHpLockPercent = 30
-_G.FTP2_NoTeleportRange = 300
-_G.FTP2_CurrentTarget = nil
-_G.FTP2_TargetLockTime = 0
-_G.TargetHistory = {}
-_G.FTP2_StartTime = 0
-_G.FTP2_FleeReturnPos = nil
-
-_G.FTP2_SafeZonePositions = {
-    World1 = {
-        { pos = Vector3.new(-3000, 250, 2057), radius = 700 },
-        { pos = Vector3.new(1101, 16, 1446), radius = 400 },
-    },
-    World2 = {
-        { pos = Vector3.new(-12, 29, 2840), radius = 200 },
-        { pos = Vector3.new(-376, 149, 307), radius = 150 },
-        { pos = Vector3.new(-6437, 306, -4730), radius = 150 },
-    },
-    World3 = {
-        { pos = Vector3.new(-338, 21, 5539), radius = 200 },
-        { pos = Vector3.new(-12550, 337, -7506), radius = 400 },
-        { pos = Vector3.new(-5046, 315, -2993), radius = 300 },
-        { pos = Vector3.new(-16228, 9, 443), radius = 300 },
-        { pos = Vector3.new(28695, 14959, -81), radius = 10000 },
-        { pos = Vector3.new(9637, -1989, 9618), radius = 10000 },
-    }
-}
-
-local StartServerHop
-local IsSafeToHopCheck
-
---自瞄
-_G.SilentAimEnabled = true
-_G.SilentAimTargetMode = "目前鎖定的目標玩家"
-_G.SilentAimTeamCheck = true
-local currentSilentAimTarget = nil
-local currentSilentAimTargetPos = nil
-
---Camlock
-_G.CamlockEnabled = false
-
---自動放技能
-_G.AutoSkillMainEnable = false
-_G.AutoSkillWeapons = {
-    ["Melee"] = {
-        Enable = false,
-        Skills = {
-            Z = { Enable = false, HoldTime = 0 },
-            X = { Enable = false, HoldTime = 0 },
-            C = { Enable = false, HoldTime = 0 },
-        }
-    },
-    ["Blox Fruit"] = {
-        Enable = false,
-        Skills = {
-            Z = { Enable = false, HoldTime = 0 },
-            X = { Enable = false, HoldTime = 0 },
-            C = { Enable = false, HoldTime = 0 },
-            V = { Enable = false, HoldTime = 0 },
-            F = { Enable = false, HoldTime = 0 },
-        }
-    },
-    ["Gun"] = {
-        Enable = false,
-        Skills = {
-            Z = { Enable = false, HoldTime = 0 },
-            X = { Enable = false, HoldTime = 0 },
-        }
-    },
-    ["Sword"] = {
-        Enable = false,
-        Skills = {
-            Z = { Enable = false, HoldTime = 0 },
-            X = { Enable = false, HoldTime = 0 },
-        }
-    },
-}
-
-local SkillKeyMap = {
-    Z = Enum.KeyCode.Z,
-    X = Enum.KeyCode.X,
-    C = Enum.KeyCode.C,
-    V = Enum.KeyCode.V,
-    F = Enum.KeyCode.F
-}
-local SkillCoolDownTrack = {}
-
---FPS
-_G.UnlockFPS = true
-
---低配模式
-_G.LowVisualMode = false
-_G.LowVisualConnection = nil
-
---移除迷霧
-_G.RemoveFogEnabled = true
-
---anti AFK
-_G.AntiAFK_ENABLED = true
-_G.AntiAFK_Connection = nil
-
---anti kick
-_G.AutoRejoinEnabled = true
-
---自動執行
-local queue_on_teleport = queue_on_teleport or (syn and syn.queue_on_teleport)
-
-if isfile and isfile("AutoBounty.file") then
-    local success, content = pcall(function() return readfile("AutoBounty.file") end)
-    _G.AutoExecute = (success and content == "true")
-else
-    _G.AutoExecute = true
-end
-
-local ScriptLoadstring = [[if isfile("AutoBounty.file") then
-    if readfile("AutoBounty.file") == "true" then
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/okdiannao478-alt/Banana-Cat-Hub/main/BananaCatHub.lua"))()
-    end
-end]]
-
---主題
-_G.Theme = "Dark"
-
-local availableThemes = WindUI:GetThemes()
-local themeList = {}
-for themeName, _ in pairs(availableThemes) do
-    table.insert(themeList, themeName)
-end
-
---自動隱藏UI
-_G.AutoHideEnabled = false
-
---快捷鍵
-_G.CurrentKey = "G"
-_G.KeyDisabled = false
-
-----------------------------------------
--- [FIX 4] 配置自動保存
-----------------------------------------
-local ConfigFolder = "AutoBounty_Config"
-local ConfigFile = ConfigFolder .. "/settings_" .. tostring(LocalPlayer.UserId) .. ".json"
-local ConfigReady = false
-local ConfigSaving = false
-local ConfigDirty = false
-
-local ConfigKeys = {
-    "ServerRegion", "HopMinPlayers", "HopMaxPlayers","HopMinBounty", "HopMaxBounty",
-    "FastAttack", "FastAttackMode", "AttackDistance", "FastAttackSpeed", "FruitsM1Enable", "FruitsM1DelayValue",
-    "ESP_Master", "ESP_ShowName", "ESP_ShowHealth", "ESP_ShowDistance", "ESP_ShowTracers", "ESP_TeamColor", "ESP_ShowLevel", "ESP_ShowPVPStatus", "ESP_FontSize",
-    "AutoEnablePVP",
-    "AutoBusoEnabled",
-    "AutoV3_Enabled",
-    "AutoV4_Enabled",
-    "AutoKenEnabled",
-    "AutoSoru",
-    "Hitbox_Enabled", "Hitbox_Size", "Hitbox_Transparency",
-    "AutoFlee", "AutoFleeHP",
-    "RemoveAnim",
-    "WaterWalkEnabled",
-    "RemoveLavaEnabled",
-    "RemoveGhostShipLavaEnabled",
-    "SelectTeam",
-    "FTP2_Enabled", "FTP2_FlySpeed", "FTP2_HeightOffset", "FTP2_OrbitRadius", "FTP2_OrbitInterval", "FTP2_LowHpLockPercent", "FTP2_NoTeleportRange", "FTP2_TimeoutLimit", "FTP2_HistoryWindow", "FTP2_ClearTimeout",
-    "SilentAimEnabled", "SilentAimTargetMode", "SilentAimTeamCheck",
-    "CamlockEnabled",
-    "AutoSkillMainEnable", "AutoSkillWeapons",
-    "UnlockFPS",
-    "LowVisualMode",
-    "RemoveFogEnabled",
-    "AntiAFK_ENABLED", "AutoRejoinEnabled",
-    "AutoExecute",
-    "Theme",
-    "AutoHideEnabled",
-    "CurrentKey", "KeyDisabled",
-}
-
-local function CopyConfigValue(value)
-    if type(value) ~= "table" then
-        return value
-    end
-    local copy = {}
-    for key, item in pairs(value) do
-        copy[key] = CopyConfigValue(item)
-    end
-    return copy
-end
-
-local function CollectConfig()
-    local data = {}
-    for _, key in ipairs(ConfigKeys) do
-        if _G[key] ~= nil then
-            data[key] = CopyConfigValue(_G[key])
-        end
-    end
-    return data
-end
-
-local function ApplyConfig(data)
-    if type(data) ~= "table" then return end
-    for _, key in ipairs(ConfigKeys) do
-        if data[key] ~= nil then
-            _G[key] = CopyConfigValue(data[key])
-        end
-    end
-end
-
-local function SaveConfig(force)
-    if ConfigSaving or (not force and not ConfigDirty) or typeof(writefile) ~= "function" then
-        return false
-    end
-    ConfigSaving = true
-    local ok = pcall(function()
-        if typeof(isfolder) == "function" and typeof(makefolder) == "function" and not isfolder(ConfigFolder) then
-            makefolder(ConfigFolder)
-        end
-        writefile(ConfigFile, HttpService:JSONEncode(CollectConfig()))
-    end)
-    ConfigSaving = false
-    if ok then ConfigDirty = false end
-    return ok
-end
-
-local function LoadConfig()
-    if typeof(readfile) ~= "function" or typeof(isfile) ~= "function" or not isfile(ConfigFile) then
-        return false
-    end
-    local ok, data = pcall(function()
-        return HttpService:JSONDecode(readfile(ConfigFile))
-    end)
-    if ok and type(data) == "table" then
-        ApplyConfig(data)
-        return true
-    end
-    return false
-end
-
-local function MarkConfigDirty()
-    ConfigDirty = true
-end
-
-local InitialConfig = CollectConfig()
-LoadConfig()
-if type(Settings) == "table" then
-    ApplyConfig(Settings)
-end
-ConfigReady = true
-
-SelectTeam()
-
-task.spawn(function()
-    while task.wait(3) do
-        if ConfigReady and ConfigDirty then
-            SaveConfig(true)
-        end
-    end
-end)
-
-----------------------------------------
---功能核心邏輯
-----------------------------------------
---自動換服
-local RegionValues = {
-    "Oregon",
-    "Florida",
-    "Texas",
-    "California",
-    "HongKong",
-    "Germany",
-    "Brazil",
-    "Singapore",
-}
-
-local function FormatNumber(n)
-    local num = math.floor(tonumber(n) or 0)
-    local str = tostring(num)
-    local k
-    while true do
-        str, k = string.gsub(str, "^(-?%d+)(%d%d%d)", "%1,%2")
-        if k == 0 then break end
-    end
-    return str
-end
-
-local function ParseServerInfo(text)
-    if type(text) ~= "string" or text == "" then
-        return nil
-    end
-
-    local region = text:match("Region:%s*(.-)%s*%-%s*Players:") or text:match("Region:%s*(.-)%s*$")
-    local currentPlayers, maxPlayers = text:match("Players:%s*(%d+)%s*/%s*(%d+)")
-    local bountyText = text:match("Bounty:%s*([%d,]+)")
-
-    if not currentPlayers or not maxPlayers or not bountyText then
-        return nil
-    end
-
-    local bounty = tonumber((bountyText:gsub(",", "")))
-    if not bounty then
-        return nil
-    end
-
-    return {
-        Region = region or "Unknown",
-        Players = tonumber(currentPlayers),
-        MaxPlayers = tonumber(maxPlayers),
-        Bounty = bounty,
-        Raw = text,
-    }
-end
-
-local function IsServerAllowed(info)
-    if not info then
-        return false
-    end
-
-    local minP = tonumber(_G.HopMinPlayers) or 6
-    local maxP = tonumber(_G.HopMaxPlayers) or 7
-    local minB = tonumber(_G.HopMinBounty) or 3000000
-    local maxB = tonumber(_G.HopMaxBounty) or math.huge
-
-    if info.Players < minP or info.Players > maxP then
-        return false
-    end
-
-    -- 排除已滿伺服器（人數 >= 伺服器上限）
-    local maxPlayers = tonumber(info.MaxPlayers) or 0
-    if maxPlayers > 0 and info.Players >= maxPlayers then
-        return false
-    end
-
-    if info.Bounty < minB or info.Bounty > maxB then
-        return false
-    end
-
-    if _G.ServerRegion and _G.ServerRegion ~= "" then
-        local targetRegion = tostring(_G.ServerRegion):lower()
-        local serverRegion = tostring(info.Region):lower()
-        if not serverRegion:find(targetRegion, 1, true) then
-            return false
-        end
-    end
-
-    return true
-end
-
-local function BuildFilterText()
-    local bountyStr
-    local minB = tonumber(_G.HopMinBounty) or 3000000
-    local maxB = _G.HopMaxBounty
-
-    if maxB == math.huge or not maxB then
-        bountyStr = string.format("≥ %s", FormatNumber(minB))
-    else
-        bountyStr = string.format("%s ~ %s", FormatNumber(minB), FormatNumber(maxB))
-    end
-
-    return string.format(
-        "🌐 地區｜%s\n👥 人數｜%d ~ %d 人\n💰 賞金｜%s",
-        tostring(_G.ServerRegion),
-        tonumber(_G.HopMinPlayers) or 6,
-        tonumber(_G.HopMaxPlayers) or 7,
-        bountyStr
-    )
-end
-
-local function BuildServerInfoText(info, job)
-    return string.format(
-        "🌐 地區｜%s\n👥 人數｜%s / %s\n💰 賞金｜%s\n🆔 序號｜%s",
-        tostring(info.Region),
-        tostring(info.Players),
-        tostring(info.MaxPlayers),
-        FormatNumber(info.Bounty),
-        tostring(job)
-    )
-end
-
-local function SetParagraphDesc(paragraph, text)
-    if not paragraph then return end
-    if paragraph.SetDesc then
-        paragraph:SetDesc(text)
-    elseif paragraph.Set then
-        paragraph:Set({ Desc = text })
-    elseif paragraph.SetTitle then
-        paragraph:SetTitle(paragraph.Title or "當前篩選", text)
-    end
-end
-
-local function RefreshFilterParagraph()
-    SetParagraphDesc(FilterParagraph, BuildFilterText())
-end
-
-local function StopServerHop()
-    getgenv().IsServerHopping = false
-    getgenv().ShuttingDown = false
-
-    if getgenv().ServerHopHiddenGui then
-        getgenv().ServerHopHiddenGui = nil
-        local PlayerGui = LocalPlayer:FindFirstChild("PlayerGui")
-        local serverBrowser = PlayerGui and PlayerGui:FindFirstChild("ServerBrowser")
-        if serverBrowser then
-            pcall(function()
-                serverBrowser.Enabled = false
-                if serverBrowser:FindFirstChild("Frame") then
-                    serverBrowser.Frame.Visible = true
-                end
-            end)
-        end
-    end
-
-end
-
-local function StartServerHop()
-    if getgenv().IsServerHopping == true then
-        return
-    end
-
-    getgenv().IsServerHopping = true
-    getgenv().ShuttingDown = true
-
-    -- [換服超時] 開始換服後若未在3分鐘內成功換服：三海進二海、二海進三海，其餘重進伺服器
-    local hopStartTime = tick()
-    task.spawn(function()
-        while getgenv().IsServerHopping do
-            if tick() - hopStartTime >= 180 then
-                local placeId = game.PlaceId
-                if table.find({7449423635, 100117331123089}, placeId) then
-                    -- 三海 → 二海
-                    pcall(function()
-                        ReplicatedStorage.Remotes.CommF_:InvokeServer("TravelDressrosa")
-                    end)
-                elseif table.find({4442272183, 79091703265657}, placeId) then
-                    -- 二海 → 三海
-                    pcall(function()
-                        ReplicatedStorage.Remotes.CommF_:InvokeServer("TravelZou")
-                    end)
-                else
-                    -- 其他(一海) → 執行重進伺服器
-                    pcall(function()
-                        game:GetService("TeleportService"):Teleport(game.PlaceId, LocalPlayer)
-                    end)
-                end
-                getgenv().IsServerHopping = false
-                return
-            end
-            task.wait(5)
-        end
-    end)
-
-    -- [安全檢查] 必須安全且無PVP狀態才能開始換服
-    if IsSafeToHopCheck and not IsSafeToHopCheck() then
-        while getgenv().IsServerHopping and IsSafeToHopCheck and not IsSafeToHopCheck() do
-            task.wait(1)
-        end
-        if not getgenv().IsServerHopping then
-            return
-        end
-    end
-
-    local currentJobId = game.JobId
-    local triedJobs = {}
-    local ServerBrowserRemote = ReplicatedStorage:FindFirstChild("__ServerBrowser")
-
-    local directServers = nil
-    if ServerBrowserRemote then
-        for _, method in ipairs({ "getServers", "fetchServers", "getServerList", "fetch", "servers", "searchServers" }) do
-            local ok, result = pcall(function()
-                return ServerBrowserRemote:InvokeServer(method)
-            end)
-            if ok and type(result) == "table" then
-                local arr = result.Servers or result.ServerList or result.Data or result
-                if type(arr) == "table" then
-                    local parsed = {}
-                    for _, s in ipairs(arr) do
-                        if type(s) == "table" then
-                            local jobId = s.JobId or s.Job or s.id or s.teleportData
-                            if type(jobId) == "string" and tostring(jobId):find("-", 1, true) then
-                                table.insert(parsed, {
-                                    JobId = tostring(jobId),
-                                    Region = tostring(s.Region or s.RegionName or s.region or ""),
-                                    Players = tonumber(s.Players or s.PlayerCount or s.CurrentPlayers or s.currentPlayers) or 0,
-                                    MaxPlayers = tonumber(s.MaxPlayers or s.MaximumPlayers or s.maxPlayers) or 0,
-                                    Bounty = tonumber(s.Bounty or s.ServerBounty or s.bounty) or 0,
-                                })
-                            end
-                        end
-                    end
-                    if #parsed > 0 then
-                        directServers = parsed
-                        break
-                    end
-                end
-            end
-        end
-    end
-
-    local useHiddenGui = false
-    local Inside = nil
-    if not directServers then
-        local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
-        local serverBrowser = PlayerGui:FindFirstChild("ServerBrowser")
-
-        if not serverBrowser then
-            getgenv().IsServerHopping = false
-            return
-        end
-
-        useHiddenGui = true
-        getgenv().ServerHopHiddenGui = true
-
-        pcall(function()
-            if serverBrowser:FindFirstChild("Frame") then
-                serverBrowser.Frame.Visible = false
-            end
-        end)
-
-        serverBrowser.Enabled = true
-
-        pcall(function()
-            if serverBrowser:FindFirstChild("Frame") then
-                serverBrowser.Frame.Visible = false
-            end
-        end)
-
-        local Filters = serverBrowser.Frame:FindFirstChild("Filters")
-        local SearchRegion = Filters and Filters:FindFirstChild("SearchRegion")
-        local TextBox = SearchRegion and SearchRegion:FindFirstChild("TextBox")
-        if TextBox then
-            TextBox.Text = _G.ServerRegion
-        end
-
-        local ScrollingFrame = serverBrowser.Frame.ScrollingFrame
-        local FakeScroll = serverBrowser.Frame.FakeScroll
-        Inside = FakeScroll and FakeScroll:FindFirstChild("Inside")
-
-        task.spawn(function()
-            while getgenv().IsServerHopping do
-                if ScrollingFrame then
-                    ScrollingFrame.CanvasPosition = Vector2.new(0, math.random(100, 7000))
-                end
-                task.wait(0.3)
-            end
-        end)
-    end
-
-    task.wait(0.5)
-
-    task.spawn(function()
-        while getgenv().IsServerHopping do
-            local candidate = nil
-
-            if directServers then
-                for _, s in ipairs(directServers) do
-                    if s.JobId ~= currentJobId and not triedJobs[s.JobId] then
-                        local info = {
-                            Region = s.Region,
-                            Players = s.Players,
-                            MaxPlayers = s.MaxPlayers,
-                            Bounty = s.Bounty,
-                        }
-                        if IsServerAllowed(info) then
-                            candidate = { info = info, job = s.JobId }
-                            break
-                        end
-                    end
-                end
-            elseif useHiddenGui and Inside then
-                for _, template in ipairs(Inside:GetChildren()) do
-                    if template.Name == "Template" then
-                        local joinButton = template:FindFirstChild("Join")
-                        local textLabel = template:FindFirstChild("TextLabel")
-                        local info = textLabel and ParseServerInfo(textLabel.Text)
-
-                        if joinButton and info and IsServerAllowed(info) then
-                            local job = joinButton:GetAttribute("Job")
-                            if job and tostring(job):find("-", 1, true) then
-                                job = tostring(job)
-                                if job ~= currentJobId and not triedJobs[job] then
-                                    candidate = { info = info, job = job }
-                                    break
-                                end
-                            end
-                        end
-                    end
-                end
-            end
-
-            if candidate and getgenv().IsServerHopping then
-                -- 換服前再次確認安全且無PVP狀態
-                if IsSafeToHopCheck and not IsSafeToHopCheck() then
-                    task.wait(1)
-                else
-                    pcall(function()
-                        ServerBrowserRemote:InvokeServer("teleport", candidate.job)
-                    end)
-
-                    triedJobs[candidate.job] = true
-                end
-            end
-
-            task.wait(5)
-        end
-    end)
-end
-
---Fast Attack
-local function IsAlive(char)
-    if not char then return false end
-    local hum = char:FindFirstChildOfClass("Humanoid")
-    return hum and hum.Health > 0
-end
-
-local Settings = {
-    MaxTargets = 20,
-    AutoScanRemotes = true
-}
-
-local State = {
-    FoundRemote = nil,
-    FoundRemoteId = nil,
-    consecutiveFailures = 0,
-    maxConsecutiveFailures = 5,
-    
-    M1_Remotes = nil,
-    M1_Net = nil,
-    M1_RegisterAttack = nil,
-    M1_RegisterHit = nil,
-    M1_Enemies = nil
-}
-
-local function GetRandomValidPart(target)
-    if not target then return nil end
-    local hrp = target:FindFirstChild("HumanoidRootPart")
-    if not hrp then return nil end
-    local parts = { 
-        target:FindFirstChild("Head"), 
-        target:FindFirstChild("UpperTorso"), 
-        target:FindFirstChild("LowerTorso"), 
-        target:FindFirstChild("Torso"), 
-        hrp 
-    }
-    local validParts = {}
-    for _, p in ipairs(parts) do
-        if p and p:IsA("BasePart") then table.insert(validParts, p) end
-    end
-    if #validParts > 0 then return validParts[math.random(1, #validParts)] end
-    return hrp
-end
-
-if Settings.AutoScanRemotes then
-    task.spawn(function()
-        local folders = { 
-            ReplicatedStorage:FindFirstChild("Util"), 
-            ReplicatedStorage:FindFirstChild("Common"), 
-            ReplicatedStorage:FindFirstChild("Remotes"), 
-            ReplicatedStorage:FindFirstChild("Assets"), 
-            ReplicatedStorage:FindFirstChild("FX") 
-        }
-        local function checkChild(child)
-            if child:IsA("RemoteEvent") and child:GetAttribute("Id") then
-                State.FoundRemoteId = child:GetAttribute("Id")
-                State.FoundRemote = child
-            end
-        end
-        for _, folder in ipairs(folders) do
-            if folder then
-                for _, child in ipairs(folder:GetChildren()) do checkChild(child) end
-                folder.ChildAdded:Connect(checkChild)
-            end
-        end
-    end)
-end
-
-local function M1_CheckAndGetCoreComponents()
-    if State.M1_Remotes and State.M1_Net and State.M1_RegisterAttack and State.M1_RegisterHit and State.M1_Enemies then
-        return State.M1_Remotes, State.M1_Net, State.M1_RegisterAttack, State.M1_RegisterHit, State.M1_Enemies
-    end
-    local Remotes = ReplicatedStorage:FindFirstChild("Remotes")
-    local Modules = ReplicatedStorage:FindFirstChild("Modules")
-    local NetInstance = Modules and Modules:FindFirstChild("Net")
-    local RegAttack = NetInstance and (NetInstance:FindFirstChild("RE/RegisterAttack") or NetInstance:FindFirstChild("RegisterAttack"))
-    local RegHit = NetInstance and (NetInstance:FindFirstChild("RE/RegisterHit") or NetInstance:FindFirstChild("RegisterHit"))
-    local Enemies = workspace:FindFirstChild("Enemies") or workspace:FindFirstChild("NPCs")
-    
-    if Remotes and Modules and NetInstance and RegAttack and RegHit and Enemies then
-        State.M1_Remotes = Remotes
-        State.M1_Net = NetInstance
-        State.M1_RegisterAttack = RegAttack
-        State.M1_RegisterHit = RegHit
-        State.M1_Enemies = Enemies
-        return Remotes, NetInstance, RegAttack, RegHit, Enemies
-    end
-    return nil, nil, nil, nil, nil
-end
-
-local function M1_GatherAllTargets(OthersEnemies)
-    local myPos = LocalPlayer.Character and LocalPlayer.Character.PrimaryPart and LocalPlayer.Character.PrimaryPart.Position
-    if not myPos then return nil end
-    
-    local firstPart = nil
-    
-    local _, _, _, _, EnemiesFolder = M1_CheckAndGetCoreComponents()
-    if EnemiesFolder then
-        for _, Enemy in ipairs(EnemiesFolder:GetChildren()) do
-            if Enemy == LocalPlayer.Character or not IsAlive(Enemy) then continue end
-            local enemyRoot = Enemy:FindFirstChild("HumanoidRootPart")
-            if not enemyRoot then continue end
-            
-            if (enemyRoot.Position - myPos).Magnitude < _G.AttackDistance then
-                local foundPart = GetRandomValidPart(Enemy)
-                if foundPart then
-                    table.insert(OthersEnemies, {Enemy, foundPart})
-                    if not firstPart then firstPart = foundPart end
-                end
-            end
-        end
-    end
-    
-    for _, OtherPlayer in ipairs(Players:GetPlayers()) do
-        if OtherPlayer == LocalPlayer then continue end
-        local OtherChar = OtherPlayer.Character
-        if not IsAlive(OtherChar) then continue end
-        local enemyRoot = OtherChar:FindFirstChild("HumanoidRootPart")
-        if not enemyRoot then continue end
-        
-        if (enemyRoot.Position - myPos).Magnitude < _G.AttackDistance then
-            local foundPart = GetRandomValidPart(OtherChar)
-            if foundPart then
-                table.insert(OthersEnemies, {OtherChar, foundPart})
-                if not firstPart then firstPart = foundPart end
-            end
-        end
-    end
-    
-    return firstPart
-end
-
-local function M1_Attack(BasePart, OthersEnemies)
-    local _, _, temp_RegisterAttack, temp_RegisterHit, _ = M1_CheckAndGetCoreComponents()
-    if not (BasePart and OthersEnemies and #OthersEnemies > 0 and temp_RegisterAttack and temp_RegisterHit) then
-        State.consecutiveFailures = State.consecutiveFailures + 1
-        if State.consecutiveFailures >= State.maxConsecutiveFailures then
-            State.M1_Remotes = nil; State.M1_Net = nil; State.M1_RegisterAttack = nil; State.M1_RegisterHit = nil; State.M1_Enemies = nil; State.consecutiveFailures = 0
-        end
-        return
-    end
-    State.consecutiveFailures = 0
-    local success, _ = pcall(function()
-        temp_RegisterAttack:FireServer(0.3)
-        temp_RegisterHit:FireServer(BasePart, OthersEnemies)
-    end)
-    if not success then State.M1_RegisterAttack = nil; State.M1_RegisterHit = nil end
-end
-
-local function PerformAttackMode1()
-    local OthersEnemies = {}
-    local primaryTargetPart = M1_GatherAllTargets(OthersEnemies)
-    if #OthersEnemies > 0 then 
-        M1_Attack(primaryTargetPart, OthersEnemies) 
-    end
-end
-
-local function GetMode2Targets()
-    local char = LocalPlayer.Character
-    local root = char and char:FindFirstChild("HumanoidRootPart")
-    if not root then return {} end
-    local targets = {}
-    local myPos = root.Position
-    
-    local sourceFolders = {
-        workspace:FindFirstChild("Enemies"),
-        workspace:FindFirstChild("NPCs"),
-        workspace:FindFirstChild("Characters")
-    }
-    
-    local function checkModel(model)
-        if not model or model == char then return end
-        local tRoot = model:FindFirstChild("HumanoidRootPart")
-        local tHum = model:FindFirstChild("Humanoid")
-        if tRoot and tHum and tHum.Health > 0 then
-            local dist = (tRoot.Position - myPos).Magnitude
-            if dist <= _G.AttackDistance then
-                table.insert(targets, { 
-                    Model = model, 
-                    Root = tRoot, 
-                    Head = model:FindFirstChild("Head") or tRoot 
-                })
-            end
-        end
-    end
-
-    for _, folder in ipairs(sourceFolders) do
-        if folder then
-            for _, model in ipairs(folder:GetChildren()) do
-                if #targets >= Settings.MaxTargets then break end
-                checkModel(model)
-            end
-        end
-    end
-    
-    for _, player in ipairs(Players:GetPlayers()) do
-        if #targets >= Settings.MaxTargets then break end
-        if player ~= LocalPlayer and player.Character then
-            checkModel(player.Character)
-        end
-    end
-    
-    return targets
-end
-
-local function PerformAttackMode2()
-    local char = LocalPlayer.Character
-    if not char then return end
-    local hasTool = char:FindFirstChildOfClass("Tool") or char:FindFirstChild("EquippedWeapon")
-    if not hasTool then return end
-    
-    local targets = GetMode2Targets()
-    if #targets == 0 then return end
-    
-    local mainTarget = targets[1]
-    local hitList = {}
-    for i, target in ipairs(targets) do 
-        table.insert(hitList, {target.Model, target.Root}) 
-    end
-    
-    RegisterAttack:FireServer(0)
-    
-    local fakeHash = tostring(LocalPlayer.UserId):sub(2,4) .. tostring(math.random(10000, 99999))
-    pcall(function()
-        RegisterHit:FireServer(mainTarget.Head, hitList, {}, fakeHash)
-    end)
-    
-    if State.FoundRemote and State.FoundRemoteId then
-        pcall(function()
-            local seedValue = RemoteSeed and RemoteSeed:InvokeServer() or 1
-            local encryptedId = bit32.bxor(State.FoundRemoteId + 909090, seedValue * 2)
-            local rawName = "RE/RegisterHit"
-            local timestamp = math.floor(workspace:GetServerTimeNow() / 10 % 10) + 1
-            local encryptedName = string.gsub(rawName, ".", function(c) 
-                return string.char(bit32.bxor(string.byte(c), timestamp)) 
-            end)
-            State.FoundRemote:FireServer(encryptedName, encryptedId, mainTarget.Head, hitList)
-        end)
-    end
-end
-
-local function PerformAttack()
-    if _G.FastAttackMode == "模式1" then
-        local Character = LocalPlayer.Character
-        local Equipped = Character and IsAlive(Character) and Character:FindFirstChildOfClass("Tool")
-        if not Equipped or Equipped.ToolTip == "Gun" then return end
-        PerformAttackMode1()
-    else
-        PerformAttackMode2()
-    end
-end
-
-local manualConnection = nil
-
-local function stopManual()
-    if manualConnection then
-        manualConnection:Disconnect()
-        manualConnection = nil
-    end
-end
-
-local function startManual()
-    if manualConnection then return end
-    manualConnection = UserInputService.InputBegan:Connect(function(input, gameProcessed)
-        if gameProcessed then return end
-        if _G.FastAttack then return end 
-        
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            pcall(PerformAttack)
-        end
-    end)
-end
-
-if not _G.FastAttack then startManual() end
-
-LocalPlayer.CharacterRemoving:Connect(function() stopManual() end)
-LocalPlayer.CharacterAdded:Connect(function()
-    if not _G.FastAttack then startManual() end
-end)
-
-local isRunning = true
-task.spawn(function()
-    while isRunning do
-        local startTime = tick()
-        
-        if _G.FastAttack then
-            pcall(PerformAttack)
-        end
-        
-        local elapsed = tick() - startTime
-        local waitTime = math.max((_G.FastAttackSpeed or 0.05) - elapsed, 0.001)
-        task.wait(waitTime)
-    end
-end)
-
---Fruit M1
-local function GetFruitRemote()
-    for _, loc in ipairs({ LocalPlayer.Character, LocalPlayer:FindFirstChild("Backpack") }) do
-        if loc then
-            for _, tool in ipairs(loc:GetChildren()) do
-                local remote = tool:IsA("Tool") and tool:FindFirstChild("LeftClickRemote", true)
-                if remote then 
-                    return remote, tool.Name 
-                end
-            end
-        end
-    end
-    return nil, "不是M1果實"
-end
-
-task.spawn(function()
-    while true do
-        if _G.FruitsM1Enable then
-            local char   = LocalPlayer.Character
-            local hrp    = char and char:FindFirstChild("HumanoidRootPart")
-            local remote = GetFruitRemote()
-            if hrp and remote then 
-                remote:FireServer(-hrp.CFrame.UpVector, 2, true) 
-            end
-        end
-        task.wait(_G.FruitsM1DelayValue)
-    end
-end)
-
---ESP Players
-local function CheckPVP(plr)
-    if plr:GetAttribute("PvpDisabled") == false then return true end
-    if plr:GetAttribute("InCombat") == true or plr:GetAttribute("CombatPd") == true then return true end
-    for name, value in pairs(plr:GetAttributes()) do
-        if string.find(string.lower(name), "pvp") and value == true then return true end
-    end
-    local ls = plr:FindFirstChild("leaderstats")
-    if ls and ls:FindFirstChild("PVP") then
-        local v = ls.PVP.Value
-        if v == "Enabled" or v == true then return true end
-    end
-    return false
-end
-
-local function removeTracer(p)
-    if Tracers[p] then
-        Tracers[p].Visible = false
-        Tracers[p]:Remove()
-        Tracers[p] = nil
-    end
-end
-
-local function removeESP(p)
-    removeTracer(p)
-    if p.Character then
-        local h = p.Character:FindFirstChild("ESP_Highlight")
-        if h then h:Destroy() end
-        local head = p.Character:FindFirstChild("Head")
-        if head then
-            local bill = head:FindFirstChild("ESP_Billboard")
-            if bill then bill:Destroy() end
-        end
-    end
-end
-
-local function createESP(p)
-    if p == LocalPlayer or not _G.ESP_Master then return end
-    local char = p.Character if not char then return end
-    local head = char:FindFirstChild("Head") if not head then return end
-    
-    if not char:FindFirstChild("ESP_Highlight") then
-        local h = Instance.new("Highlight")
-        h.Name = "ESP_Highlight"
-        h.FillColor = _G.ESP_HighlightColor
-        h.OutlineColor = Color3.fromRGB(255, 255, 255)
-        h.FillTransparency = 0.55
-        h.OutlineTransparency = 0.1
-        h.Adornee = char
-        h.Parent = char
-    end
-    
-    if not head:FindFirstChild("ESP_Billboard") then
-        local bill = Instance.new("BillboardGui")
-        bill.Name = "ESP_Billboard"
-        bill.AlwaysOnTop = true
-        bill.Size = UDim2.new(0, 200, 0, 110)
-        bill.StudsOffset = Vector3.new(0, 4.5, 0)
-        bill.Adornee = head
-        bill.Parent = head
-        
-        local text = Instance.new("TextLabel", bill)
-        text.Name = "InfoLabel"
-        text.Size = UDim2.new(1, 0, 0, 80)
-        text.BackgroundTransparency = 1
-        text.TextStrokeTransparency = 0.1
-        text.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-        text.Font = Enum.Font.GothamBold
-        text.TextSize = _G.ESP_FontSize
-        text.TextColor3 = Color3.fromRGB(255, 255, 255)
-        text.RichText = true
-        text.TextYAlignment = Enum.TextYAlignment.Bottom
-        
-        local barBG = Instance.new("Frame", bill)
-        barBG.Name = "HealthBarBG"
-        barBG.Size = UDim2.new(0, 110, 0, 5)
-        barBG.Position = UDim2.new(0.5, -55, 0, 90)
-        barBG.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-        barBG.BorderSizePixel = 0
-        barBG.Visible = false
-        
-        local cornerBG = Instance.new("UICorner")
-        cornerBG.CornerRadius = UDim.new(1, 0)
-        cornerBG.Parent = barBG
-        
-        local barFG = Instance.new("Frame", barBG)
-        barFG.Name = "HealthBarFG"
-        barFG.Size = UDim2.new(1, 0, 1, 0)
-        barFG.BackgroundColor3 = Color3.fromRGB(0, 255, 130)
-        barFG.BorderSizePixel = 0
-        
-        local cornerFG = Instance.new("UICorner")
-        cornerFG.CornerRadius = UDim.new(1, 0)
-        cornerFG.Parent = barFG
-    end
-end
-
-local function updateTracer(p, targetHRP)
-    if not _G.ESP_ShowTracers or not _G.ESP_Master then 
-        removeTracer(p)
-        return 
-    end
-    local myHRP = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-    if myHRP and targetHRP then
-        local currentCam = workspace.CurrentCamera
-        local startPos, startEv = currentCam:WorldToViewportPoint(myHRP.Position)
-        local endPos, ev = currentCam:WorldToViewportPoint(targetHRP.Position)
-        if ev and startEv then
-            local tr = Tracers[p] or Drawing.new("Line")
-            Tracers[p] = tr
-            tr.Visible = true
-            tr.From = Vector2.new(startPos.X, startPos.Y)
-            tr.To = Vector2.new(endPos.X, endPos.Y)
-            
-            if _G.ESP_TeamColor and p.TeamColor then
-                tr.Color = p.TeamColor.Color
-            else
-                tr.Color = _G.ESP_TracerColor
-            end
-            tr.Thickness = 1.8
-            tr.Transparency = 0.75
-        else
-            removeTracer(p)
-        end
-    else
-        removeTracer(p)
-    end
-end
-
-RunService.RenderStepped:Connect(function()
-    if not _G.ESP_Master then return end
-    local myHRP = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-    for _, p in ipairs(Players:GetPlayers()) do
-        if p == LocalPlayer then continue end
-        local char = p.Character
-        if not char then removeESP(p) continue end
-        local head = char:FindFirstChild("Head")
-        local hrp2 = char:FindFirstChild("HumanoidRootPart")
-        local hum2 = char:FindFirstChildOfClass("Humanoid")
-        if not (head and hrp2 and hum2) then removeESP(p) continue end
-
-        createESP(p)
-
-        if _G.ESP_ShowTracers then
-            updateTracer(p, hrp2)
-        else
-            removeTracer(p)
-        end
-
-        local bill = head:FindFirstChild("ESP_Billboard")
-        local h = char:FindFirstChild("ESP_Highlight")
-        if not (bill and h) then continue end
-
-        if _G.ESP_TeamColor and p.TeamColor then
-            h.OutlineColor = p.TeamColor.Color
-        else
-            h.OutlineColor = Color3.fromRGB(255, 255, 255)
-        end
-
-        local info = bill:FindFirstChild("InfoLabel")
-        local barBG = bill:FindFirstChild("HealthBarBG")
-        local barFG = barBG and barBG:FindFirstChild("HealthBarFG")
-
-        if info then
-            local display = ""
-            if _G.ESP_ShowName then
-                display = display .. "<b>" .. p.Name .. "</b>\n"
-            end
-            if _G.ESP_ShowLevel then
-                local lv = "???"
-                local data = p:FindFirstChild("Data") or p:FindFirstChild("leaderstats")
-                if data and data:FindFirstChild("Level") then lv = data.Level.Value end
-                display = display .. '<font color="#FFFFFF">Lv. ' .. tostring(lv) .. '</font>\n'
-            end
-            if _G.ESP_ShowPVPStatus then
-                if CheckPVP(p) then
-                    display = display .. '<font color="#00FF88">[ Safe PVP ]</font>\n'
-                else
-                    display = display .. '<font color="#FF4D4D">[ Enabled PVP ]</font>\n'
-                end
-            end
-            local hpText = ""
-            if _G.ESP_ShowHealth then
-                hpText = '<font color="#FFFFFF">HP: ' .. math.floor(hum2.Health) .. "/" .. math.floor(hum2.MaxHealth) .. '</font> '
-            end
-            local distText = ""
-            if _G.ESP_ShowDistance and myHRP then
-                distText = '<font color="#FFFFFF">[' .. math.floor((myHRP.Position - hrp2.Position).Magnitude) .. 'm]</font>'
-            end
-            if _G.ESP_ShowHealth or _G.ESP_ShowDistance then
-                display = display .. hpText .. distText .. "\n"
-            end
-            info.Text = display
-            info.TextSize = _G.ESP_FontSize
-        end
-
-        if barBG and barFG then
-            if _G.ESP_ShowHealth then
-                barBG.Visible = true
-                local hpPercent = math.clamp(hum2.Health / hum2.MaxHealth, 0, 1)
-                barFG.Size = UDim2.fromScale(hpPercent, 1)
-                if hpPercent > 0.5 then
-                    barFG.BackgroundColor3 = Color3.fromRGB(255 * (1 - hpPercent) * 2, 255, 50)
-                else
-                    barFG.BackgroundColor3 = Color3.fromRGB(255, 255 * hpPercent * 2, 50)
-                end
-            else
-                barBG.Visible = false
-            end
-        end
-    end
-end)
-
-local PlayerCharConns = {}
-
-Players.PlayerRemoving:Connect(function(p)
-    removeESP(p)
-    if PlayerCharConns[p] then
-        PlayerCharConns[p]:Disconnect()
-        PlayerCharConns[p] = nil
-    end
-end)
-
-Players.PlayerAdded:Connect(function(p)
-    if PlayerCharConns[p] then
-        PlayerCharConns[p]:Disconnect()
-    end
-    PlayerCharConns[p] = p.CharacterAdded:Connect(function()
-        task.wait(0.5)
-        if _G.ESP_Master then createESP(p) end
-    end)
-end)
-
---Auto Enabled PVP
-local function GetCommF()
-    local remotes = ReplicatedStorage:FindFirstChild("Remotes")
-    return remotes and remotes:FindFirstChild("CommF_")
-end
-
-task.spawn(function()
-    while true do
-        if _G.AutoEnablePVP and not getgenv().IsServerHopping then
-            local remote = GetCommF()
-            if remote then 
-                pcall(function()
-                    remote:InvokeServer("EnablePvp") 
-                end)
-            end
-        end
-        task.wait(1)
-    end
-end)
-
---Auto Buso
-task.spawn(function()
-    while task.wait(1) do
-        if _G.AutoBusoEnabled then
-            local player = game.Players.LocalPlayer
-            if player and player.Character and not player.Character:FindFirstChild("HasBuso") then
-                pcall(function()
-                    game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("Buso")
-                end)
-            end
-        end
-    end
-end)
-
--- Auto V3
-local function toggleV3()
-    if UserInputService:GetFocusedTextBox() then return end
-    VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.T, false, game)
-    task.wait(1)
-    VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.T, false, game)
-end
-
-task.spawn(function()
-    while task.wait(0.5) do
-        if not game.Players.LocalPlayer or not game.Players.LocalPlayer:IsDescendantOf(game.Players) then break end
-        if _G.AutoV3_Enabled then
-            toggleV3()
-            task.wait(1)
-        end
-    end
-end)
-
--- Auto V4
-local function GetAwakeningRemote()
-    local player = Players.LocalPlayer
-    if not player then return nil end
-
-    local backpack = player:FindFirstChild("Backpack")
-    local awakening = backpack and backpack:FindFirstChild("Awakening")
-    if awakening and awakening:FindFirstChild("RemoteFunction") then
-        return awakening.RemoteFunction
-    end
-
-    local char = player.Character
-    local charAwakening = char and char:FindFirstChild("Awakening")
-    if charAwakening and charAwakening:FindFirstChild("RemoteFunction") then
-        return charAwakening.RemoteFunction
-    end
-
-    return nil
-end
-
-task.spawn(function()
-    while true do
-        task.wait(0.1)
-        if _G.AutoV4_Enabled then
-            local remote = GetAwakeningRemote()
-            if remote then
-                task.spawn(function()
-                    pcall(function()
-                        remote:InvokeServer(true)
-                    end)
-                end)
-            end
-        end
-    end
-end)
-
--- Auto Ken
-local function toggleKenVision()
-    if UserInputService:GetFocusedTextBox() then return end
-    VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.E, false, game)
-    task.wait(0.05)
-    VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.E, false, game)
-end
-
-task.spawn(function()
-    while task.wait(0.1) do
-        if not LocalPlayer or not LocalPlayer:IsDescendantOf(Players) then break end
-
-        if not _G.AutoKenEnabled then continue end
-
-        local kenLeft   = LocalPlayer:GetAttribute("KenDodgesLeft")
-        local kenActive = LocalPlayer:GetAttribute("KenActive")
-
-        if kenLeft ~= nil then
-            if not kenActive then
-                toggleKenVision()
-                task.wait(0.5)
-            end
-        else
-            toggleKenVision()
-            task.wait(2.0)
-        end
-    end
-end)
-
---自動順步
-local function SoruTo(targetPosition)
-    local Character = LocalPlayer and LocalPlayer.Character
-    if not Character then return false end
-
-    local HumanoidRootPart = Character:FindFirstChild("HumanoidRootPart")
-    local Humanoid = Character:FindFirstChild("Humanoid")
-    if not HumanoidRootPart or not Humanoid or Humanoid.Health <= 0 then return false end
-
-    local startCFrame = HumanoidRootPart.CFrame
-    local finalPos = targetPosition
-    local finalCFrame = (startCFrame - startCFrame.Position) + finalPos + Vector3.new(0, HumanoidRootPart.Size.Y * 1.5, 0)
-
-    local randomId = math.random(1, 999999999)
-    
-    ReplicatedStorage.Remotes.CommE:FireServer(
-        "Soru",
-        startCFrame,
-        finalCFrame,
-        workspace:GetServerTimeNow(),
-        randomId
-    )
-    return true
-end
-
-local function GetClosestPlayerForSoru()
-    local closestPlayer = nil
-    local shortestDistance = math.huge
-
-    local Character = LocalPlayer and LocalPlayer.Character
-    if not Character or not Character:FindFirstChild("HumanoidRootPart") then
-        return nil, math.huge
-    end
-
-    local myPos = Character.HumanoidRootPart.Position
-
-    for _, player in pairs(Players:GetPlayers()) do
-        if player ~= LocalPlayer then
-            local otherChar = player.Character
-            local otherHum = otherChar and otherChar:FindFirstChild("Humanoid")
-            local otherRoot = otherChar and otherChar:FindFirstChild("HumanoidRootPart")
-            if otherHum and otherRoot and otherHum.Health > 0 then
-                local distance = (otherRoot.Position - myPos).Magnitude
-                if distance < shortestDistance then
-                    shortestDistance = distance
-                    closestPlayer = player
-                end
-            end
-        end
-    end
-
-    return closestPlayer, shortestDistance
-end
-
-local function SoruToClosestPlayer()
-    if tick() - LastSoruTime < SORU_COOLDOWN then
-        return
-    end
-
-    local targetPlayer, distance = GetClosestPlayerForSoru()
-    
-    if not targetPlayer or distance > MAX_SORU_DISTANCE then 
-        return 
-    end
-
-    local targetChar = targetPlayer.Character
-    if targetChar and targetChar:FindFirstChild("HumanoidRootPart") then
-        local targetPos = (targetChar.HumanoidRootPart.CFrame * CFrame.new(0, 0, 3)).Position
-        
-        local success = SoruTo(targetPos)
-        
-        if success then
-            LastSoruTime = tick()
-            
-            pcall(function()
-                if WindUI then
-                    WindUI:Notify({
-                        Title = "自動順步",
-                        Content = string.format("觸發：%s (%dM)", targetPlayer.Name, math.floor(distance)),
-                        Duration = 3,
-                        Icon = "zap"
-                    })
-                end
-            end)
-        end
-    end
-end
-
-local function StartAutoSoru()
-    if AutoSoruConn then return end
-    AutoSoruConn = task.spawn(function()
-        while _G.AutoSoru do
-            pcall(SoruToClosestPlayer)
-            task.wait(1)
-        end
-        AutoSoruConn = nil
-    end)
-end
-
-local function StopAutoSoru()
-    if AutoSoruConn then
-        task.cancel(AutoSoruConn)
-        AutoSoruConn = nil
-    end
-end
-
-if _G.AutoSoru then 
-    StartAutoSoru() 
-end
-
---Hitbox
-local function getRoot(char)
-    if not char then return nil end
-    return char:FindFirstChild("HumanoidRootPart")
-end
-
-local function applyHitboxToPlayer(plr)
-    if plr == LocalPlayer then return end
-    if not plr.Character then return end
-    
-    local r = getRoot(plr.Character)
-    if r and r:IsA("BasePart") then
-        r.CanCollide = false
-        if _G.Hitbox_Enabled then
-            r.Size = Vector3.new(_G.Hitbox_Size, _G.Hitbox_Size, _G.Hitbox_Size)
-            r.Transparency = _G.Hitbox_Transparency
-        else
-            r.Size = Vector3.new(2, 2, 1)
-            r.Transparency = 0
-        end
-    end
-end
-
-local function applyHitboxAll()
-    for _, plr in pairs(Players:GetPlayers()) do
-        applyHitboxToPlayer(plr)
-    end
-end
-
-local function setupPlayerEvents(plr)
-    if plr == LocalPlayer then return end
-
-    plr.CharacterAdded:Connect(function(char)
-        task.wait(0.5)
-        applyHitboxToPlayer(plr)
-    end)
-
-    if plr.Character then
-        applyHitboxToPlayer(plr)
-    end
-end
-
-for _, plr in pairs(Players:GetPlayers()) do
-    setupPlayerEvents(plr)
-end
-
-Players.PlayerAdded:Connect(function(plr)
-    setupPlayerEvents(plr)
-end)
-
-Players.PlayerRemoving:Connect(function(plr)
-    task.defer(applyHitboxAll)
-end)
-
-local hitboxTick = 0
-RunService.Heartbeat:Connect(function()
-    if not _G.Hitbox_Enabled then return end
-    hitboxTick = hitboxTick + 1
-    if hitboxTick % 30 ~= 0 then return end
-    for _, plr in ipairs(Players:GetPlayers()) do
-        if plr ~= LocalPlayer then
-            applyHitboxToPlayer(plr)
-        end
-    end
-end)
-
---Auto flee（修改版）
--- 穿牆輔助：啟用/停用角色的無碰撞
-local function SetCharNoclip(char, enabled)
-    if not char then return end
-    for _, part in ipairs(char:GetDescendants()) do
-        if part:IsA("BasePart") then
-            part.CanCollide = not enabled
-        end
-    end
-end
-
-local function StartAutoFlee()
-    if _G.AutoFleeConn then return end
-    _G.AutoFleeConn = task.spawn(function()
-        local wasFleeing = false
-        -- 獨立逃跑用的飛行組件（不與自動列賞共用，避免互相覆蓋）
-        local fleeAttachment = nil
-        local fleeLinearVelocity = nil
-        local fleeAntiGravity = nil
-
-        local function SetupFleeComponents(hrp)
-            -- 清理舊的組件
-            if fleeLinearVelocity then fleeLinearVelocity:Destroy() fleeLinearVelocity = nil end
-            if fleeAntiGravity then fleeAntiGravity:Destroy() fleeAntiGravity = nil end
-            if fleeAttachment then fleeAttachment:Destroy() fleeAttachment = nil end
-
-            local att = Instance.new("Attachment")
-            att.Name = "AutoFlee_Attachment"
-            att.Parent = hrp
-            fleeAttachment = att
-
-            local lv = Instance.new("LinearVelocity")
-            lv.Name = "AutoFlee_LinearVelocity"
-            lv.MaxForce = math.huge
-            lv.VelocityConstraintMode = Enum.VelocityConstraintMode.Vector
-            lv.VectorVelocity = Vector3.new(0, 0, 0)
-            lv.Attachment0 = att
-            lv.Parent = hrp
-            fleeLinearVelocity = lv
-
-            -- 計算角色總質量以抵消重力
-            local totalMass = 0
-            local char = hrp.Parent
-            if char then
-                for _, part in ipairs(char:GetDescendants()) do
-                    if part:IsA("BasePart") and not part.Massless then
-                        totalMass = totalMass + part:GetMass()
-                    end
-                end
-            end
-
-            local vf = Instance.new("VectorForce")
-            vf.Name = "AutoFlee_AntiGravity"
-            vf.ApplyAtCenterOfMass = true
-            vf.Attachment0 = att
-            vf.Force = Vector3.new(0, totalMass * workspace.Gravity, 0)
-            vf.Parent = hrp
-            fleeAntiGravity = vf
-        end
-
-        local function ClearFleeComponents()
-            if fleeLinearVelocity then fleeLinearVelocity:Destroy() fleeLinearVelocity = nil end
-            if fleeAntiGravity then fleeAntiGravity:Destroy() fleeAntiGravity = nil end
-            if fleeAttachment then fleeAttachment:Destroy() fleeAttachment = nil end
-        end
-
-        while _G.AutoFlee do
-            task.wait(0.05)
-            pcall(function()
-                -- 自動列賞開啟時不接管，讓自動列賞自己處理逃跑
-                if _G.FTP2_Enabled then
-                    if wasFleeing then
-                        wasFleeing = false
-                        ClearFleeComponents()
-                        SetCharNoclip(LocalPlayer.Character, false)
-                    end
-                    return
-                end
-
-                local char = LocalPlayer.Character
-                local hum = char and char:FindFirstChildOfClass("Humanoid")
-                local hrp = char and char:FindFirstChild("HumanoidRootPart")
-                if not hum or not hrp or hum.Health <= 0 then
-                    if wasFleeing then
-                        wasFleeing = false
-                        ClearFleeComponents()
-                        SetCharNoclip(char, false)
-                    end
-                    return
-                end
-                
-                local hpPercent = (hum.Health / hum.MaxHealth) * 100
-                if hpPercent <= _G.AutoFleeHP then
-                    if not wasFleeing then
-                        wasFleeing = true
-                        -- 穿牆 + 建立飛行組件
-                        SetCharNoclip(char, true)
-                        SetupFleeComponents(hrp)
-                    else
-                        -- 每次都確認組件仍然存在於正確的 hrp
-                        local needSetup = not fleeLinearVelocity or fleeLinearVelocity.Parent ~= hrp
-                        if needSetup then
-                            SetupFleeComponents(hrp)
-                        end
-                    end
-                    -- 持續往上飛，速度 300
-                    if fleeLinearVelocity then
-                        fleeLinearVelocity.VectorVelocity = Vector3.new(0, 300, 0)
-                    end
-                elseif wasFleeing then
-                    -- 血量恢復，停止逃跑
-                    wasFleeing = false
-                    ClearFleeComponents()
-                    SetCharNoclip(char, false)
-                end
-            end)
-        end
-
-        -- 迴圈結束時恢復碰撞並清理組件
-        pcall(function()
-            if wasFleeing then
-                SetCharNoclip(LocalPlayer.Character, false)
-            end
-            if fleeLinearVelocity then fleeLinearVelocity:Destroy() fleeLinearVelocity = nil end
-            if fleeAntiGravity then fleeAntiGravity:Destroy() fleeAntiGravity = nil end
-            if fleeAttachment then fleeAttachment:Destroy() fleeAttachment = nil end
-        end)
-        _G.AutoFleeConn = nil
-    end)
-end
-
-local function StopAutoFlee()
-    _G.AutoFleeConn = nil
-    pcall(function()
-        SetCharNoclip(LocalPlayer.Character, false)
-    end)
-end
-
-if _G.AutoFlee then StartAutoFlee() end
-
--- [FIX 2] 移除動作
-local function DisableAnimForChar(char)
-    if not char then return end
-    local hum = char:WaitForChild("Humanoid", 5)
-    if not hum then return end
-    local animator = hum:WaitForChild("Animator", 5)
-    if not animator then return end
-
-    for _, t in pairs(animator:GetPlayingAnimationTracks()) do
-        t:Stop()
-    end
-
-    if _G.RemoveAnimTrackConn then
-        _G.RemoveAnimTrackConn:Disconnect()
-        _G.RemoveAnimTrackConn = nil
-    end
-
-    _G.RemoveAnimTrackConn = animator.AnimationPlayed:Connect(function(t)
-        if _G.RemoveAnim then
-            t:Stop()
-        end
-    end)
-end
-
-local function StartRemoveAnim()
-    if _G.RemoveAnimCharConn then return end
-
-    if LocalPlayer and LocalPlayer.Character then
-        DisableAnimForChar(LocalPlayer.Character)
-    end
-
-    _G.RemoveAnimCharConn = LocalPlayer.CharacterAdded:Connect(function(char)
-        task.wait(0.5)
-        if _G.RemoveAnim then
-            DisableAnimForChar(char)
-        end
-    end)
-end
-
-local function StopRemoveAnim()
-    if _G.RemoveAnimTrackConn then
-        _G.RemoveAnimTrackConn:Disconnect()
-        _G.RemoveAnimTrackConn = nil
-    end
-    if _G.RemoveAnimCharConn then
-        _G.RemoveAnimCharConn:Disconnect()
-        _G.RemoveAnimCharConn = nil
-    end
-end
-
-if _G.RemoveAnim then 
-    StartRemoveAnim() 
-end
-
---walk on water
-task.spawn(function()
-    local lastWaterSize = -1
-    while task.wait(0.5) do
-        local waterPlane = Workspace.Map and Workspace.Map:FindFirstChild("WaterBase-Plane")
-        if waterPlane then
-            local targetSize = _G.WaterWalkEnabled and 112 or 80
-            if targetSize ~= lastWaterSize then
-                lastWaterSize = targetSize
-                waterPlane.Size = Vector3.new(1000, targetSize, 1000)
-            end
-        end
-    end
-end)
-
--- Remove Lava
-local function removeLava()
-    for _, v in pairs(Workspace:GetDescendants()) do
-        if v.Name == "LavaParts" and v.Parent and v.Parent.Name == "CircleIsland"
-           and v.Parent.Parent and v.Parent.Parent.Name == "Map" then
-            v:Destroy()
-        end
-    end
-    for _, v in pairs(ReplicatedStorage:GetDescendants()) do
-        if v.Name == "LavaParts" and v.Parent and v.Parent.Name == "CircleIsland"
-           and v.Parent.Parent and v.Parent.Parent.Name == "Map" then
-            v:Destroy()
-        end
-    end
-end
-
-task.spawn(function()
-    while task.wait(0.5) do
-        if _G.RemoveLavaEnabled and not lavaRemoved then
-            lavaRemoved = true
-            removeLava()
-            WindUI:Notify({ Title = "已移除岩漿傷害", Content = "已成功移除岩漿物件", Duration = 3 })
-        elseif not _G.RemoveLavaEnabled then
-            lavaRemoved = false
-        end
-    end
-end)
-
--- 移除鬼船傷害
-local function removeGhostShipLava()
-    local deletedCount = 0
-    
-    if Workspace:FindFirstChild("Map") 
-       and Workspace.Map:FindFirstChild("GhostShipInterior") 
-       and Workspace.Map.GhostShipInterior:FindFirstChild("LavaParts") then
-        
-        local lavaPartsFolder = Workspace.Map.GhostShipInterior.LavaParts
-        local children = lavaPartsFolder:GetChildren()
-        local targetIndices = {3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13}
-        
-        for _, index in ipairs(targetIndices) do
-            local part = children[index]
-            if part then
-                part:Destroy()
-                deletedCount = deletedCount + 1
-            end
-        end
-        
-        if lavaPartsFolder:FindFirstChild("Lava") then
-            lavaPartsFolder.Lava:Destroy()
-            deletedCount = deletedCount + 1
-        end
-    end
-    
-    return deletedCount
-end
-
-task.spawn(function()
-    while task.wait(0.5) do
-        if _G.RemoveGhostShipLavaEnabled and not ghostShipLavaRemoved then
-            ghostShipLavaRemoved = true
-            local deletedCount = removeGhostShipLava()
-            
-            WindUI:Notify({
-                Title = "已移除鬼船傷害",
-                Content = "已成功移除岩漿物件",
-                Duration = 3,
-                Type = "Success"
-            })
-            
-        elseif not _G.RemoveGhostShipLavaEnabled then
-            ghostShipLavaRemoved = false
-        end
-    end
-end)
-
---自動列賞
-local function GetCombatStatus()
-    local mainUI = LocalPlayer:FindFirstChild("PlayerGui") and LocalPlayer.PlayerGui:FindFirstChild("Main")
-    local bottomHUD = mainUI and mainUI:FindFirstChild("BottomHUDList")
-    local inCombatUI = bottomHUD and bottomHUD:FindFirstChild("InCombat")
-
-    if inCombatUI and inCombatUI.Visible then
-        local rawText = ""
-        
-        if inCombatUI:IsA("TextLabel") then
-            rawText = inCombatUI.Text
-        else
-            local childText = inCombatUI:FindFirstChildWhichIsA("TextLabel", true)
-            if childText then
-                rawText = childText.Text
-            end
-        end
-
-        local lowerText = string.lower(rawText)
-        if string.find(lowerText, "bounty at risk") or string.find(lowerText, "bounty") or string.find(lowerText, "賞金") then
-            return "BountyAtRisk"
-        else
-            return "InCombatNoRisk"
-        end
-    else
-        return "NotInCombat"
-    end
-end
-
-local FTP2_CombatCache = "NotInCombat"
-local FTP2_CombatCacheTime = 0
-
-local function IsInCombatState()
-    local now = os.clock()
-    if now - FTP2_CombatCacheTime >= 0.5 then
-        FTP2_CombatCacheTime = now
-        FTP2_CombatCache = GetCombatStatus()
-    end
-    return FTP2_CombatCache ~= "NotInCombat"
-end
-
--- 換服安全檢查：必須安全且無PVP狀態才能換服
-IsSafeToHopCheck = function()
-    if not LocalPlayer or not LocalPlayer:IsDescendantOf(Players) then
-        return false
-    end
-
-    -- 戰鬥中(賞金受威脅)不可換服
-    if GetCombatStatus() == "BountyAtRisk" then
-        return false
-    end
-
-    -- 已開啟PVP時不可換服
-    if CheckPVP(LocalPlayer) then
-        return false
-    end
-
-    return true
-end
-
-local function CheckAndNotifyCombatStatus()
-    if _G.FTP2_HasTriggeredHop then return end
-
-    local status = GetCombatStatus()
-    
-    if status == "NotInCombat" then
-        _G.FTP2_HasTriggeredHop = true
-        task.spawn(function()
-            if StartServerHop then StartServerHop() end
-        end)
-    elseif status == "InCombatNoRisk" then
-        _G.FTP2_HasTriggeredHop = true
-        task.spawn(function()
-            if StartServerHop then StartServerHop() end
-        end)
-    elseif status == "BountyAtRisk" then
-    end
-end
-
-local function IsInSafeZone(plr)
-    if not plr or not plr.Character then return false end
-    local hrp = plr.Character:FindFirstChild("HumanoidRootPart")
-    if not hrp then return false end
-
-    local placeId = game.PlaceId
-    local zones = {}
-
-    if table.find({2753915549, 85211729168715}, placeId) then
-        zones = _G.FTP2_SafeZonePositions.World1
-    elseif table.find({4442272183, 79091703265657}, placeId) then
-        zones = _G.FTP2_SafeZonePositions.World2
-    elseif table.find({7449423635, 100117331123089}, placeId) then
-        zones = _G.FTP2_SafeZonePositions.World3
-    end
-
-    local pos = hrp.Position
-    for _, zone in ipairs(zones) do
-        if (pos - zone.pos).Magnitude <= zone.radius then
-            return true
-        end
-    end
-
-    return false
-end
-
-local function GetLevel(plr)
-    if not plr then return nil end
-    local obj = (plr:FindFirstChild("Data") and plr.Data:FindFirstChild("Level"))
-              or (plr:FindFirstChild("leaderstats") and plr.leaderstats:FindFirstChild("Level"))
-    return obj and obj.Value or nil
-end
-
-local function IsPlayerAlly(player)
-    if not player then return false end
-    local main = LocalPlayer:FindFirstChild("PlayerGui") and LocalPlayer.PlayerGui:FindFirstChild("Main")
-    if not main then return false end
-    
-    local allies = main:FindFirstChild("Allies")
-    local container = allies and allies:FindFirstChild("Container")
-    local subAllies = container and container:FindFirstChild("Allies")
-    if not subAllies then return false end
-
-    local frame = subAllies:FindFirstChild("Frame") 
-        or (subAllies:FindFirstChild("ScrollingFrame") and subAllies.ScrollingFrame:FindFirstChild("Frame"))
-
-    if not frame then return false end
-    return frame:FindFirstChild(player.Name) ~= nil
-end
-
-local function IsValidTarget(plr)
-    if not plr or plr == LocalPlayer then return false end
-    if _G.FTP2_Blacklist[plr] then return false end
-
-    local char = plr.Character
-    if not char then return false end
-
-    local hrp = char:FindFirstChild("HumanoidRootPart")
-    local hum = char:FindFirstChildOfClass("Humanoid")
-    if not hrp or not hum or hum.Health <= 0 then 
-        return false 
-    end
-
-    if plr:GetAttribute("IslandRaiding") == true then
-        _G.FTP2_Blacklist[plr] = true
-        return false
-    end
-
-    if char:FindFirstChildOfClass("ForceField") then
-        _G.FTP2_Blacklist[plr] = true
-        return false
-    end
-
-    local combatLockTarget = (plr == _G.FTP2_CurrentTarget) and IsInCombatState()
-
-    if not combatLockTarget then
-        if plr:GetAttribute("SafeZone") == true or plr:GetAttribute("InSafeZone") == true then
-            _G.FTP2_Blacklist[plr] = true
-            return false
-        end
-
-        if IsInSafeZone(plr) then
-            _G.FTP2_Blacklist[plr] = true
-            return false
-        end
-    end
-
-    if plr:GetAttribute("PvpDisabled") == true then
-        _G.FTP2_Blacklist[plr] = true
-        return false
-    end
-
-    local myTeam = LocalPlayer.Team
-    local tgTeam = plr.Team
-    if myTeam and tgTeam and myTeam.Name == "Marines" and tgTeam.Name == "Marines" then
-        _G.FTP2_Blacklist[plr] = true
-        return false
-    end
-
-    if IsPlayerAlly(plr) then
-        _G.FTP2_Blacklist[plr] = true
-        return false
-    end
-
-    local myLv = GetLevel(LocalPlayer)
-    local tgLv = GetLevel(plr)
-    if not myLv or not tgLv or math.abs(myLv - tgLv) > 550 then
-        _G.FTP2_Blacklist[plr] = true
-        return false
-    end
-
-    local myHRP = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-    if myHRP and (myHRP.Position - hrp.Position).Magnitude > 30000 then
-        return false
-    end
-
-    return true
-end
-
-local ValidTargetCache = {}
-local ValidTargetCacheTime = 0
-local function IsValidTargetFast(plr)
-    local now = os.clock()
-    if now - ValidTargetCacheTime > 0.15 then
-        ValidTargetCacheTime = now
-        table.clear(ValidTargetCache)
-    end
-    if ValidTargetCache[plr] ~= nil then return ValidTargetCache[plr] end
-    local v = IsValidTarget(plr)
-    ValidTargetCache[plr] = v
-    return v
-end
-
-local function IsTargetLowHP(plr)
-    if not plr then return false end
-    local char = plr.Character
-    local hum = char and char:FindFirstChildOfClass("Humanoid")
-    if not hum or hum.Health <= 0 or hum.MaxHealth <= 0 then return false end
-    local percent = (hum.Health / hum.MaxHealth) * 100
-    return percent < (_G.FTP2_LowHpLockPercent or 30)
-end
-
-local function GetCurrentWorldEntrances()
-    local pool = {}
-    local placeId = game.PlaceId
-
-    if table.find({2753915549, 85211729168715}, placeId) then
-        pool = {
-            { Arg = Vector3.new(61163.85, 11.68, 1819.78), Dest = Vector3.new(61164, 5, 1820) },
-            { Arg = Vector3.new(3864.68, 6.73, -1926.21), Dest = Vector3.new(3865, 5, -1926) },
-            { Arg = Vector3.new(-4607.82, 874.39, -1667.55), Dest = Vector3.new(-4608, 873, -1668) },
-            { Arg = Vector3.new(-7894.61, 5547.14, -380.29), Dest = Vector3.new(-7895, 5546, -380) }
-        }
-    elseif table.find({4442272183, 79091703265657}, placeId) then
-        pool = {
-            { Arg = Vector3.new(2285, 15, 882), Dest = Vector3.new(2285, 15, 882) },
-            { Arg = Vector3.new(-380, 350, 630), Dest = Vector3.new(-380, 350, 630) },
-            { Arg = Vector3.new(924, 125, 32882), Dest = Vector3.new(924, 125, 32882) },
-            { Arg = Vector3.new(-6491, 116, -107), Dest = Vector3.new(-6491, 116, -107) }
-        }
-    elseif table.find({7449423635, 100117331123089}, placeId) then
-        pool = {
-            { Arg = Vector3.new(5678, 1013, -312), Dest = Vector3.new(5678, 1013, -312) },
-            { Arg = Vector3.new(-12551, 337, -7507), Dest = Vector3.new(-12551, 337, -7507) },
-            { Arg = Vector3.new(-5038, 315, -3135), Dest = Vector3.new(-5038, 315, -3135) },
-            { Arg = Vector3.new(-5098, 317, -3179), Dest = Vector3.new(-16813, 58, 305) },
-        }
-    end
-    return pool
-end
-
-local function UpdatePositionHistory()
-    local now = os.clock()
-    local activePlayers = {}
-
-    for _, plr in ipairs(Players:GetPlayers()) do
-        if plr ~= LocalPlayer then
-            activePlayers[plr] = true
-            local char = plr.Character
-            local hrp = char and char:FindFirstChild("HumanoidRootPart")
-            local hum = char and char:FindFirstChildOfClass("Humanoid")
-
-            if hrp and hum and hum.Health > 0 then
-                if not _G.TargetHistory[plr] then
-                    _G.TargetHistory[plr] = {}
-                end
-                local history = _G.TargetHistory[plr]
-
-                table.insert(history, { time = now, pos = hrp.Position, vel = hrp.AssemblyLinearVelocity })
-
-                while #history > 0 and (now - history[1].time) > _G.FTP2_HistoryWindow do
-                    table.remove(history, 1)
-                end
-            end
-        end
-    end
-
-    for plr, history in pairs(_G.TargetHistory) do
-        if not activePlayers[plr] or not plr:IsDescendantOf(Players) then
-            _G.TargetHistory[plr] = nil
-        elseif #history == 0 then
-            _G.TargetHistory[plr] = nil
-        else
-            local lastRecord = history[#history]
-            if (now - lastRecord.time) > _G.FTP2_ClearTimeout then
-                _G.TargetHistory[plr] = nil
-            end
-        end
-    end
-end
-
-local function GetPredictedPosition2(plr)
-    if not plr or not plr.Character then return nil end
-
-    local hrp = plr.Character:FindFirstChild("HumanoidRootPart")
-    if not hrp then return nil end
-
-    local history = _G.TargetHistory[plr]
-    local currentPos = hrp.Position
-    local currentVel = hrp.AssemblyLinearVelocity
-
-    local ping = 0.04
-    pcall(function()
-        ping = Stats.Network.ServerStatsItem["Data Ping"]:GetValue() / 1000
-    end)
-
-    if not history or #history < 3 then
-        local t = math.clamp(ping, 0.03, 0.25)
-        local pos = currentPos + (currentVel * t)
-        if pos.Y < hrp.Position.Y then
-            pos = Vector3.new(pos.X, hrp.Position.Y, pos.Z)
-        end
-        return pos
-    end
-
-    local count = #history
-    local now = os.clock()
-
-    local totalWeight = 0
-    local weightedVel = Vector3.new(0, 0, 0)
-
-    for i = 2, count do
-        local prev = history[i - 1]
-        local curr = history[i]
-        local dt = curr.time - prev.time
-        if dt > 0.001 then
-            local instVel = (curr.pos - prev.pos) / dt
-            local weight = math.exp((curr.time - now) / 0.1)
-            weightedVel = weightedVel + (instVel * weight)
-            totalWeight = totalWeight + weight
-        end
-    end
-
-    local historyVel = (totalWeight > 0) and (weightedVel / totalWeight) or currentVel
-    local finalVel = historyVel:Lerp(currentVel, 0.3)
-
-    if finalVel.Magnitude > 280 then
-        finalVel = finalVel.Unit * 280
-    end
-
-    local oldest = history[1]
-    local mid = history[math.floor(count / 2)]
-    local newest = history[count]
-
-    local dt1 = mid.time - oldest.time
-    local dt2 = newest.time - mid.time
-    local accel = Vector3.new(0, 0, 0)
-
-    if dt1 > 0.005 and dt2 > 0.005 then
-        local v1 = (mid.pos - oldest.pos) / dt1
-        local v2 = (newest.pos - mid.pos) / dt2
-        accel = (v2 - v1) / ((dt1 + dt2) * 0.5)
-    end
-
-    if accel.Magnitude > 150 then
-        accel = accel.Unit * 150
-    end
-
-    local oldDir = (mid.pos - oldest.pos)
-    local newDir = (newest.pos - mid.pos)
-    if oldDir.Magnitude > 1 and newDir.Magnitude > 1 then
-        local dirDot = math.clamp(oldDir.Unit:Dot(newDir.Unit), 0, 1)
-        accel = accel * dirDot
-    end
-
-    local myChar = LocalPlayer.Character
-    local myHRP = myChar and myChar:FindFirstChild("HumanoidRootPart")
-    local predTime = 0.15
-
-    if myHRP then
-        local dist = (currentPos - myHRP.Position).Magnitude
-        local flightTime = dist / _G.FTP2_FlySpeed
-        predTime = math.clamp((flightTime * 0.55) + ping, 0.04, 0.45)
-    end
-
-    local predictedPos = currentPos + (finalVel * predTime) + (0.5 * accel * (predTime ^ 2))
-
-    local hum = plr.Character:FindFirstChildOfClass("Humanoid")
-    if hum then
-        local state = hum:GetState()
-        if state == Enum.HumanoidStateType.Freefall then
-            local gravity = workspace.Gravity
-            predictedPos = predictedPos - Vector3.new(0, 0.5 * gravity * (predTime ^ 2), 0)
-        end
-    end
-
-    if predictedPos.Y < hrp.Position.Y then
-        predictedPos = Vector3.new(predictedPos.X, hrp.Position.Y, predictedPos.Z)
-    end
-
-    return predictedPos
-end
-
-local function GetNearestPlayer()
-    local nearestPlayer = nil
-    local shortestDistance = math.huge
-    local myChar = LocalPlayer.Character
-    local myHRP = myChar and myChar:FindFirstChild("HumanoidRootPart")
-
-    if not myHRP then return nil end
-
-    for _, plr in ipairs(Players:GetPlayers()) do
-        if IsValidTargetFast(plr) then
-            local tgHRP = plr.Character and plr.Character:FindFirstChild("HumanoidRootPart")
-            if tgHRP then
-                local dist = (tgHRP.Position - myHRP.Position).Magnitude
-                if dist < shortestDistance then
-                    shortestDistance = dist
-                    nearestPlayer = plr
-                end
-            end
-        end
-    end
-    return nearestPlayer
-end
-
-local function ClearFTP2FlightComponents()
-    if _G.FTP2_LinearVelocity then _G.FTP2_LinearVelocity:Destroy() _G.FTP2_LinearVelocity = nil end
-    if _G.FTP2_AntiGravity then _G.FTP2_AntiGravity:Destroy() _G.FTP2_AntiGravity = nil end
-    if _G.FTP2_Attachment then _G.FTP2_Attachment:Destroy() _G.FTP2_Attachment = nil end
-end
-
-local function SetupFTP2FlightComponents(hrp)
-    ClearFTP2FlightComponents()
-
-    local att = Instance.new("Attachment")
-    att.Name = "XuHub_FlightAttachment2"
-    att.Parent = hrp
-    _G.FTP2_Attachment = att
-
-    local lv = Instance.new("LinearVelocity")
-    lv.Name = "XuHub_FlightVelocity2"
-    lv.MaxForce = math.huge
-    lv.VelocityConstraintMode = Enum.VelocityConstraintMode.Vector
-    lv.VectorVelocity = Vector3.new(0, 0, 0)
-    lv.Attachment0 = att
-    lv.Parent = hrp
-    _G.FTP2_LinearVelocity = lv
-
-    local totalMass = 0
-    local char = hrp.Parent
-    if char then
-        for _, part in ipairs(char:GetDescendants()) do
-            if part:IsA("BasePart") and not part.Massless then
-                totalMass = totalMass + part:GetMass()
-            end
-        end
-    end
-
-    local vf = Instance.new("VectorForce")
-    vf.Name = "XuHub_AntiGravity2"
-    vf.ApplyAtCenterOfMass = true
-    vf.Attachment0 = att
-    vf.Force = Vector3.new(0, totalMass * workspace.Gravity, 0)
-    vf.Parent = hrp
-    _G.FTP2_AntiGravity = vf
-end
-
-local FTP2_OrbitOffset = nil
-local FTP2_NextOrbitTime = 0
-
-local function FlyToTargetLogic2(plr)
-    if not plr or not plr.Character then return end
-
-    local myChar = LocalPlayer.Character
-    local myHRP = myChar and myChar:FindFirstChild("HumanoidRootPart")
-    local tgHRP = plr.Character:FindFirstChild("HumanoidRootPart")
-
-    if not myHRP or not tgHRP then return end
-
-    if os.clock() < _G.FTP2_TeleportPauseUntil then
-        if _G.FTP2_LinearVelocity then _G.FTP2_LinearVelocity.VectorVelocity = Vector3.new(0, 0, 0) end
-        myHRP.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
-        return
-    end
-
-    local rawTargetPos = GetPredictedPosition2(plr) or tgHRP.Position
-
-    local now = os.clock()
-    if not FTP2_OrbitOffset or now >= FTP2_NextOrbitTime then
-        local maxRadius = _G.FTP2_OrbitRadius or 50
-        local distance = math.random(1, maxRadius)
-        local dir = Vector3.new(math.random() * 2 - 1, math.random() * 2 - 1, math.random() * 2 - 1)
-        if dir.Magnitude > 0 then dir = dir.Unit end
-        FTP2_OrbitOffset = dir * distance
-        FTP2_NextOrbitTime = now + (_G.FTP2_OrbitInterval or 0.016)
-    end
-    local targetPos = rawTargetPos + FTP2_OrbitOffset
-
-    local dir = targetPos - myHRP.Position
-
-    local flySpeed = _G.FTP2_FlySpeed
-
-    local distToTargetCenter = (rawTargetPos - myHRP.Position).Magnitude
-    local directFlightTime = distToTargetCenter / _G.FTP2_FlySpeed
-    local bestEntrance = nil
-    local bestTotalTime = directFlightTime 
-    local teleportPenalty = 1.5 
-    local pool = GetCurrentWorldEntrances()
-
-    if distToTargetCenter < (_G.FTP2_NoTeleportRange or 300) then
-        pool = {}
-    end
-
-    for _, e in ipairs(pool) do
-        if _G.FTP2_BlockedEntrances[e.Arg] then continue end
-
-        local destDistToTarget = (e.Dest - rawTargetPos).Magnitude
-        local totalTimeViaPortal = (destDistToTarget / _G.FTP2_FlySpeed) + teleportPenalty
-        
-        if totalTimeViaPortal < bestTotalTime then
-            if (distToTargetCenter - destDistToTarget) > 150 then
-                bestTotalTime = totalTimeViaPortal
-                bestEntrance = e
-            end
-        end
-    end
-
-    if bestEntrance then
-        local lastTime = _G.FTP2_LastTeleportTicks[bestEntrance.Arg] or 0
-        if os.clock() - lastTime > 4 then
-            _G.FTP2_LastTeleportTicks[bestEntrance.Arg] = os.clock()
-            _G.FTP2_TeleportPauseUntil = os.clock() + 1.2
-
-            local preDist = (myHRP.Position - bestEntrance.Dest).Magnitude
-            
-            if _G.FTP2_LinearVelocity then _G.FTP2_LinearVelocity.VectorVelocity = Vector3.new(0, 0, 0) end
-            myHRP.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
-            
-            task.spawn(function()
-                pcall(function()
-                    local commF = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("CommF_")
-                    commF:InvokeServer("requestEntrance", bestEntrance.Arg)
-                end)
-            end)
-
-            task.spawn(function()
-                task.wait(1.5)
-                local char = LocalPlayer.Character
-                local hrp = char and char:FindFirstChild("HumanoidRootPart")
-                if hrp then
-                    local postDist = (hrp.Position - bestEntrance.Dest).Magnitude
-                    if postDist > 150 and postDist >= preDist * 0.5 then
-                        local fails = (_G.FTP2_TeleportFails[bestEntrance.Arg] or 0) + 1
-                        _G.FTP2_TeleportFails[bestEntrance.Arg] = fails
-                        if fails >= 3 then
-                            _G.FTP2_BlockedEntrances[bestEntrance.Arg] = true
-                            if WindUI then
-                                WindUI:Notify({ Title = "自動列賞", Content = "傳送點 3 次無法到達，已改用其他傳送點", Duration = 3 })
-                            end
-                        end
-                    end
-                end
-            end)
-            return 
-        end
-    end
-
-    local needSetup = not _G.FTP2_LinearVelocity or _G.FTP2_LinearVelocity.Parent ~= myHRP
-    if needSetup then SetupFTP2FlightComponents(myHRP) end
-
-    _G.FTP2_LinearVelocity.VectorVelocity = dir.Unit * flySpeed
-
-    local lookAt = Vector3.new(rawTargetPos.X, myHRP.Position.Y, rawTargetPos.Z)
-    if (lookAt - myHRP.Position).Magnitude > 0.1 then
-        myHRP.CFrame = CFrame.new(myHRP.Position, lookAt)
-    end
-end
-
-local function FleeUpLogic()
-    pcall(function()
-        local char = LocalPlayer.Character
-        local hum = char and char:FindFirstChildOfClass("Humanoid")
-        local hrp = char and char:FindFirstChild("HumanoidRootPart")
-        if not hum or not hrp or hum.Health <= 0 then return end
-
-        -- 穿牆：關閉碰撞，避免被建築卡住
-        SetCharNoclip(char, true)
-
-        -- 確保飛行組件存在且掛在正確的 hrp 上
-        local needSetup = not _G.FTP2_LinearVelocity or _G.FTP2_LinearVelocity.Parent ~= hrp
-        if needSetup then
-            SetupFTP2FlightComponents(hrp)
-        end
-
-        _G.FTP2_LinearVelocity.VectorVelocity = Vector3.new(0, 300, 0)
-    end)
-end
-
-local function ForceStandUp()
-    local myChar = LocalPlayer.Character
-    if not myChar then return end
-    local myHum = myChar:FindFirstChildOfClass("Humanoid")
-    local myHRP = myChar:FindFirstChild("HumanoidRootPart")
-    if not myHum or myHum.Health <= 0 then return end
-
-    if myHum.Sit then
-        myHum.Sit = false
-        pcall(function() myHum.Jump = true end)
-        pcall(function() myHum:ChangeState(Enum.HumanoidStateType.GettingUp) end)
-        pcall(function() myHum:ChangeState(Enum.HumanoidStateType.Physics) end)
-    end
-
-    if myHRP then
-        for _, child in ipairs(myHRP:GetChildren()) do
-            if child:IsA("Weld") then
-                pcall(function() child:Destroy() end)
-            elseif child:IsA("Motor6D") then
-                local n = string.lower(child.Name)
-                if n:find("seat") or n:find("sit") or n:find("vehicle") then
-                    pcall(function() child:Destroy() end)
-                end
-            end
-        end
-    end
-end
-
-local function StartFTPFlight2()
-    if _G.FTP2_FlightConn ~= nil then return end 
-
-    local char = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
-    char:WaitForChild("Humanoid", 9e9)
-    char:WaitForChild("HumanoidRootPart", 9e9)
-    
-    while not char.Parent do 
-        task.wait() 
-    end
-    
-    local checkHum = char:FindFirstChildOfClass("Humanoid")
-    if checkHum and checkHum.Health <= 0 then
-        LocalPlayer.CharacterAdded:Wait()
-        return StartFTPFlight2()
-    end
-
-    if not _G.FTP2_Enabled then return end
-
-    _G.FTP2_Enabled = true
-    table.clear(_G.FTP2_LastTeleportTicks) 
-    table.clear(_G.FTP2_TeleportFails)
-    table.clear(_G.FTP2_BlockedEntrances)
-    table.clear(_G.FTP2_Blacklist)
-    _G.FTP2_TeleportPauseUntil = 0 
-    _G.FTP2_HasTriggeredHop = false
-    _G.FTP2_CurrentTarget = nil
-    _G.FTP2_TargetLockTime = os.clock()
-    _G.FTP2_StartTime = os.clock()
-    _G.FTP2_FleeReturnPos = nil
-    FTP2_OrbitOffset = nil
-    FTP2_NextOrbitTime = 0
-
-    if type(setPlatformStand) == "function" then setPlatformStand(true) end
-    
-    local hum = char and char:FindFirstChildOfClass("Humanoid")
-    if hum then hum:ChangeState(Enum.HumanoidStateType.Physics) end
-    if type(_G.SetNoclipState) == "function" then _G.SetNoclipState(true) end
-
-    _G.FTP2_PlayerLeaveConn = Players.PlayerRemoving:Connect(function(plr)
-        _G.TargetHistory[plr] = nil
-        _G.FTP2_Blacklist[plr] = nil
-        if _G.FTP2_CurrentTarget == plr then
-            _G.FTP2_CurrentTarget = nil
-        end
-    end)
-
-    local lastHistoryUpdate = 0
-    local lastNoclipScan = 0
-    local cachedChar = nil
-    local cachedParts = nil
-
-    _G.FTP2_FlightConn = RunService.RenderStepped:Connect(function()
-        if not _G.FTP2_Enabled then return end
-
-        local currentChar = LocalPlayer.Character
-        local currentHum = currentChar and currentChar:FindFirstChildOfClass("Humanoid")
-
-        ForceStandUp()
-
-        if _G.AutoFlee and currentHum and currentHum.Health > 0 then
-            local hpPercent = (currentHum.Health / currentHum.MaxHealth) * 100
-            local fleeHP = _G.AutoFleeHP or 30
-            if hpPercent <= fleeHP then
-                if not _G.FTP2_FleeReturnPos then
-                    local fChar = LocalPlayer.Character
-                    local fHRP = fChar and fChar:FindFirstChild("HumanoidRootPart")
-                    if fHRP then
-                        _G.FTP2_FleeReturnPos = fHRP.Position
-                    end
-                end
-                FleeUpLogic()
-                return
-            end
-        end
-
-        if _G.FTP2_FleeReturnPos then
-            local fChar = LocalPlayer.Character
-            local fHum = fChar and fChar:FindFirstChildOfClass("Humanoid")
-            local fHRP = fChar and fChar:FindFirstChild("HumanoidRootPart")
-            if fHRP and fHum and fHum.Health > 0 then
-                fHRP.CFrame = CFrame.new(_G.FTP2_FleeReturnPos)
-                _G.FTP2_FleeReturnPos = nil
-                -- 恢復後停止上飛，重新啟用飛行組件給列賞使用
-                if _G.FTP2_LinearVelocity then
-                    _G.FTP2_LinearVelocity.VectorVelocity = Vector3.new(0, 0, 0)
-                end
-                SetCharNoclip(fChar, false)
-                if WindUI then
-                    WindUI:Notify({ Title = "自動列賞", Content = "血量已恢復，傳送回原位置繼續列賞", Duration = 3 })
-                end
-            elseif not fHRP or not fHum or fHum.Health <= 0 then
-                _G.FTP2_FleeReturnPos = nil
-            end
-        end
-
-        local now = os.clock()
-        if now - lastHistoryUpdate >= 0.1 then
-            lastHistoryUpdate = now
-            UpdatePositionHistory()
-        end
-
-        if type(_G.SetNoclipState) == "function" then _G.SetNoclipState(true) end
-
-        pcall(function()
-            local myChar = LocalPlayer.Character
-            if myChar then
-                local myHum = myChar:FindFirstChildOfClass("Humanoid")
-                local myHRP = myChar:FindFirstChild("HumanoidRootPart")
-
-                if myChar ~= cachedChar or not cachedParts or now - lastNoclipScan >= 1 then
-                    lastNoclipScan = now
-                    cachedChar = myChar
-                    cachedParts = {}
-                    for _, part in ipairs(myChar:GetDescendants()) do
-                        if part:IsA("BasePart") then
-                            table.insert(cachedParts, part)
-                        end
-                    end
-                end
-                for _, part in ipairs(cachedParts) do
-                    if part.CanCollide then
-                        part.CanCollide = false
-                    end
-                end
-
-                if myHum and not myHum.PlatformStand then
-                    myHum.PlatformStand = true
-                end
-            end
-        end)
-
-        if _G.FTP2_CurrentTarget then
-            if not IsValidTargetFast(_G.FTP2_CurrentTarget) then
-                _G.FTP2_Blacklist[_G.FTP2_CurrentTarget] = true
-                _G.FTP2_CurrentTarget = nil
-            end
-        end
-
-        local oldTarget = _G.FTP2_CurrentTarget
-        local lowHpLock = IsTargetLowHP(oldTarget)
-
-        if lowHpLock then
-            _G.FTP2_CurrentTarget = oldTarget
-        else
-            local nearest = GetNearestPlayer()
-            if nearest then
-                _G.FTP2_CurrentTarget = nearest
-            else
-                _G.FTP2_CurrentTarget = nil
-            end
-        end
-
-        if _G.FTP2_CurrentTarget then
-            if _G.FTP2_CurrentTarget ~= oldTarget then
-                _G.FTP2_TargetLockTime = os.clock()
-            end
-
-            if not lowHpLock and os.clock() - _G.FTP2_TargetLockTime >= _G.FTP2_TimeoutLimit then
-                _G.FTP2_Blacklist[_G.FTP2_CurrentTarget] = true
-                if WindUI then
-                    WindUI:Notify({ Title = "自動列賞", Content = "鎖定時間超過 " .. tostring(_G.FTP2_TimeoutLimit) .. "秒，已跳過玩家: " .. _G.FTP2_CurrentTarget.Name, duration = 3 })
-                end
-                _G.FTP2_CurrentTarget = nil
-                _G.FTP2_TargetLockTime = os.clock()
-            end
-        else
-            _G.FTP2_TargetLockTime = os.clock()
-        end
-
-        if _G.FTP2_CurrentTarget then
-            FlyToTargetLogic2(_G.FTP2_CurrentTarget)
-        else
-            FleeUpLogic()
-
-            if os.clock() - _G.FTP2_StartTime >= 5 then
-                CheckAndNotifyCombatStatus()
-            end
-        end
-    end)
-end
-
-local function StopFTPFlight2()
-    _G.FTP2_Enabled = false
-    _G.FTP2_TeleportPauseUntil = 0
-    _G.FTP2_CurrentTarget = nil
-    _G.FTP2_FleeReturnPos = nil
-    
-    if type(_G.SetNoclipState) == "function" then _G.SetNoclipState(false) end
-
-    if _G.FTP2_FlightConn then 
-        _G.FTP2_FlightConn:Disconnect()
-        _G.FTP2_FlightConn = nil 
-    end
-
-    if _G.FTP2_PlayerLeaveConn then
-        _G.FTP2_PlayerLeaveConn:Disconnect()
-        _G.FTP2_PlayerLeaveConn = nil
-    end
-
-    ClearFTP2FlightComponents()
-
-    if type(setPlatformStand) == "function" then setPlatformStand(false) end
-    
-    local char = LocalPlayer.Character
-    if char then
-        local hum = char:FindFirstChildOfClass("Humanoid")
-        local hrp = char:FindFirstChild("HumanoidRootPart")
-
-        if hum then
-            hum.PlatformStand = false
-            hum:ChangeState(Enum.HumanoidStateType.GettingUp)
-        end
-
-        if hrp then
-            hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
-            hrp.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
-        end
-    end
-end
-
-if _G.FTP2_Enabled then
-    task.spawn(StartFTPFlight2)
-end
-
---自瞄
-local function IsSilentAimEnemy(player)
-    if not player or player == LocalPlayer then return false end
-    if IsPlayerAlly(player) then return false end
-    
-    local myTeam = LocalPlayer.Team
-    local targetTeam = player.Team
-    if myTeam and targetTeam and myTeam.Name == "Marines" and targetTeam.Name == "Marines" then
-        return false
-    end
-    return true
-end
-
-local function SilentAim_GetTargetPartAndDist()
-    local myChar = LocalPlayer.Character
-    if not myChar then return nil, math.huge end
-    local myRoot = myChar:FindFirstChild("HumanoidRootPart")
-    if not myRoot then return nil, math.huge end
-
-    if _G.SilentAimTargetMode == "目前鎖定的目標玩家" then
-        local targetPlr = _G.FTP2_CurrentTarget
-        if targetPlr and targetPlr.Parent and targetPlr.Character then
-            if not _G.SilentAimTeamCheck or IsSilentAimEnemy(targetPlr) then
-                local char = targetPlr.Character
-                local hum = char:FindFirstChildOfClass("Humanoid")
-                local root = char:FindFirstChild("HumanoidRootPart")
-                if hum and hum.Health > 0 and root then
-                    local dist = (root.Position - myRoot.Position).Magnitude
-                    return root, dist
-                end
-            end
-        end
-        return nil, math.huge
-    end
-
-    local closest = nil
-    local shortest = math.huge
-
-    for _, player in ipairs(Players:GetPlayers()) do
-        if player ~= LocalPlayer then
-            if not _G.SilentAimTeamCheck or IsSilentAimEnemy(player) then
-                local char = player.Character
-                if IsAlive(char) then
-                    local part = char:FindFirstChild("HumanoidRootPart")
-                    if part then
-                        local dist = (part.Position - myRoot.Position).Magnitude
-                        if dist < shortest then
-                            closest = part
-                            shortest = dist
-                        end
-                    end
-                end
-            end
-        end
-    end
-
-    return closest, shortest
-end
-
-if not _G.SilentAimHooked and not disableHook then
-    _G.SilentAimHooked = true
-
-    task.spawn(function()
-        local MouseModuleInstance = ReplicatedStorage:WaitForChild("Mouse", 5)
-        if MouseModuleInstance then
-            pcall(function()
-                local MouseModule = require(MouseModuleInstance)
-                if typeof(MouseModule) == "table" then
-                    local realStore = { Hit = rawget(MouseModule, "Hit"), Target = rawget(MouseModule, "Target") }
-                    local mmt = getrawmetatable(MouseModule) or {}
-                    setreadonly(mmt, false)
-                    rawset(MouseModule, "Hit", nil)
-                    rawset(MouseModule, "Target", nil)
-
-                    mmt.__index = function(self, key)
-                        if key == "Hit" then
-                            if _G.SilentAimEnabled and currentSilentAimTargetPos then return CFrame.new(currentSilentAimTargetPos) end
-                            return realStore.Hit
-                        elseif key == "Target" then
-                            if _G.SilentAimEnabled and currentSilentAimTarget then return currentSilentAimTarget end
-                            return realStore.Target
-                        end
-                        return rawget(self, key)
-                    end
-
-                    mmt.__newindex = function(self, key, value)
-                        if key == "Hit" or key == "Target" then realStore[key] = value else rawset(self, key, value) end
-                    end
-                    setreadonly(mmt, true)
-                    setmetatable(MouseModule, mmt)
-                end
-            end)
-        end
-    end)
-
-    local gmt = getrawmetatable(game)
-    if gmt then
-        setreadonly(gmt, false)
-        local oldIndex = gmt.__index
-        local mouse = LocalPlayer:GetMouse()
-
-        gmt.__index = newcclosure(function(self, key)
-            if not checkcaller() and _G.SilentAimEnabled and currentSilentAimTargetPos and self == mouse then
-                local targetPos = currentSilentAimTargetPos
-                local camPos = Camera.CFrame.Position
-                if key == "Hit" then return CFrame.new(targetPos)
-                elseif key == "Target" then return currentSilentAimTarget
-                elseif key == "UnitRay" then return Ray.new(camPos, (targetPos - camPos).Unit)
-                elseif key == "Origin" then return CFrame.new(camPos)
-                elseif key == "Direction" then return (targetPos - camPos).Unit end
-            end
-            return oldIndex(self, key)
-        end)
-        setreadonly(gmt, true)
-    end
-end
-
-if _G.SilentAimLoop then _G.SilentAimLoop:Disconnect() end
-_G.SilentAimLoop = RunService.RenderStepped:Connect(function()
-    if _G.SilentAimEnabled then
-        currentSilentAimTarget, _ = SilentAim_GetTargetPartAndDist()
-        currentSilentAimTargetPos = currentSilentAimTarget and currentSilentAimTarget.Position or nil
-        _G.SilentAimTargetPos = currentSilentAimTargetPos
-    else
-        currentSilentAimTarget = nil
-        currentSilentAimTargetPos = nil
-        _G.SilentAimTargetPos = nil
-    end
-end)
-
---Camlock
-local camlockWasEnabled = false
-
-RunService.RenderStepped:Connect(function()
-    if not _G.CamlockEnabled then
-        if camlockWasEnabled then
-            camlockWasEnabled = false
-            if LocalPlayer.Character then
-                for _, part in ipairs(LocalPlayer.Character:GetDescendants()) do
-                    if part:IsA("BasePart") then
-                        part.LocalTransparencyModifier = 0
-                    end
-                end
-            end
-        end
-        return
-    end
-    camlockWasEnabled = true
-
-    if not _G.FTP2_CurrentTarget then return end
-    if not _G.FTP2_CurrentTarget.Character then return end
-    if not LocalPlayer.Character then return end
-
-    local char = LocalPlayer.Character
-    for _, part in ipairs(char:GetDescendants()) do
-        if part:IsA("BasePart") and part.LocalTransparencyModifier < 1 then
-            part.LocalTransparencyModifier = 1
-        end
-    end
-
-    local camera = Workspace.CurrentCamera
-    local targetHRP = _G.FTP2_CurrentTarget.Character:FindFirstChild("HumanoidRootPart")
-    local localHead = char:FindFirstChild("Head")
-
-    if targetHRP and localHead then
-        local camPos = localHead.Position + localHead.CFrame.LookVector * 1.5
-        camera.CFrame = CFrame.new(camPos, targetHRP.Position)
-    end
-end)
-
---自動放技能
-LocalPlayer.CharacterAdded:Connect(function()
-    SkillCoolDownTrack = {}
-end)
-
-local function GetMyCharacter()
-    local char = LocalPlayer.Character
-    if char and char:FindFirstChild("HumanoidRootPart") and char:FindFirstChildOfClass("Humanoid") then
-        local hum = char:FindFirstChildOfClass("Humanoid")
-        if hum.Health > 0 then
-            return char
-        end
-    end
-    return nil
-end
-
-local function getToolType(tool)
-    if not tool or not tool:IsA("Tool") then return nil end
-    local tType = tool:GetAttribute("Type") or tool.ToolTip
-    if tType == "Fruit" then tType = "Blox Fruit" end
-    return tType
-end
-
-local function SkillEquipByType(toolType)
-    local char = GetMyCharacter()
-    if not char then return nil end
-    local hum = char:FindFirstChildOfClass("Humanoid")
-    if not hum then return nil end
-
-    for _, tool in ipairs(char:GetChildren()) do
-        if tool:IsA("Tool") and getToolType(tool) == toolType then
-            return tool
-        end
-    end
-
-    local targetTool = nil
-    local backpack = LocalPlayer:FindFirstChildOfClass("Backpack")
-    if backpack then
-        for _, tool in ipairs(backpack:GetChildren()) do
-            if tool:IsA("Tool") and getToolType(tool) == toolType then
-                targetTool = tool
-                break
-            end
-        end
-    end
-
-    if not targetTool then
-        for _, tool in ipairs(char:GetChildren()) do
-            if tool:IsA("Tool") and getToolType(tool) == toolType then
-                targetTool = tool
-                break
-            end
-        end
-    end
-
-    if targetTool then
-        hum:EquipTool(targetTool)
-        task.wait(0.15)
-    end
-    return targetTool
-end
-
-local function SkillPressKey(key, holdTime)
-    if not key then return end
-    VirtualInputManager:SendKeyEvent(true, key, false, game)
-    task.wait(holdTime or 0.05)
-    VirtualInputManager:SendKeyEvent(false, key, false, game)
-end
-
-local function GetAvailableSkills()
-    local available = {}
-    local currentTime = os.clock()
-    local myChar = GetMyCharacter()
-    if not myChar then return available end
-
-    local PlayerGui = LocalPlayer:FindFirstChild("PlayerGui")
-    local SkillsFolder = PlayerGui and PlayerGui:FindFirstChild("Main") and PlayerGui.Main:FindFirstChild("Skills")
-
-    for weaponName, weaponData in pairs(_G.AutoSkillWeapons) do
-        if weaponData.Enable then
-            local toolInstance = nil
-            for _, item in ipairs(myChar:GetChildren()) do
-                if item:IsA("Tool") and getToolType(item) == weaponName then
-                    toolInstance = item
-                    break
-                end
-            end
-            if not toolInstance then
-                local backpack = LocalPlayer:FindFirstChildOfClass("Backpack")
-                if backpack then
-                    for _, item in ipairs(backpack:GetChildren()) do
-                        if item:IsA("Tool") and getToolType(item) == weaponName then
-                            toolInstance = item
-                            break
-                        end
-                    end
-                end
-            end
-
-            if toolInstance then
-                local uiFolder = SkillsFolder and SkillsFolder:FindFirstChild(toolInstance.Name)
-                for skillName, skillData in pairs(weaponData.Skills) do
-                    if skillData.Enable then
-                        local cdKey = weaponName .. "_" .. skillName
-                        local isReady = false
-
-                        if uiFolder and uiFolder:FindFirstChild(skillName) then
-                            local skillGui = uiFolder[skillName]
-                            local cdFrame = skillGui:FindFirstChild("Cooldown", true)
-                            local lvlFrame = skillGui:FindFirstChild("Level")
-
-                            local reqLevel = lvlFrame and tonumber(lvlFrame.Text:match("%d+")) or 0
-                            local currentLevel = toolInstance:FindFirstChild("Level") and toolInstance.Level.Value or 0
-
-                            if cdFrame and cdFrame.Size.X.Scale == 0 and reqLevel <= currentLevel then
-                                if currentTime >= (SkillCoolDownTrack[cdKey] or 0) then
-                                    isReady = true
-                                end
-                            end
-                        else
-                            if currentTime >= (SkillCoolDownTrack[cdKey] or 0) then
-                                isReady = true
-                            end
-                        end
-
-                        if isReady then
-                            table.insert(available, {
-                                Weapon = weaponName,
-                                Skill = skillName,
-                                HoldTime = skillData.HoldTime,
-                                Cooldown = 1.0,
-                                Tool = toolInstance
-                            })
-                        end
-                    end
-                end
-            end
-        end
-    end
-    return available
-end
-
-task.spawn(function()
-    while true do
-        task.wait(0.1)
-        if not _G.AutoSkillMainEnable then continue end
-
-        local targetPart = currentSilentAimTarget
-        if not targetPart and _G.FTP2_CurrentTarget and _G.FTP2_CurrentTarget.Character then
-            targetPart = _G.FTP2_CurrentTarget.Character:FindFirstChild("HumanoidRootPart")
-        end
-
-        local dist = targetPart and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-            and (targetPart.Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude or math.huge
-
-        if targetPart and dist <= 80 then
-            local available = GetAvailableSkills()
-            if #available > 0 then
-                local chosen = available[math.random(1, #available)]
-                local myChar = GetMyCharacter()
-                if myChar then
-                    local equipped = SkillEquipByType(chosen.Weapon)
-                    if equipped then
-                        local cdKey = chosen.Weapon .. "_" .. chosen.Skill
-                        SkillCoolDownTrack[cdKey] = os.clock() + chosen.Cooldown + chosen.HoldTime
-
-                        local keyEnum = SkillKeyMap[chosen.Skill]
-                        if keyEnum then
-                            SkillPressKey(keyEnum, chosen.HoldTime)
-                        end
-                        task.wait(0.2)
-                    end
-                end
-            else
-                task.wait(0.1)
-            end
-        end
-    end
-end)
-
-local function HandleSkillDropdown(weaponType, selectedValues)
-    for key, data in pairs(_G.AutoSkillWeapons[weaponType].Skills) do
-        data.Enable = false
-    end
-    for k, val in pairs(selectedValues) do
-        local skillKey = type(k) == "number" and val or k
-        local isEnabled = type(k) == "number" and true or val
-        if isEnabled and _G.AutoSkillWeapons[weaponType].Skills[skillKey] then
-            _G.AutoSkillWeapons[weaponType].Skills[skillKey].Enable = true
-        end
-    end
-end
-
---低配模式
-_G.SetLowVisualState = function(state)
-    _G.LowVisualMode = state
-    
-    if _G.LowVisualMode then
-        WindUI:Notify({ 
-            Title = "優化系統", 
-            Content = "低配模式已啟動，正在清理地圖並優化效能...", 
-            Duration = 5
-        })
-        
-        Lighting.GlobalShadows = false
-        Lighting.FogEnd = 9e9
-        Lighting.Brightness = 1
-        
-        for _, obj in ipairs(game:GetDescendants()) do
-            if obj:IsA("BasePart") then
-                obj.Material = Enum.Material.SmoothPlastic
-                obj.Reflectance = 0
-            elseif obj:IsA("Decal") or obj:IsA("Texture") then
-                obj:Destroy()
-            elseif obj:IsA("ParticleEmitter") or obj:IsA("Trail") or obj:IsA("Smoke") or obj:IsA("Fire") or obj:IsA("Sparkles") then
-                obj.Enabled = false
-            elseif obj:IsA("PostEffect") or obj:IsA("BloomEffect") or obj:IsA("BlurEffect") or obj:IsA("DepthOfFieldEffect") or obj:IsA("SunRaysEffect") then
-                obj.Enabled = false
-            end
-        end
-        
-        if not _G.LowVisualConnection then
-            _G.LowVisualConnection = Workspace.DescendantAdded:Connect(function(obj)
-                if obj:IsA("BasePart") then
-                    obj.Material = Enum.Material.SmoothPlastic
-                    obj.Reflectance = 0
-                elseif obj:IsA("Decal") or obj:IsA("Texture") then
-                    obj:Destroy()
-                elseif obj:IsA("ParticleEmitter") or obj:IsA("Trail") or obj:IsA("Smoke") or obj:IsA("Fire") or obj:IsA("Sparkles") then
-                    obj.Enabled = false
-                end
-            end)
-        end
-    else
-        if _G.LowVisualConnection then
-            _G.LowVisualConnection:Disconnect()
-            _G.LowVisualConnection = nil
-        end
-    end
-end
-
---移除迷霧
-_G.ApplyRemoveFog = function()
-    local lightingService = game:GetService("Lighting")
-    
-    local layers = lightingService:FindFirstChild("LightingLayers")
-    if layers then layers:Destroy() end
-    
-    local sky = lightingService:FindFirstChildOfClass("Sky")
-    if sky then sky:Destroy() end
-    
-    lightingService.FogEnd = 9e9
-end
-
--- Anti AFK
-local function EnableAntiAFK()
-    if _G.AntiAFK_Connection then
-        _G.AntiAFK_Connection:Disconnect()
-        _G.AntiAFK_Connection = nil
-    end
-
-    _G.AntiAFK_Connection = LocalPlayer.Idled:Connect(function()
-        VirtualUser:Button2Down(Vector2.new(0, 0), workspace.CurrentCamera.CFrame)
-        task.wait(1)
-        VirtualUser:Button2Up(Vector2.new(0, 0), workspace.CurrentCamera.CFrame)
-    end)
-
-    if getconnections then
-        for _, connection in pairs(getconnections(LocalPlayer.Idled)) do
-            if connection.Disable then 
-                connection:Disable()
-            elseif connection.Disconnect then 
-                connection:Disconnect() 
-            end
-        end
-    end
-end
-
-local function DisableAntiAFK()
-    if _G.AntiAFK_Connection then 
-        _G.AntiAFK_Connection:Disconnect()
-        _G.AntiAFK_Connection = nil 
-    end
-end
-
---Anti Kick
-game:GetService("GuiService").ErrorMessageChanged:Connect(function()
-    if not _G.AutoRejoinEnabled then return end
-    
-    local ts = game:GetService("TeleportService")
-    ts:Teleport(game.PlaceId, game:GetService("Players").LocalPlayer)
-end)
-
---自動隱藏UI
-local function startAutoHideTimer()
-    task.delay(3, function()
-        if _G.AutoHideEnabled then
-            Window:Toggle(false)
-
-        end
-    end)
-end
-
-if _G.AutoHideEnabled then
-    startAutoHideTimer()
-end
-
-----------------------------------------
--- 分頁
-----------------------------------------
-local Tabs = {
-    Config   = Window:Tab({ Title = "配置",  Icon = "wrench"}),
-    Skills   = Window:Tab({ Title = "列賞&技能", Icon = "zap"}),
-    Settings = Window:Tab({ Title = "畫質&設定", Icon = "settings"}),
-    Support  = Window:Tab({ Title = "聯絡支援", Icon = "message-circle"}),
-}
-
-----------------------------------------
--- 元件
-----------------------------------------
-Tabs.Support:Section({ Title = "Discord 聯絡支援" })
-
-Tabs.Support:Paragraph({
-    Title = "Banana Cat Hub 支援中心",
-    Desc = "如果你需要協助，請加入 Discord 聯絡支援。"
-})
-
-Tabs.Support:Button({
-    Title = "聯絡支援",
-    Icon = "message-circle",
-    Desc = "點擊後複製 Discord 邀請連結",
-    Callback = function()
-        local DiscordSupportUrl = "https://discord.gg/dgh7qJ4wA"
-        if setclipboard then
-            setclipboard(DiscordSupportUrl)
-            WindUI:Notify({
-                Title = "聯絡支援",
-                Content = "Discord 連結已複製，請貼到瀏覽器開啟",
-                Duration = 4
-            })
-        else
-            WindUI:Notify({
-                Title = "聯絡支援",
-                Content = DiscordSupportUrl,
-                Duration = 6
-            })
-        end
-    end
-})
-
-Tabs.Config:Section({ Title = "自動換服" })
-
-FilterParagraph = Tabs.Config:Paragraph({
-    Title = "當前篩選",
-    Desc = BuildFilterText(),
-})
-
-Tabs.Config:Dropdown({
-    Title = "選擇地區",
-    Values = RegionValues,
-    Value = _G.ServerRegion,
-    Callback = function(v)
-        _G.ServerRegion = v
-        RefreshFilterParagraph()
-        MarkConfigDirty()
-    end,
-})
-
-Tabs.Config:Button({
-    Title = "開始跳服",
-    Icon = "arrow-right-left",
-    Callback = function(v)
-        StartServerHop()
-    end,
-})
-
-Tabs.Config:Button({
-    Title = "停止跳服",
-    Icon = "circle-stop",
-    Callback = function(v)
-        StopServerHop()
-    end,
-})
-
-Tabs.Config:Section({ Title = "Fast Attack" })
-
-Tabs.Config:Dropdown({
-    Title = "選擇攻擊模式",
-    Values = { "模式1", "模式2(部分帳號失效可使用)" },
-    Value = _G.FastAttackMode,
-    Callback = function(v)
-        _G.FastAttackMode = v
-        MarkConfigDirty()
-    end
-})
-
-Tabs.Config:Toggle({
-    Title = "自動攻擊",
-    Value = _G.FastAttack,
-    Callback = function(v)
-        _G.FastAttack = v
-        if _G.FastAttack then
-            stopManual()
-        else
-            startManual()
-        end
-        MarkConfigDirty()
-    end
-})
-
-Tabs.Config:Slider({
-    Title = "攻擊距離",
-    Desc = "設定攻擊距離(已失效)",
-    Value = {
-        Min = 10,
-        Max = 3000,
-        Default = _G.AttackDistance
-    },
-    Callback = function(v)
-        _G.AttackDistance = v
-        MarkConfigDirty()
-    end
-})
-
-Tabs.Config:Slider({
-    Title = "攻擊速度",
-    Desc = "調整攻擊間隔 (秒)",
-    Step = 0.05,
-    Value = {
-        Min = 0.05,
-        Max = 2,
-        Default = _G.FastAttackSpeed
-    },
-    Callback = function(v)
-        _G.FastAttackSpeed = v
-        MarkConfigDirty()
-    end
-})
-
-Tabs.Config:Section({ Title = "Fruit M1" })
-
-Tabs.Config:Toggle({
-    Title = "自動果實 M1",
-    Value = _G.FruitsM1Enable,
-    Callback = function(v)
-        _G.FruitsM1Enable = v
-        MarkConfigDirty()
-    end
-})
-
-Tabs.Config:Slider({
-    Title = "果實 M1 延遲",
-    Step = 0.01,
-    Value = {
-        Min = 0.01,
-        Max = 0.5,
-        Default = _G.FruitsM1DelayValue
-    },
-    Callback = function(v)
-        _G.FruitsM1DelayValue = v
-        MarkConfigDirty()
-    end
-})
-
-Tabs.Config:Section({ Title = "Auto Enabled Config" })
-
-Tabs.Config:Toggle({
-    Type = "Checkbox",
-    Title = "ESP Players",
-    Value = _G.ESP_Master,
-    Callback = function(state)
-        _G.ESP_Master        = state
-        _G.ESP_ShowName      = state
-        _G.ESP_ShowLevel     = state
-        _G.ESP_ShowPVPStatus = state
-        _G.ESP_ShowHealth    = state
-        _G.ESP_ShowDistance  = state
-        _G.ESP_TeamColor     = state
-        
-        for _, p in ipairs(Players:GetPlayers()) do
-            if state then 
-                createESP(p) 
-            else 
-                removeESP(p) 
-            end
-        end
-        MarkConfigDirty()
-    end
-})
-
-Tabs.Config:Toggle({
-    Title = "顯示玩家射線",
-    Value = _G.ESP_ShowTracers,
-    Callback = function(state)
-        _G.ESP_ShowTracers = state
-        if not state then 
-            for _, p in ipairs(Players:GetPlayers()) do 
-                removeTracer(p) 
-            end 
-        end
-        MarkConfigDirty()
-    end
-})
-
-Tabs.Config:Slider({
-    Title = "ESP字體大小",
-    Desc = "調整字體大小",
-    Value = {
-        Min = 10,
-        Max = 32,
-        Default = _G.ESP_FontSize
-    },
-    Callback = function(value)
-        _G.ESP_FontSize = value
-        MarkConfigDirty()
-    end
-})
-
-Tabs.Config:Toggle({
-    Title = "Auto Enabled PVP",
-    Desc = "自動開啟PVP",
-    Value = _G.AutoEnablePVP,
-    Callback = function(state)
-        _G.AutoEnablePVP = state
-        MarkConfigDirty()
-    end
-})
-
-Tabs.Config:Toggle({
-    Title = "Auto Buso",
-    Desc = "自動開啟武裝色",
-    Value = _G.AutoBusoEnabled,
-    Callback = function(v)
-        _G.AutoBusoEnabled = v
-        MarkConfigDirty()
-    end
-})
-
-Tabs.Config:Toggle({
-    Title = "Auto V3",
-    Desc = "自動開啟V3",
-    Value = _G.AutoV3_Enabled,
-    Callback = function(v)
-        _G.AutoV3_Enabled = v
-        MarkConfigDirty()
-    end
-})
-
-Tabs.Config:Toggle({
-    Title = "Auto V4",
-    Desc = "自動開啟V4",
-    Value = _G.AutoV4_Enabled,
-    Callback = function(v)
-        _G.AutoV4_Enabled = v
-        MarkConfigDirty()
-    end
-})
-
-Tabs.Config:Toggle({
-    Title = "Auto Ken",
-    Desc = "自動開啟見聞色",
-    Value = _G.AutoKenEnabled,
-    Callback = function(v)
-        _G.AutoKenEnabled = v
-        MarkConfigDirty()
-    end
-})
-
-Tabs.Config:Toggle({
-    Title = "自動順步(龍族)",
-    Desc = "自動順步至最近玩家",
-    Value = _G.AutoSoru,
-    Callback = function(state)
-        _G.AutoSoru = state
-        if state then
-            StartAutoSoru()
-        else
-            StopAutoSoru()
-        end
-        MarkConfigDirty()
-    end
-})
-
-Tabs.Config:Toggle({
-    Title = "開啟碰撞箱",
-    Value = _G.Hitbox_Enabled,
-    Callback = function(v)
-        _G.Hitbox_Enabled = v
-        applyHitboxAll()
-        MarkConfigDirty()
-    end
-})
-
-Tabs.Config:Slider({
-    Title = "碰撞箱大小",
-    Desc = "調整碰撞箱大小",
-    Value = { Min = 1, Max = 500, Default = _G.Hitbox_Size },
-    Callback = function(v)
-        _G.Hitbox_Size = v
-        if _G.Hitbox_Enabled then
-            applyHitboxAll()
-        end
-        MarkConfigDirty()
-    end
-})
-
-Tabs.Config:Toggle({
-    Title = "自動逃跑",
-    Value = _G.AutoFlee,
-    Callback = function(v)
-        _G.AutoFlee = v
-        if v then 
-            StartAutoFlee() 
-        else 
-            StopAutoFlee() 
-        end
-        MarkConfigDirty()
-    end
-})
-
-Tabs.Config:Slider({
-    Title = "逃跑血量值 (%)",
-    Desc = "血量低於設定值自動往上飛離",
-    Value = {
-        Min = 1,
-        Max = 100,
-        Default = _G.AutoFleeHP
-    },
-    Callback = function(v)
-        _G.AutoFleeHP = v
-        MarkConfigDirty()
-    end
-})
-
-Tabs.Config:Toggle({
-    Title = "移除玩家動作",
-    Value = _G.RemoveAnim,
-    Callback = function(v)
-        _G.RemoveAnim = v
-        if v then 
-            StartRemoveAnim() 
-        else 
-            StopRemoveAnim() 
-        end
-        MarkConfigDirty()
-    end
-})
-
-Tabs.Config:Toggle({
-    Title = "水上行走",
-    Value = _G.WaterWalkEnabled,
-    Callback = function(v)
-        _G.WaterWalkEnabled = v
-        MarkConfigDirty()
-    end
-})
-
-Tabs.Config:Toggle({
-    Title = "移除岩漿",
-    Value = _G.RemoveLavaEnabled,
-    Callback = function(v)
-        _G.RemoveLavaEnabled = v
-        MarkConfigDirty()
-    end
-})
-
-Tabs.Config:Toggle({
-    Title = "移除鬼船傷害",
-    Value = _G.RemoveGhostShipLavaEnabled,
-    Callback = function(v)
-        _G.RemoveGhostShipLavaEnabled = v
-        MarkConfigDirty()
-    end
-})
-
-Tabs.Skills:Section({ Title = "自動列賞" })
-Tabs.Skills:Dropdown({
-    Title = "選擇陣營",
-    Values = { "海賊", "海軍" },
-    Value = _G.SelectTeam == "Pirates" and "海賊" or "海軍",
-    Callback = function(v)
-        _G.SelectTeam = v == "海賊" and "Pirates" or "Marines"
-        SelectTeam()
-        MarkConfigDirty()
-    end,
-})
-Tabs.Skills:Toggle({ 
-    Title = "自動列賞", 
-    Value = _G.FTP2_Enabled,
-    Callback = function(v)
-        _G.FTP2_Enabled = v
-        if v then
-            if _G.FTP_Enabled and type(StopFTPFlight) == "function" then 
-                StopFTPFlight()
-            end
-            StartFTPFlight2()
-            if WindUI then 
-                WindUI:Notify({ Title = "自動列賞", Content = "已開啟", duration = 3 }) 
-            end
-        else
-            StopFTPFlight2()
-            if WindUI then 
-                WindUI:Notify({ Title = "自動列賞", Content = "已關閉", duration = 3 }) 
-            end
-        end
-        MarkConfigDirty()
-    end
-})
-
-Tabs.Skills:Slider({
-    Title = "鎖定玩家限時時間",
-    Value = {
-        Min = 60,
-        Max = 300,
-        Default = _G.FTP2_TimeoutLimit
-    },
-    Callback = function(v)
-        _G.FTP2_TimeoutLimit = v
-        MarkConfigDirty()
-    end
-})
-
-Tabs.Skills:Button({
-    Title = "跳過當前目標玩家",
-    Callback = function()
-        if _G.FTP2_CurrentTarget then
-            local skippedName = _G.FTP2_CurrentTarget.Name
-            _G.FTP2_Blacklist[_G.FTP2_CurrentTarget] = true
-            _G.FTP2_CurrentTarget = nil
-            _G.FTP2_TargetLockTime = os.clock()
-            if WindUI then
-                WindUI:Notify({ Title = "手動跳過", Content = "已跳過該名目標玩家", duration = 3 })
-            end
-        else
-            if WindUI then
-                WindUI:Notify({ Title = "手動跳過", Content = "目前沒有鎖定的目標玩家", duration = 3 })
-            end
-        end
-    end
-})
-
-Tabs.Skills:Section({ Title = "自瞄" })
-
-Tabs.Skills:Toggle({
-    Title = "開啟自瞄 (技能 & M1)",
-    Value = _G.SilentAimEnabled,
-    Locked = disableHook,
-    LockedTitle = disableHook and ("目前不支援 " .. tostring(executorName) .. " 執行器") or nil,
-    Callback = function(v)
-        if disableHook then return end
-        _G.SilentAimEnabled = v
-        MarkConfigDirty()
-    end
-})
-
-Tabs.Skills:Toggle({
-    Title = "畫面鎖定",
-    Desc = "供無法使用自瞄的啟動器",
-    Value = _G.CamlockEnabled,
-    Callback = function(v)
-        _G.CamlockEnabled = v
-        MarkConfigDirty()
-    end
-})
-
-Tabs.Skills:Toggle({
-    Title = "隊伍檢測(不瞄隊友)",
-    Value = _G.SilentAimTeamCheck,
-    Callback = function(v)
-        _G.SilentAimTeamCheck = v
-        MarkConfigDirty()
-    end
-})
-
-Tabs.Skills:Section({ Title = "使用技能" })
-
-local function GetEnabledWeaponList()
-    local list = {}
-    for weaponName, data in pairs(_G.AutoSkillWeapons) do
-        if data.Enable then
-            table.insert(list, weaponName)
-        end
-    end
-    return list
-end
-
-local function GetEnabledSkillList(weaponType)
-    local list = {}
-    local data = _G.AutoSkillWeapons[weaponType]
-    if data then
-        for skillName, skillData in pairs(data.Skills) do
-            if skillData.Enable then
-                table.insert(list, skillName)
-            end
-        end
-    end
-    return list
-end
-
-Tabs.Skills:Toggle({
-    Title = "Auto Skills",
-    Value = _G.AutoSkillMainEnable,
-    Callback = function(v)
-        _G.AutoSkillMainEnable = v
-        MarkConfigDirty()
-    end
-})
-
-Tabs.Skills:Dropdown({
-    Title = "配置",
-    Desc = "Melee,Fruit,Sword,Gun",
-    Multi = true,
-    Value = GetEnabledWeaponList(),
-    Values = {"Melee", "Blox Fruit", "Sword", "Gun"},
-    Callback = function(v)
-        for k, wData in pairs(_G.AutoSkillWeapons) do 
-            wData.Enable = false 
-        end
-        for k, val in pairs(v) do
-            local wName = type(k) == "number" and val or k
-            local isEnabled = type(k) == "number" and true or val
-            if isEnabled and _G.AutoSkillWeapons[wName] then
-                _G.AutoSkillWeapons[wName].Enable = true
-            end
-        end
-        MarkConfigDirty()
-    end
-})
-
-Tabs.Skills:Space()
-
-Tabs.Skills:Divider()
-
-Tabs.Skills:Space()
-
-Tabs.Skills:Dropdown({
-    Title = "拳法(Melee)",
-    Multi = true,
-    Value = GetEnabledSkillList("Melee"),
-    Values = {"Z", "X", "C"},
-    Callback = function(v)
-        HandleSkillDropdown("Melee", v)
-        MarkConfigDirty()
-    end
-})
-
-Tabs.Skills:Dropdown({
-    Title = "果實(Blox Fruit)",
-    Multi = true,
-    Value = GetEnabledSkillList("Blox Fruit"),
-    Values = {"Z", "X", "C", "V", "F"},
-    Callback = function(v)
-        HandleSkillDropdown("Blox Fruit", v)
-        MarkConfigDirty()
-    end
-})
-
-Tabs.Skills:Dropdown({
-    Title = "刀(Sword)",
-    Multi = true,
-    Value = GetEnabledSkillList("Sword"),
-    Values = {"Z", "X"},
-    Callback = function(v)
-        HandleSkillDropdown("Sword", v)
-        MarkConfigDirty()
-    end
-})
-
-Tabs.Skills:Dropdown({
-    Title = "槍(Gun)",
-    Multi = true,
-    Value = GetEnabledSkillList("Gun"),
-    Values = {"Z", "X"},
-    Callback = function(v)
-        HandleSkillDropdown("Gun", v)
-        MarkConfigDirty()
-    end
-})
-
-Tabs.Settings:Section({ Title = "重置腳本" })
-
-Tabs.Settings:Button({
-    Title = "將所有配置恢復初始",
-    Icon = "trash-2",
-    Desc = "標記為待重置 下次啟動腳本時改為初始設定",
-    Callback = function()
-        local ok = pcall(function()
-            if typeof(isfolder) == "function" and typeof(makefolder) == "function" and not isfolder(ConfigFolder) then
-                makefolder(ConfigFolder)
-            end
-            if typeof(writefile) == "function" then
-                writefile(ConfigFile, HttpService:JSONEncode(InitialConfig))
-            end
-        end)
-        if ok then
-            ConfigDirty = false
-            WindUI:Notify({
-                Title = "配置等待重置",
-                Content = "下次啟動腳本後將完全生效 當前功能不受影響",
-                Duration = 4
-            })
-        else
-            WindUI:Notify({
-                Title = "重置失敗",
-                Content = "無法儲存設定檔 請確認執行器是否支援檔案寫入",
-                Duration = 4
-            })
-        end
-    end
-})
-
-Tabs.Settings:Section({ Title = "畫質設定" })
-
-Tabs.Settings:Toggle({
-    Title = "突破FPS上限",
-    Value = _G.UnlockFPS,
-    Callback = function(state)
-        _G.UnlockFPS = state
-
-        if _G.UnlockFPS and setfpscap then
-            setfpscap(999)
-        else
-            if setfpscap then
-                setfpscap(0)
-            end
-        end
-        MarkConfigDirty()
-    end
-})
-
-Tabs.Settings:Toggle({
-    Title = "低配模式",
-    Desc = "大幅優化效能",
-    Value = _G.LowVisualMode,
-    Callback = function(v)
-        _G.SetLowVisualState(v)
-        MarkConfigDirty()
-    end
-})
-
-Tabs.Settings:Toggle({
-    Title = "移除迷霧",
-    Value = _G.RemoveFogEnabled,
-    Callback = function(v)
-        _G.RemoveFogEnabled = v
-        if v then
-            _G.ApplyRemoveFog()
-        end
-        MarkConfigDirty()
-    end
-})
-
-Tabs.Settings:Section({ Title = "設定" })
-
-Tabs.Settings:Toggle({ 
-    Title = "Anti AFK", 
-    Desc = "防止閒置被踢出", 
-    Value = _G.AntiAFK_ENABLED,
-    Callback = function(v) 
-        _G.AntiAFK_ENABLED = v
-        if _G.AntiAFK_ENABLED then 
-            EnableAntiAFK() 
-        else 
-            DisableAntiAFK() 
-        end
-        MarkConfigDirty()
-    end
-})
-
-Tabs.Settings:Toggle({ 
-    Title = "自動重新連接", 
-    Desc = "斷線或被踢出時自動重新加入伺服器", 
-    Value = _G.AutoRejoinEnabled,
-    Callback = function(v)
-        _G.AutoRejoinEnabled = v
-        MarkConfigDirty()
-    end
-})
-
-Tabs.Settings:Toggle({ 
-    Title = "換服後自動執行",
-    Desc = "切換伺服器時自動重新載入",
-    Value = _G.AutoExecute,
-    Callback = function(v)
-        _G.AutoExecute = v
-        
-        if _G.AutoExecute then
-            if queue_on_teleport then
-                writefile("AutoBounty.file", "true")
-                queue_on_teleport(ScriptLoadstring)
-                WindUI:Notify({
-                    Title = "通知",
-                    Content = "已開啟自動執行",
-                    Duration = 3
-                })
-            else
-                WindUI:Notify({
-                    Title = "支援錯誤",
-                    Content = "你目前的注入器不支援",
-                    Duration = 3
-                })
-            end
-        else
-            if queue_on_teleport and isfile("AutoBounty.file") then
-                delfile("AutoBounty.file")
-            end
-            WindUI:Notify({
-                Title = "通知",
-                Content = "已關閉自動執行",
-                Duration = 3
-            })
-        end
-        MarkConfigDirty()
-    end
-})
-
-Tabs.Settings:Dropdown({
-    Title = "選擇主題",
-    Values = themeList,            
-    Value = _G.Theme,            
-    Callback = function(state)
-        _G.Theme = state             
-        WindUI:SetTheme(state)
-        MarkConfigDirty()
-    end
-})
-
-Tabs.Settings:Toggle({
-    Title = "自動隱藏 UI",
-    Desc = "開啟時將在 3 秒後自動隱藏介面",
-    Value = _G.AutoHideEnabled,
-    Callback = function(v)
-        _G.AutoHideEnabled = v
-        if v then
-            startAutoHideTimer()
-        end
-        MarkConfigDirty()
-    end
-})
-
-Tabs.Settings:Keybind({ 
-    Title = "快捷鍵", 
-    Desc = "可更改", 
-    Value = _G.CurrentKey,
-    Callback = function(v)
-        _G.CurrentKey = typeof(v) == "EnumItem" and v.Name or tostring(v)
-        
-        if not _G.KeyDisabled then
-            local success, keyCode = pcall(function() return Enum.KeyCode[_G.CurrentKey] end)
-            if success then
-                Window:SetToggleKey(keyCode)
-            end
-        end
-        MarkConfigDirty()
-    end
-})
-
-Tabs.Settings:Toggle({
-    Title = "停用快捷鍵",
-    Desc = "開啟後將禁用快捷鍵",
-    Value = _G.KeyDisabled,
-    Callback = function(state)
-        _G.KeyDisabled = state
-        
-        if state then
-            Window:SetToggleKey(nil)
-        else
-            local success, keyCode = pcall(function() return Enum.KeyCode[_G.CurrentKey] end)
-            if success then
-                Window:SetToggleKey(keyCode)
-            end
-        end
-        MarkConfigDirty()
-    end
-})
-
---初始化狀態
-task.spawn(function()
-    task.wait()
-
-    while typeof(EnableAntiAFK) ~= "function" do
-        task.wait()
-    end
-
-    if _G.AutoExecute then
-        if queue_on_teleport then
-            if not isfile("AutoBounty.file") then
-                writefile("AutoBounty.file", "true")
-            end
-            queue_on_teleport(ScriptLoadstring)
-        end
-    else
-        if queue_on_teleport and isfile("AutoBounty.file") then
-            delfile("AutoBounty.file")
-        end
-    end
-
-    if _G.LowVisualMode then
-        _G.SetLowVisualState(true)
-    end
-
-    if _G.RemoveFogEnabled then
-        _G.ApplyRemoveFog()
-    end
-
-    if setfpscap then
-        if _G.UnlockFPS then
-            setfpscap(999)
-        else
-            setfpscap(0)
-        end
-    end
-
-    if _G.AntiAFK_ENABLED then
-        EnableAntiAFK()
-    end
-
-end)
-
-
+-- Banana Cat Hub protected loader
+-- The public file contains an encoded payload; keep the original backup private.
+local __payload =
+    "b0xDTEMXc09EeUFKyY2e14iEufXkkdzajaj4g+XuSGRMQ0xuTFllWE8AHx0fGwB9X0RbTFlIAGZIVG9MQ0xDTG5MWWVYTwA4HR/Qsd2X4u9rWUgAZkhUb0xD" ..
+    "TENMbkxZZVhPAB8dHxsAfV9EW0xZSABmSFRvTENMQ2sxBAQtFBYNRlFBXQMnEwACSURLHGJFDCwVBw1OBiIMEXI8EWFdUVZTSXhbSRcPEEVKKggceCYLFT0E" ..
+    "MRcdKxBKD2JcU09IIgFLX084Ck4qCSkuABcEHGtJDRsrFA4NYVVGQkQ+FRpWXFRLA2Vvcy4ODQACQQsVADgmB19EWVFTDW1SDhcMEV9qLhEqJxMYCA0Ea0M8" ..
+    "PAESfldCRF9ONVBAfA0bBkwnRSkuABcEHBJjXFQvFA9ICHdXQn41AB8fAhFNDxsJGDsEHBJMSEkNGysUDg1gVUJaRDMTHRMFJxFCOQQeJ0FTQQkALgRODxAW" ..
+    "fldCRF9ONVpLJAQECUQoBA0nBT0VARMiBhFqXGhBXVNTWg0cHQoXDSQJTDIAC2JcTjECADoEBjtbLkJRUV5mQTELDARrGApOKglZFxILEycPMxQAGxAQW1tT" ..
+    "VxYQcBUIGwROIkg/NhwwFwcCC0lhNActBytDQkVGZUgiBAAVBFZMJycKGiMNTjMbDxAEBj4cAUgSDRJRTD0XUzEEADZIORMQIQRGQzwULTIROgMLTlcSGzxB" ..
+    "PxEIGkE3BEAuFxhiXE4WARMoEgQpFgcDcUVAREg+BioXDBEXTEEJFiEAAkE4CDEVASkZK0NCRUZ7TD4TDhMTVFgNLAQUJ1spBBoyJhMCIRYHBRBmW0RZJRMF" ..
+    "Pw8EEFkGBBcjBgsTTEhJDRsrFA4NZV9AXV4gEwoTQUlFSioIHHgmCxU9BDEXHSsQSg9lX0BdXiATChNDXW9BJAYYLkEiCAkJNwgaL1VfDVVRX1MXFxcdJQQG" ..
+    "E0QoAFFgLQcGBhUqDxNqXGhBXVNTWg0DBggCElRYDSwEFCdbKQQaMiYTAiEWBwUQY0ZXWSNQQHwNGwZMJ0UJLgAXBBwmNghUdVUuQlFRXmZBMQsMBFsyDEMv" ..
+    "IxAwEhoiBggvBVxqJQ5MS1VAcVg5UEB8DRsGTCdFFCMIADQnQX5BBCQUG0hAd0dfDTEcDVYRGARULhc+NwhUJwcPJycdOgYWblpZXlIFcj8IHw9WTCcnChoj" ..
+    "DU4DARU3DhkAICYNDxBfV0Q+JyBWABoBDSYEECw0J1soCC0FMiEHEVlxWFtaSXhQKxkVAApAAzA9DggdFUxISQ0bKxQODVtecVlAMhMdIyhUWA0pCg02DgMp" ..
+    "OyVjABosVQBCRkRdW2UFNlMwCBoBayIXCjYiBggCBWtDPSY2DUBQUUYUBFp4RFtMWUgAZkhUb0xDTENMbkxZZVhPAB8dHxsAfV9EW0xZSABmSFRvTGRMQ0Gm" ..
+    "7NWt2uTEm6fam6S/zvOT7t6DscKDwceE+M+L5OSE+emQzavXv53SlvWa1f+E8cDFw+9ZEjc+QYvr3In39X9PAB8dHxsAfV9EW0xZSABmSFRvTENMQ0xuTFll" ..
+    "WE8AHx0fGwB9X0RbaxgKTioJWQMUGgkBEyobESw+B1RBEA8WVlpSSVZBL0dMeV1JJ1APUF1QdAUSfxZVSwIJV1dIYUdLK0FJRVk5EBxua05BTkEYQ0F/FgdL" ..
+    "A1JUUh9gRAoUVkZRHi4BSCdZC0MzQX5BADoABwE4EBIWDQtQWUUHQQYefFEac1NaVA1ScwQXexMBH1RWEGsNbVIdBBQRSSdrRVliOkxZVwB1BRF7FlcdBQZR" ..
+    "BUhoQgtGUkUEFX5HJGJcThUcFCZNfmhVQg1pElEAHTFEDxcERFxOeQFNcgBcVwwEellMLFc/DQ8QRkRYNV5jVkFURXZpUkF2WAtRDFklUUQrRwMcUwIHAx1k" ..
+    "QghOQylFEGsRCzcEQmtOQWNBL2oTAR9TAAEOHzYWXUVTTQMac1AYcgMLAltDHkFJaAEQWFccOBYNcFIyVFdDXBR7U09wAAoDCFF3ABJ4EAEeCgIDUw8NUlRW" ..
+    "FQYQSGdvWWJBTjpMByYCFilEUx9RAVRUGzEQXBRRQwNPeVJNYDxOXE4VMRQRZH9CDRIQaRROZRQKElAVAEh6XUx1AgtRCgV1UxZ8EQQPbxAPFlkiBwxaa1RF" ..
+    "DWs+W3dVD1lcWCdYFSpHUBpXVVYPFWgUUUBTF0dwa1hZNhMbBEJrY0FUaC5AGFRUBQdMNkBcQ1VNVRktBxwgAl9UDFchQyloSEJZQEVXGidwUklWOlZdGX8H" ..
+    "SnJXWgddVXRZEX0WWhtQUwsAHmNQNFZcVBFfPgBVSEFOQU46YVZGLhNUGFEBAAIZZEsKRVUVVEt7BBh3VEw8TlxjFQY9EE4nEhASFnZyQl5FA0AEHi4BQCEE" ..
+    "XwILWCEFFXBEBkkDEm8WEHAGGwMEWG8Na0VZGUNWVQ8CcVFGfhZVHVcHBg8YNkpcR1MSABhpOFl/QRoTGwRva1RoVUJ2EFZTBBhnF1kUVBFSFShcTiMFWVRb" ..
+    "U3oDRGooQhASREBDSHx4SVZBVD4PeFYccwUIUAoAcwBALkcAGAYEA1AeNkZaVDxUWA0/FwwnTWRBTkFjOlYpQ1dIAwQLBR9hQwsUUkMETHwDTyFUCAdMPGNc" ..
+    "VDwHF0geOhIWDXApS0IFR1NJeVcbclQNVghZcVQWfRFUTgtSCxRwcE9JAhMBAAFBRVliQTVDXFFyAEdxQlcYAVUHUhxlEV4SU0dTFShQWx9BU0EaEzYEWEJV" ..
+    "Qg0SaxAEHjEUXhNYQVYcLVwYd1YIUF0EJVBBf0NAcBINEkJfJRdFfEFURQ0QRxwkWVYFCgNyUUx7TFFMAlNUAhgzSwpPVVY4DXZFDTAUC01kQWNBVBNXWxQF" ..
+    "CAZTHDZEUEFSFVEYKgRNcVdeV1lSYTxUdVUWX0dVHjwNcFJJLUMXVxQvVU1yUV5SCAJ1WERxFwNPBwEAVE9yL0lLQQAXWC5Jc2JBTkE1Q3ZTRXtHUksLUlEB" ..
+    "HGlHC0NTQQdLfFFLc0MzQVNBNxMBLVloDRIQEm0PNBdQFVkXXB9+URp6B1cEWgJzWUEpQloeEG0SCw0kABwTTX5FDWtFImACXVBeAnRZQisQABgLAwQDHWJE" ..
+    "DUJRElQPFkVEYhUcFAtNSUFUaFU5DwRVBlcdM0VYQVYVVxp/U0wgAAxZWQJ2UVYVVV8NRkJHUwFaUklWQS9HHS5VSSQDDVgKUXEAQXlMBk4ABQQHFGEUSytB" ..
+    "SUVZORAcbmtOQU5BGENHKhEHGlFSB1AZNkBYRwIWUhx6ABp3AlxDM0F+QQA6AAcBOBASFg0LUFtAVEMHGihWHHZQDQJZWCdYTC4UARQLVhBrDW1SHQQUEUkn" ..
+    "a0VZYjpMUVoEIAcQe0BWTwsDCgYdZhBZRlIWAEt9RyRiXE4VHBQmTX5oVUINaRIKBh40EFpHAhEEGi5RHHUHWlcIVyZSRypXPw0PEEZEWDVeY1ZBVEV2aVNM" ..
+    "JllbBFkEdlIWeEJTSFMAVANPY0JfQUMpRRBrEQs3BEJrTkFjQS9qQ1dIVwEFAhU1QA1HWRUHHS9RH3sFXVYIQx5BSWgBEFhXHDgWDXBSMlRSRAAUfgBMJlAN" ..
+    "AlpWcAASe00GTAoBUVcPDVJUVhUGEEhnb1liQU46TFh2A014QFVMV1YHDhtiEFFHWBBSHnsES2A8TlxOFTEUEWR/Qg0SEGkUFDZKWkUEQ1dMelJBdQAKAFoE" ..
+    "JlQWfkADD28QDxZZIgcMWmtURQ1rPlt0AlxQC1J3AkUqRlsYUFIKUxxhFAxGUkNHcGtYWTYTGwRCa2NBVGguQBtUB1QOFDVGXRBVEl1IKFFLewJeVVsFdUMp" ..
+    "aEhCWUBFVxoncFJJVjpWVR57AR16UQ0FD1BzUxJwRgdMAQkKVxtgUDRWXFQRXz4AVUhBTkFOOmEAR3hMVhxUBgMEHmNKDRJXQ1cffFJMIFdMPE5cYxUGPRBO" ..
+    "JxIQEhZ2chEIRVNCUR19XUogUlcEDwJ7UkAsEVMbVBJvFhBwBhsDBFhvDWtFWRlDDwJXV3AEFnsRA08BUlQHSTFCCkBXEVwZaThZf0EaExsEb2tUaFVCdhAE" ..
+    "AQZMZUsNTwQRUxR/UkByAFhYWQIiVxZqKEIQEkRAQ0h8eElWQVQ+D3wESHFTClhZU3MCF38QBksECFRUTzIRWlQ8VFgNPxcMJ01kQU5BYzpWKkIBTgYGBg9P" ..
+    "YhZRQANAVRt5AB9xVAxWTDxjXFQ8BxdIHjoSFg1wKUtPUUFRHnwGQHRUXFdaBHFYQnxMBE8FUQsUcHBPSQITAQABQUVZYkE1QwxVd1lCe0FTGwsBCgAbaERQ" ..
+    "EFNHUx1/XVsfQVNBGhM2BFhCVUINEmsQBU5oR1gXWERXH31TTXNRX1ULVnVRFX5GQHASDRJCXyUXRXxBVEUNEEdPJ1MLUFpYIlASKREGGlcDUw8YMkpYRFRW" ..
+    "OA12RQ0wFAtNZEFjQVQTVwQVV1JWUxUzEFFEBRJUFCkHTyYAVlZdU2E8VHVVFl9HVR48DXBSSS1DQFYZeAZPcANaV1cAdFRGK0YGHQMBAwUeci9JS0EAF1gu" ..
+    "SXNiQU5BNUN7VER6QgYdAQQED0hpF1pHVkRXTC1dSHRDM0FTQTcTAS1ZaA0SEBJtD2JKXhAEQlYZKFMadQdbVFxSclJMK0QBSRBtEgsNJAAcE01+RQ1rRSJg" ..
+    "UA9XCFN3AxV9FFQZBgdXVB1mRg9CAEVdDxZFRGIVHBQLTUlBVGhVOQ8ABAoEHWUWD05STVVLcgAddVUPBV0DdwJWFVVfDUZCR1MBWlJJVkEvRxV7BkpxUQsC" ..
+    "VlFxVkx9TFtJUwJRAE5kRUsrQUlFWTkQHG5rTkFOQRhDF3wRBxoHUgoCSzRGD0ICEl1OLQYcdQJaQzNBfkEAOgAHATgQEhYNC1BfQVAXB08tXEF1BVpTC1B7" ..
+    "WUd+TFYVUQAQaw1tUh0EFBFJJ2tFWWI6TARXWXIHEilAAR1RAQRQGDYQXEFZFwEefUckYlxOFRwUJk1+aFVCDWkSA1QYY0VYF1FBBE99A0AmUFxUC1VxUUB8" ..
+    "Vz8NDxBGRFg1XmNWQVRFdmlTSnIFDQNeAnFYRy1CUkgDVVAGFGYRChBDKUUQaxELNwRCa05BY0EvakRUS1EFVFRIZUFaRQMWBhl5AU8gVlkCXUMeQUloARBY" ..
+    "Vxw4Fg1wUjJUUhJRSX4GSCFZClZZBCdRTCxGWkwFBVBQDw1SVFYVBhBIZ29ZYkFOOkwHcFRMLEdVFVEAAQVPZxQPElYXXRt+Bx9gPE5cThUxFBFkf0INEhBp" ..
+    "FEtpEwgXVxdQSXxUTHtUXVhZU3ZWF3oQBg9vEA8WWSIHDFprVEUNaz5bdANWBV5YJgBCfUFSFAsBB1UbZRcKT1IXR3BrWFk2ExsEQmtjQVRoLkAbCwgADkti" ..
+    "QlpPAEMHSSlVSSRTD1JYVCZDKWhIQllARVcaJ3BSSVY6VlZLLwEcJwJeV1xUcQAWLBYEGQNUVlMZZFA0VlxUEV8+AFVIQU5BTjphV0VxRVobAlQFUBhmFAgQ" ..
+    "VkVcTC8DSnpXTDxOXGMVBj0QTicSEBIWdnIQXkIDEAMVc11LdQBeA18FegVGKxFaSQoSbxYQcAYbAwRYbw1rRVkZQ1pXXVVzU0YsQlJMAFYBDhQyEVFAVxED" ..
+    "GWk4WX9BGhMbBG9rVGhVQnYQCVQGS2RCW0YARQBJKFxAcFReVghZJgJHaihCEBJEQENIfHhJVkFUPg9/AE8gUQpSV1V0AkMpEARMCwgEDkhmF1hUPFRYDT8X" ..
+    "DCdNZEFOQWM6Vn4XWhwCBQEDT2cTWk9WQlAff1wdcARYU0w8Y1xUPAcXSB46EhYNcClLTlISVh95XUhzVFhVCgAgABV6QgQbAlJUFHBwT0kCEwEAAUFFWWJB" ..
+    "NUMPAnQDRC1EBEsEVQIBHmETXxNYQl1IL1FbH0FTQRoTNgRYQlVCDRJrEFUVMxdbR1dFVRl5UkgmWFkDX1V2UkEqTEBwEg0SQl8lF0V8QVRFDRBHTXdSCwdc" ..
+    "WScAESkTUUkBBwACGGhDDxNQVjgNdkUNMBQLTWRBY0FUE1cBFVdRVg8bZkpdFQcXBxl6U017VF1UWlVhPFR1VRZfR1UePA1wUkktQ0AEFC5cHSZQXwUKWCUD" ..
+    "RHBMV0kAUwVQFHIvSUtBABdYLklzYkFOQTVDJ1hNfU1bSQtVVAIfYhYNRAQXXRspABh0QzNBU0E3EwEtWWgNEhASbQ9nRFlDVxUBGCoHSHcAXQRaA3tSEH5E" ..
+    "UUsQbRILDSQAHBNNfkUNa0UiYAVaBVdVcAUVexRTSwRSVgZMYhNcFFFHXA8WRURiFRwUC01JQVRoVTkPUQkAAh4xRVASVkBUHi1QSidTWFkIUncAVhVVXw1G" ..
+    "QkdTAVpSSVZBL0cfKVBKe1ZeB1ZVcwMQe0BSGlMEAQYZNUpLK0FJRVk5EBxua05BTkEYQ0MsTVtOVFFWBhgyRAoXUUdTHnsGTyRSWEMzQX5BADoABwE4EBIW" ..
+    "DQtQDxNREFQUKV0YcQcIUVYAJlkVfxRSSwUDEGsNbVIdBBQRSSdrRVliOkxYDVAgUBZ4QVEUUVNTVBhgQgsQUUIHFHJHJGJcThUcFCZNfmhVQg1pEgZTFGZA" ..
+    "XUAAEVIcLwBMJlJWWF9VIQJBeFc/DQ8QRkRYNV5jVkFURXZpURonBVtTWVN1WU1xRVIUUVJWBR8yQFxPQylFEGsRCzcEQmtOQWNBL2oQURwLBwYEHGBKDEZT" ..
+    "QVZPeQRMdFFXUwhDHkFJaAEQWFccOBYNcFIyVANGVkwvB08kWAhVVgImVkxwRVQcC1EDBQ8NUlRWFQYQSGdvWWJBTjpMB3ECQn5HARoDAAQEG2MWDUUAR1IU" ..
+    "f1RPYDxOXE4VMRQRZH9CDRIQaRQdZ0EIT1VDA09zUEkjVVkAXFF2V0R8QlMPbxAPFlkiBwxaa1RFDWs+WyFTV1NZByUDTSsUVxpUCQIAHGVEWERREUdwa1hZ" ..
+    "NhMbBEJrY0FUaC5AGANTBAZIaUoMTlISXBh8UxhwWVZYWVd3QyloSEJZQEVXGidwUklWOlZcHH0BTnFYDFYLAHBUFn5BVElUUQMCTzVQNFZcVBFfPgBVSBxk" ..
+    "awIOIAAYaBMXQ1FEW1lDcBwGBAwVCUQxADInGEYXDw02BF1CVUINEkJXQlgiHEkFFQYMQyxLFS0WCxNGFSwSADocDEoaRlNaWDVSBgRBVkcEYl8eMRQMSUxE" ..
+    "MEpWZFVADxs6V1hJWngFGQIVCQ0tEBchFQcOAEEoCBcjMw1feVVLHl81ExoZD11vDWtFWQ4ODQACMS8ADS0HWGZbU1keXzUTGhkPVApfa0eR6eqG5t2E7fmS" ..
+    "3sxCaVtDUVlfNFKOwsOR6ruu6Ninzug9AAk3FQQ7T00CVllBVUIiFkcRBlsBSiNSCAhVGSBMSEkEGix/aEFdU1NaDTYHBxUVHQpDaxYRLRYlBBcxMQ4ZOAFK" ..
+    "BDgQEhYNPB0KFw1UDkgyIgwrQVNBJw8wFRUmFgcDXFVFHg8DERsTBBoiWCJHUEhBTkFOCiYYMz0cTGNTXVcWEHBQKxcPFQtMCAQNChQMKgsYBAAALVdoDRIQ" ..
+    "El1IKTUcH08mAF4uETYsMh4AGQ9jXFQuFA5eVzoSFg1wGQwPJgEMAwICFy0TCyYbCAoPBy0BQhASREBDSFpSSVZBHwBUDBAQbCUHEh4NIhg7OhEHXxINEgcd" ..
+    "YEJZfEFURQ0gAAAFFAdPPgAxBBo8VV8NVVFfUxcXFx0lBAYTRCgAUWAiARMLJjYIVmF/aA0SEBJaQjMTBVYDFQZGLxcWMkFTQScPMBUVJhYHA1xVRR4PFgAI" ..
+    "GwRWTCdrRVliAw8CBQUxDgRmJgtXVxAPFngUGwRETxIXQiY2GiMNC0lfTWNQXUJVQg0SUlNVRjQABgZPNgROIAILLRQABS0OLw4Ge1VfDXFfXllfY1wPBA4Z" ..
+    "N2oJTUluQV5NTlFqa1RoVUJPU1NZUl8/Akc0ABcOSjkKDCwFOhMPDzARFToQDE5LEA8WHX5BXHxBVEUNKQQaKQUcDh5PEwAGLRsWDQ8QWVNUFwcAfGtURQ1r" ..
+    "CRYhAAJBDQAxBVR1VStDQURTWE41XAcTFlxHazkEFCdDR2tOQWNBFykHBgNzXlFeQiIiBh8PAEUQazMcIRUBE1xPLQQDYEVMGB4QAhgYeXhJVkFUBkw5AVcS" ..
+    "Dh0IGggsD1R1VTdpW10AGEsiHQQlAhUJSGNVV3dNTlFAVGprVGhVQk5TQlYYfjkIDFZcVDBpIghLbAccDgMuJQcHLQFKHgEAHhYcaUJAfEFURQ0oBAsmTywA" ..
+    "DQokExs9GwZuXVxdRB5wT0k1DhgKX3hLHzAOAzMpI2tSQWRVURgeEAEDBFpSSVZBFwRfL0spIxMLDxpBfkEWKRYJSUBfQjwNcFJJPw8HEUwlBhxsDwsWRkMW" ..
+    "KDcnBwxIQBIeFk4xAA1fTzcKXyUACxAACggbEmNcVB0xC0AcXldBBWBeSUdRXW8na0VZYg0BAg8NYxUdPBkHDQ8Qe1heJBMHFQRaC0g8TVsWBBYVIgAhBBhq" ..
+    "XGgNEhASQkQkHgxYIxUGRiwXFjcPCjUcAC0SBCkHB0NRSRILDWF4SVZBVBFEPwkcbDEBEgcVKg4aaEhCeHZZXwQDNgAGGy4SA14uEVFzWUJBX1Vqa1RoVUJZ" ..
+    "W0ReUwMDGxMTQUlFeA8MFHBPAAQZSXJNVGVGVAESAB4WH2hbY1ZBVEVZIhEVJ08oDgAVY1xUDRsXQBx2XVhZfjUGAgkVCG8kCR1IQU5BThUqFRgtWzZISkQS" ..
+    "Cw1yMAgYABoEDQgEDWIpGwNOTGMxIhhVh6CT1Z2wxPnlgdvoVm8Na0VZNggaDQtPFwQMPDYNQV1CARYQcDEGGg4GVgMtFxYvMykjRlN2VFhoR1cYHhAAAxh5" ..
+    "eElWQVQRRD8JHGw1CxkaMiobEWhIQhwEOhIWDXAGAAINEUt9KhccLBVOXE4CIhMQQn9CDRIQXllOMR5JHggaEQ12RTAsEhoAAAImTxotAkoPZlVKQmExEAwa" ..
+    "Q11vDWtFWSoIABVAIyICHy8HDVhcVGZETD4BGRcTEQtOMkVEYlBkQU5BYwkdJgFMfV1DW0JEPxxJS0EhIUQmV1ckEwEMIQclEhE8XVMVHhAGAARaUklWQRwM" ..
+    "Qz9LKisbC0FTQRYlHSVHTENXRxoHAXBfWkBNVFUBa1ZLa2tOQU5BKwgaPFskQlxEEgsNFRwcG08yCkM/Sz4tFQYAA2tjQVRoHQtDRh5mU1UkUlRWQ5zOpqPZ" ..
+    "wafky4fy6KX0/K34w8idtt2KtrbA+5D9/YCg6oDWxInF6obm8ITa0JP0lBJ0W0VOPwANVobAx8jE81tIQU5BTgkqDwBmIQdVRnNdWkIiQUlLQTcKQSQXSmwH" ..
+    "HA4DMwQjXHpHUgESAgAGAXBAW0ZIfkUNa0URKw8aTzoEOxUnIQ8HDQ8QAwcncFJJVgkdC1llMRw6FTkTDxEzBBBoSEJZQEVXPA1wUkkeCBoRAxsECycPGkFT" ..
+    "QSAABix/aA0SEBJaQjMTBVYIGhVYP0VEYigAEhoALQIRZhsHWhoSZlNVJDAGDkNdbw1rRVkrDx4UGk8ADREpBzZISkR9WGs/ERwFQUlFSyoJCidrTkFOQSoP" ..
+    "BD0BTH1eUVFTRT8eDRMTIABVP0VEYkOG3daExsSRxdSHgrQSOBYNcFIAGBEBEQMfAAE2QVNBGg4wFQYhGwUFVVVGUUg+BEFfTzYEQyoLGAEAGikbAwgEDWga" ..
+    "EA0QEhs8DXBSSR8PBBBZZTUWMQgaCAEPY1xUHTELQAAeVERCPT0PEBIREQV6XVViWVhIZEFjQVQhGxJYRh5hX1c1UlRWNDAMQHlLFycWRlBCQW5SQmRVUgES" ..
+    "AwYfJ3BSSVYIGhVYP0s7IwIFBhwONg8QCxoOQkADEgsNEx0FGRNHS0s5ChQQJixJW1RvQUF9WUIYBxk4Fg1wUgAYEQERAx8AATYiAQ0BE3BBSWg2DUFdQgEY" ..
+    "SyIdBCQmNk0fflBVYlNbVEJBcVRBYX9CDRIQW1hdJQZHJg0VBkgjChUmBBwiAQ0sE0doSEJuXVxdRB5+FBsZDCYib2NUTnJNTlBZUW9BRX9FSycSEBIWRD4C" ..
+    "HAJPMgpDP0VEYiQAFANPBQ4aPFshQlZVOBYNcFIAGBEBEQMfAAE2MgcbC0F+QUV7f0INEhBbWF0lBkcmAAYAQz9FRGICDxMKa2NBVGg8DF5GUVxVSH4cDAFJ" ..
+    "VjBkCAoLLAQcQ0JBKg8EPQFLA3FfQFhIIiAIEggBFg12RSwGCANPAAQ0SURkVVQEODoSFg1wHgYVABhFXj4HFCsVTlxOKC0SACkbAUgcXldBBXImDA4VNhBZ" ..
+    "PwoXYEhkQU5BYxIBKhgLWRxkV05ZcE9JVIjd8sXm7JzPwIvO6ENJQVRoVRFYUF1bQgMAHRofFR0KQ2tYWRclBwxcTyUTGyU6BEtBVUYeHGheSUdSRkwna0VZ" ..
+    "YhIbAwMIN08nIQ8HDQ8QZ3JEPUBHGAQDTRxnRVRxV0JBXk1jUkBhf0INEhBBQ089Gx1YIxUGRiwXFjcPCiIBDSwTR2hIQm5dXF1EHn4UGxkMJiJvY1JMbkFZ" ..
+    "VEJBdFRdQlVCDRJDR1RAOQZHIgQMEW4kCRYwUk5cTiIsDRs6RkxLQF9fZGoSWltDVFhFH35QVWJTW1RHa2NBVGgGF09fWUYYaz8cHVZcVCBDPghXBA4AFUAm" ..
+    "LBUcKRggQl5UOBYNcFIaAwMZDFllMRw6FT0IFARjXFR5RmgNEhASRVgyHwACTyQEXy4LDWJcTgIPEydrVGhVQmRcQ0ZXQzMXRxgEA00PHiw6LRMABBxDb0EH" ..
+    "PRcPREYZHHVCIhwMBDMVAUQ+Fll/QTslBwxtDxE/XVIBEgYbPCdwUklWDRsGTCdFCycSGw0aQX5BPSYGFkxcU1cYQzUFQVQ1ER1ZBwQbJw1MSGRBY0FUOhAR" ..
+    "WF5EHHRMMxkOBA4BC0kfFxgsEh4AHAQtAg1oSEIcOBASFg0iFxoDDQBLfSQWEDYIAQ9OXGM0MCEYUANUQl1bYjYUGhMVXFQVZ0VIdFlHa05BY0EGLQYXQUYe" ..
+    "YV9XNVJUVjQwDEB5SxcnFkZQQkFuUkJkVVIBEgEKHydwUklWExEWWCcRVwQOABVOXGMkGj0YTGtdXkYYaj8GARcMfkUNa0ULJxIbDRpPFwQMPFVfDRASOBYN" ..
+    "cFIbExIBCVllMRw6FS0OAg4xUlR1VSFCXl9ABQM2AAYbMzMnBXlQTG5BX1ReTWNQQXhcaA0SEBJESCMHBQJPIABVPzYQOAROXE5Qc2tUaFVCX1dDR1pZfiII" ..
+    "BAQaEQ12RRojEwprZEFjQVQkGgFMXhBTVU41Ah0TBVRYDS0EFTEEZEFOQWMNGysUDg1URVxVWTkdB1YXERdELRxRa2tOQU5BY0FUaBkNTlNcElVMPhYAEgAA" ..
+    "AA12RRctEwMAAgg5BD8tDEpEXEBHQgMEFxECSH5FDWtFWWJBTggIQQIUACAaEERIVVZ9SCkBMhUAGgFELwQNJzxOFQYELWtUaFVCDRIQEhYNcFIOExUTAEM9" ..
+    "TVBsIw8PDw8iIhU8PRdPeVVLFhBwEQgYBR0BTD8Ac2JBTkFOQWNBVGhVQkxRU1dGWTUWSUtBABdYLm9ZYkFOQU5BY0FUaFUJSEt3R18XFBcaAhMbHAVib1li" ..
+    "QU5BTkFjBBg7EGgNEhASFg1wUklWQVQXSDgQFTZPOgQWFWNcVGqQ74zXn7TRqfGU/P6OyOnF4O6RxdKLz/aH1dhUDBwRTl1CVhbK5NCM+feR6Iyuyv9ga05B" ..
+    "TkFjQVRoVUINEkRTRUZ+FgwaAA1NHGVQVWIHGw8NFSoOGmBcaA0SEBIWDXBSSVZBVEUNa0UQJEEFBBcmNghUKRsGDVlVS3FYOVw5FxMRC1lrEREnD2RBTkFj" ..
+    "QVRoVUINEhASFg1wUklWQR8AVAwQEHglCxIaEywYXGF/Qg0SEBIWDXBSSVZBVEUNa0VZYkEFCA0KBQ4GAxAbBRDYmb3F18GM2PmS85RrIRAxAgETCkGk1dat" ..
+    "+vTIv5HXmasMHAECFQQWF2RKHSsSDQ4cBW0GE2cRBUUFQXgCWhFQQHxBVEUNa0VZYkFOQU5BY0FULRsGJxIQEhYNcFJJVkFURUglAVBIQU5BTkFjQVQtGwYn" ..
+    "EhASFkg+FmN8QVRFDTgQGy8IGk8vAjcIAikBB0kIc11YQzURHV4XERdELRxQSEFOQU4ILREBPFskQlFFQXpCIwZTNQ4aC0goEVEkFAACGggsD1wtGxZIQGBA" ..
+    "U14jFw1fa1RFDWtFWWJBBwdOBC0VETolEEhBQ1dSDSQaDBhBAgBfIgMAakhOBAAFSUFUaFUHQ1YZODwNcFJJBAQEAEw/RQ0jEgVPGQAqFVxhVRdDRlleFkwz" ..
+    "EQwGFREBDSQXWSwOGkEFBDomASFbMkxAVVxCJ3BSSVYTERFYOQtZIwINBB4VJgV+LRsGJzgdHxbJ6NeP1t2dz6Gjyvik6MmJz+2m6Pmg29zKj57VrKlwFQwC" ..
+    "BhELW2NMVwAAAAAAAAAAAAAAAGZXSd2KtrTK5JDv0YCi3I392IfyzYvnxojP0J3Mide9k9OC1nhEW0Gc7oit6Nuk/eOE5MCm+Nyt2t7FtYQSUUgkFQwYF1xM" ..
+    "DaPH0qvm44bTz6zd+K39+8iCrdqZuLTJ55Do042Mx4Dg6ofyzYv984XL1ZDPtdWqttOg8ZfG8If1x8jv6HMuDg0AAkEIBA0OHA5IfFFfUw1tUks0ABoEQyom" ..
+    "GDYpGwNACiYYVkIZDU5TXBJFWCACBR8EEC5IMkVEYg8BEwMALwgOLT4HVBpXV0JKNRwfXkhaJ0wlBBcjIg8VJhQhKhExXGgnW1YSRVggAgUfBBAuSDJFRH9B" ..
+    "TENOAC0FVCEGBEReVRJXQzRSGxMAEANEJwBZNgkLD2RBY0FUOBYDQV4YVENDMwYAGQ9cTCdrRVliQU5BTgglQR07EwtBVxh5U1QWGwUTLxUISGJFDSoEAGtO" ..
+    "QWNBVGhVQg0SEBJFWCACBR8EEC5IMkVEYg8BEwMALwgOLT4HVBpCV1dJNhsFE0k/AFQNDBUnLw8MC0hqa1RoVUINEhASU0M0eElWQVQAQy9McycPCmtkCCVB" ..
+    "Bz0FEkFbVVZ9SClSVEtBVkcNJBdZLA4aQS8UNwkbOhwYSFZ7V09eCwEcBhEYDEgvLhw7PE4VBgQta1RoVUJGW1NZcEIiOQwPSVaAoOqA1sSI+viGzuyOyMSd" ..
+    "zZrXtbreg+6V1NiH6OzL3u1ZAAAAAAAAAAAAAAAAZldJbljF/8WB8dKRy7Wt88BiJQcSDQ4xBVSvwcDIvabXu4y13e+Z3e4NWT8VCnhOQQUHEiAOBixbBUod" ..
+    "VFVeGiE4XQEgVkwna0VZYhMLFRsTLWsRJhFoJx8dEt+LxpTF14je6cXk5J/K8Yvr8YTT75D36IeAqtW/l8j/9IbK7ZDbtqPi06frxofjw6X9+a3/w8irmNux" ..
+    "oLjP1JLcy4K544rF2YXW7IbHxYbv3pP+pNSlutCt95TK9ofrwCciA1k1EwcVCwcqDRFoAQpIXDoSFg1wAgoXDRhNSz4LGjYIAQ9GSElBVGhVQg0SEEVERCQX" ..
+    "Dx8NEU1mLhw/Kw0LLw8MJk1UOwASXV5ZV1JmNQtAfEFURQ0uCx1rawsPCmskBAAvEAxbGhkcdEw+EwcXIhURZT4HMicYTlxOEjYRBCQcB0l5VUs8J1pfRFYn" ..
+    "FRZZayQNNgANCk4yJhMCLX8OQlFRXhZgPxYcGgQHRRBrNxwyDQcCDxUmBSc8GhBMVVUIYUw5Bi8ZEzcNRCcBUWAsAQUbDSYSVmRVUx0bOl5ZTjEeSTgEAEUQ" ..
+    "aygWJhQCBB1BIg8QaDgNSUdcV0UXBxMAAicbF24jDBUmSUwvCxVhTVR5RUsnXl9RV0FwIAwRCAcRSDkkDTYADQpOXGMvETxVA0NWEHxTWWolCB8VMgpfCA0Q" ..
+    "LgVGQzwkbDMRLxwRWVdCc0JZMRECVE1UVB1ibxUtAg8NTjMmBh07AQdfellGFhBwPAwCQRULSWsrHDZbOQAHFQUOBgsdC0FWGBBkaH8gDBEIBxFIOS0QNkNC" ..
+    "QV9RamsYJxYDQRJiV1tCJBc6EwQQRRBrKxw2QQ8PCkENBAByMwtDVnZbRF4kMQEfDRBNDzgAHCZDR2tkTG5MWWVYTwAfHR8bAH1fRFtMWUgAZkhUb0xDTENM" ..
+    "bkxZZVhPAB8dHzwAfVKA7tOd4qCjwf6n9PGG+slJTFllWE8AHx0fGwB9X0RbTFlIAGZIVG9MQ0xDTG5MWWVYTwAfHR8bAFpfRFaE8eTF49SQxeyI996J/+iR" ..
+    "zdCEsbLWpIbK2fqP6s2b2aGu4PGk2euG/uen2f6szeLIsrvXgYu0yuKexuZFeAKKxc6I796L5M6J/MKTz4zaj7zToPGV4PGH2v3K3vxzMgIPDQJJJRQaKwEL" ..
+    "QlwYGzwNcFJJGg4XBEFrChUmNQEGCQ0mJgEhVV8NVVFfUxcXFx0lBAYTRCgAUWAiARMLJjYIVmFPJERcVHRfXyMGKh4IGAEFaScYLAAAAC0ANykBKiENSlVc" ..
+    "V3FYOVBAfEFURQ0iA1ktDQo1AQYkDREPAAsNRlhXWCdwUklWQVRFDSQJHRYOCQYCBAQUHXIxB15GQl1PBXl4SVZBVABDL28cLAVHa2QGJhUTLRsUBRsec0NZ" ..
+    "PzAGAw8AHGEkBB0nBU5cThUxFBFCf08AEg0PCxBtT1RLXElYEHZYRH9cU1xTXH5cSXVIXxAPDQ8LEG1PVEtcSVgQdm9Ub0FcT04pLA4faDYKSFFbEh7Iz8WB" ..
+    "1+2R/IWtz9uk2cJIZExuQUl1SF8QDw0PCxBtT1RLXElYEHZYRH9cU1xTXH5cSXVIXxAPDQ8LEG1PVHwNGwZMJ0UcOgQNFBoOMS8VJRBCEBIYW1JIPgYAEBgR" ..
+    "HUgoEA0tE04AAAVjCBAtGxZEVElXTkgzBx0ZE1xMBGsKC2JDOw8FDywWGmp/DkJRUV4WQT8FDAQvFQhIa1hZMRUcCAAGbQ0bPxAQBVdIV1VYJB0bOAAZAARB" ..
+    "bxUtAg8NThQtEgE4BQ1fRlVWekQjBklLQQ9HVS4LFmBNTkMdDi8ABilXHydeX1FXQXAbGiMPBxBdOwoLNgQKLw8MJkFJaBMDQUFVODxLPwBJKU1UC0wmAFkr" ..
+    "D04IHgAqEwdgAAxeR0BCWV8kFw06CAcRBGsBFkhBTkFOCCVBBzwHC0NVHlRfQzRaBRkWERdjKggcbkEAAAMEakEAIBAMJxIQEhYNcFJJHxIhC14+FQktExoE" ..
+    "Ci8iDBFoSEJZQEVXPA1wUklWQVRFTzkAGClrTkFOQSYPEEIQDEk4Ol5ZTjEeSR8SOQxeOAwXJScbDw0VKg4aO1VfDRpYXVlGPRcdFwwREUUkAVl/XE4PBw1q" ..
+    "QRs6VUpKV0RAV1o9Fx0XFRUHQS5FRH9BAAgCSGMOBmhdEUhGQldXST8cBQ9BSVgNJQwVa2sCDg0AL0EQIQYDT15VellCO1JUVggHMEM4EAkyDhwVCwUNABkt" ..
+    "VQ1fEllBe0QjAQAYBjIQQygREC0PHWtkCCVBECEGA09eVXpZQjtSHR4EGm8Na0VZNQAcD0ZDGCAaPBxPbkBRQV5wcDYMAgQXEUgvRRUrDAcVCwVjBAwtFhdZ" ..
+    "XUISHg9wXEdWBAwATj4RFjAvDwwLQW1PVGpcTA1hWV5TQyRSKB8MVA1CJA4KYgkPFwtBIQQRJlUGREFRUFpINFIdGUEEF0g9ABc2QQgTCwQ5CBovW0AEOFVc" ..
+    "UidaX0RbTFlIAGZIVG9MQ0xDTG5MWWVYTwAfHR8bAH1fRFtMWUgAZkhUb2tDTE42Kg8QHTxoAB8dHxsAfV9EW0xZSABmSFRvTENMQ0xuTFllWE8AHx0fGwB9" ..
+    "X0RbTH4JQigEFWI2Bw8KNApBSWgZDUxWQ0ZERD4VQQQEBRBIOBFROWtOQU5BFhMYaEhCD1pERkZeal1GBAADS0oiERE3AxsSCxMgDho8EAxZHFNdWwIWHQYC" ..
+    "ABMAXj4WVhUIAAU7KGwMFSEbTUlbQ0YZQDEbB1gNAQQPQRhQbCMBBRdIa0h+QiILQ1Zlewx+NQY9HgQZAAUUIlcWCQsMC0hJaxgnFgNBEmdbWEk/BUlLQSMM" ..
+    "Qy8wMHgiHAQPFSY2HSYRDVoaSzgWDXBSPR8VGAANa0VZYkFOQU5cY0M2KRsDQ1MQcVdZcDocFEFZRW8nCgFiJxwUBxVhTX5oVUINHx0S06LTmun1hOjzysLi" ..
+    "kODJiMHSjv/7kuDsi4y+1bqhye3NjuLJncO0o/DwqtP9hPL3pMXOp8nuyYqL26uPtu/WkO/VgKDBjPnNh/bvTiAgEw0kHAEN1IeD3qTil+Hwh9jhyPPmnPPh" ..
+    "ZEFOQWMoFycbQg0SEBIWDXBSSUtBVg1ZPxUKeE5BEw8WbQYdPB0XT0dDV0ROPxwdEw8AS04kCFYtCgoIDw8tABt8QloAU1xGGW8xHAgYAFkmTD9IMTcDQQwP" ..
+    "CC1ONikbA0NTZF1RSjwXKhoOBwBJZRUXJV4YXFpDb2tUaFVCZFFfXGVEKhdJVkFURQ12RUt0TWRBTkFjIAE8HQ1fEhASFg1wUklLQVZXHXlTn97hiPfeicTL" ..
+    "kcPghaCH2IGoD3x4SVZBVCNCJwEcMEFOQU5BY0FUdVVAbEdEXRZvPwcHAhhWSSdrRVliMgcbC0FjQVRoVUINEhAPFngUGwRETxIXQiYqHyQSCxVGV3ZRWGhA" ..
+    "UB0bHDgWDXBSPQQAGhZdKhccLBVOQU5cYxUGPRBOJxIQEhZ5OBcEE0FURQ1rRVliQVNBTCUiEx9qWWgNEhASd04iCwUfAlRFDWtFWWJcThUcFCZNfmhVQg16" ..
+    "WVZTfjUTGxUJNgRfa1hZJAACEgtNSUFUaFUxRFZVcFdfBxsNAglURRBrVEByTWRBTkFjNActB0IQEks4Fg1wUklWQVQgQyoHFScFTkFOXGMVBj0QTg1zXl1Y" ..
+    "VD0dHAVBSUVLKgkKJ01kQU5BY0FUaFUhTF5cUFdOO1JJS0ESEEMoERAtD0ZITg8sFR0uDEphXVNTWn08ExATE1orTCYAVWJDJyVUQWFPWgQaAUxeYF5XVDUA" ..
+    "RyMSERdkL0lZcUhOBAAFSUFUaFUfATgQEhYNfV9Jn/vFjbrERS4rDwo0J0Gm7+uu6c7KqLTblq+58cGf9/+AuNSD9cuI5vSB3c+H4PGS9oXXh5TSlduazuSJ" ..
+    "88/F4+ec3vKL3MyHz+idwOBoDRIQEnldNRwrAxUACkNrWFk5a05BTkFjQVRoMAxMUFxXUg1tUg8XDQcAAUFFWWJBE2sTSElrWWVVIExcUVxXDRMTHVYpAQfC" ..
+    "9/+c9ceK2eWJ5POd7uyKuLvYgKXIzOSO/+aS6aSi7eyt3eKE4cur09Sgx87Ek5/Vkpd/m/PHiePqDR4scy4ODQACQQEAGikbA25TRHpDTwQdDhENESJYIkVE" ..
+    "YigAEhoALQIRZhsHWhoSYVVfNRcHMRQdRwRBJxgsAAAALQA3KQEqIQ1KVVxXcVg5XCcXDBFFEGtHOyMPDw8PIiIVPD0XNkJVV15TaiUbS3wjFQtMJQQ6IxUm" ..
+    "FAw1LAYTJBAlWFseYFNeNQYmGDIEBFolRURiBw8NHQRJIxUmFAxMcVFGflgyJgYRBhgAaj4MVwsGAA4cBAQUHQEbEUhGEA8WWSIHDHwjFQtMJQQ6IxUmFAw1" ..
+    "LAYTJBAlWFsedl9eIB4IDy4GAUg5RURiWFdYV2sBABopGwNuU0R6Q08EHQ4RDREiWCJLPCwADA0LBWNcVDwHF0g4OkJVTDweQRAUGgZZIgoXakhkQU5BYw0b" ..
+    "KxQODV1cVnFYOVJUVgYVCEhxIhw2MgsTGAggBFxqNg1fV3dHXw95SC8fDxAjRDkWDQEJBw0KSWEjFSYUDExxUUZ+WDImBhEGGABqPgxba2tOQU5BKgdUJxkG" ..
+    "akdZEkJFNRxJGQ0QIlgiXz0nEhoTARhrSFQtGwYnV15WHydaX0RWhcnayt/NkcLkiO7+hf36k9Lxh6ib1Y6DyMzkjv/mm9m3rMnVptnuhNLUpOPOoeL+xKS5" ..
+    "EmNkv87lkc3YgZfHgMX3huzbh/fIhOHXVTdkOFxdVUw8UisXDxULTAgEDQoUDCICDjAEEB0HDg0PEBBeWSQCGkxOWxdMPEseKxUGFAwUMAQGKxoMWVdeRhhO" ..
+    "Px9GGQoQDEwlCxgtVVlZQwAvFVsKFAxMXFEfdUwkXyEDA1sITCILVgAAAAAAABcOEy8ZB25eX0FTSX4CBxFeAlgZaW8VLQIPDU4jIg8VJhQhTEZ4R1RiIBcH" ..
+    "IxMYRRBrRxE2FR4SVE5sExU/WwVERlhHVFgjFxsVDhoRSCURVyEOA04BCicIFSYbA0IGBwobTDwGRjQAGgRDKkg6IxVDKRsDbAwVIRtNb1NeU1hMBB0OEQ0R" ..
+    "Kl0uC1cyDwleGFx3Q35lWELJj4/VooW3++GQ/diAod2D09aE/uyB3c+I9feQ56Dbq4neqPad1fmH/e7L4vqc3daGwOKE2smT8cmFl77YnLbI3+SB/uuT/6ms" ..
+    "5Mmr4+SE0cqm7uJCGQ1OU1wSdEw+EwcXIhURZT4HOi4OHQQKMSIVHGhIQg9wUVxXQzExCAIpAQd5JAIeLgQtDQESJgUrPkFMXVxXEDxBPxEIGkE2BEMqCxgB" ..
+    "ABopGwMMEREmJQNZWhAPFg8SEwcXDxUmTD8tDCA1AQYJDSYuBC0bPVsGHkJYSnJ4BRkCFQkNCQQXIw8PIg8VCxQWCxkNXldUc0VeNQZJS0EaDEFBCRYhAAJB" ..
+    "LAAtABopNgNZekVQeV01HCgFEhERDXZFFysNZGsCDiAAGGgTF0NRRFtZQ3AwCBgAGgRuKhExNwMiDg8FAhIHLQFKTEFDV0J4Ih5FVgAHFkg/NRg2CUdrTkFj" ..
+    "QRgnFgNBEkJXRVg8BklLQRoMQUFFWWJBHgIPDS9JEj0bAVlbX1weBFpSSVZBVEUNawkWIQACQQ8SMAQADxAWWVdCEgsNNxcdBRgaBF44AA1iDhxBCQQ3AgE7" ..
+    "AQ1AU0NBU1laUklWQVRFDWsJFiEAAkEGFTcRJi0EF0hBRBILDSIXGAMEBxENJBdZKhUaETETJhABLQYWJxIQEhYNcFJJHwdUDF4tDBUnQQ8PCkE0Ex08EARE" ..
+    "XlUSV0M0UggFEhERai4RDScTTgAABWMJADwFMEhDRVdFWXAGARMPfkUNa0VZYkFOQU5BYwgSaBsNWRJZQVBEPBdBFxIHAFkbBA0qSE4VBgQta1RoVUINEhAS" ..
+    "Fg1wUklWQVQJQigEFWITCxIeDi0SEWhIQkVGREJkSCEHDAUVXB4NHhcVYlxOAB0SJhUhOhlODX9VRl5CNFJUVkMzIHlpRQRra05BTkFjQVRoVUINEhASFg05" ..
+    "FEkEBAcVQiUWHGIAAAVOEyYSBCcbEUgccl1SVHAGARMPfkUNa0VZYkFOQU5BY0FUaFVCDRIQRUREJBcPHw0RTUw4Fhw2MQ8VBk1jExE7BQ1DQVUcdEI0C0B8" ..
+    "QVRFDWtFWWJBTkFOQWNBVC0bBicSEBIWDXBSSVZBVEVIJQFzYkFOQU5BY0FUaFVCRFQQW0VLOR4MXgAHFkg/NRg2CUdBGgkmD35oVUINEhASFg1wUklWQVRF" ..
+    "Xy4WDC4VTlxOADASETwyB1lGVUAeTCMBDAIxFRFFYm9ZYkFOQU5BY0FUaFUHQ1Y6EhYNcFJJVkERC0lBRVliQQsPCkhJQVRoVRBIRkVAWA0iFxoDDQBvSCUB" ..
+    "c0gjDw8PDyIiFTw9F09xXF1FSDQzGgUEAEUQaycYLAAAAC0ANykBKjkNTFZxQUVIJForFw8VC0wIBA0KFAwiAg4wBBAdBw4BEnJTWEw+EyoXFTwQTwgJFjEE" ..
+    "CjEPFStIfgoUDExcUXFXWRgHCzkREQtsOBYcNkFTQSwALQAaKTYDWXpFUHpCMRYoBRIREQUJBBcjDw8iDxULFBYHBQdDZ0JeGg0SEwcXDxUmTD8tDCAuHgQA" ..
+    "MSIVHGF/aAAfENeBi7TK4p7G5oOhwozx14Thy4rc/Ibg4JHfktWkmt6t1ZTm5oXK/srR4ZzHyIvd24Tf95PB8o2RvtSKu8ntzY7iyZztp67576XF1Ifm96bj" ..
+    "7a761g13XV1cRFoeBhUAGEVvKgsYLAAtABopNgMgJxIFQVdyR0JZPxxJS0E9C14/BBchBEAPCxZrQz0lFAVIcEVGQkI+UEB8IxULTCUEOiMVJhQMNSwGEyQQ" ..
+    "IFhGRF1YAx4TBBNBSUUPCQQXIw8PIg8VFw4TLxkHDzhyU1hMPhMqFxU8EE8fCh4lDQsjGxU3DhpmNAxOWl9AZkI5HB1WXFQzSCgRFjBTQA8LFmtRWGhESydw" ..
+    "UVxXQzExCAIpAQd5JAIeLgQsFBoVLA9aGBoRREZZXVgNbVI8MggZVwMlAA5qUUJBX1lvQUVkVU8cChk4dEw+EwcXIhURZT4HLS0GCQ0LIzYVACcbTH5bSlcW" ..
+    "EHAnLR8MRktLOQoUDQcIEgsVa1REZFVXHRs6cFdDMRwINQAALVgpMRYlBgIELBQ3FRsmWyBMUVtVREIlHA0iExULXjsECycPDRhOXGNQfgoUDExcUXFXWRgH" ..
+    "CyIOEwJBLicMNhUBD0AjLBMQLQcxREhVYl9VNR5JS0FEb28qCxgsAC0AGik2AyAnEgVBV3JHQlk/HEc/DBUCSGtYWQAAAAAAAAAAAAAAAG5eX0FTSREBGhMV" ..
+    "VApfa0dbSCMPDw8PIiIVPD0XT2ZfVVFBNTAcAhUbCwMYBhguBDoYHgRjXFQNGxdAHGNRV0E1JhAGBFojRD9vOyMPDw8PIiIVPD0XNkJVV15TbyUGHRkPWiRY" ..
+    "Pwo7NxUaDgAiLA0bOlVfDVRRXkVIWjAIGAAaBG4qETE3AzoOCQYvBDY9ARZCXB5of0M0FxFWXFRXHUEnGCwAAAAtADcpASohDUpVXFd0WCQGBhhPJARfLgsN" ..
+    "YlxOIw8PIg8VCxQWZUdSZllKNx4MMRQdbycnChojDU4jDw8iDxULFBZlR1JmWUo3Hgw1DgYLSDlFRGIoABIaAC0CEWYbB1oaEmd/bj8ABxMTVkwnCQQXIw8P" ..
+    "Ig8VCxQWHBoFSl5VcVlfPhcbWCIbF0MuFysjBQcUHUF+QSEMHA8DXFVFHhx8UllfazYEQyoLGAEAGikbAxcOEy8ZB25dQlxTX34iCAQEGhENdkU7Iw8PDw8i" ..
+    "IhU8PRc2QlVXXlNvJQYdGQ9+b0EkBhguQSwAAAAtADcpASpYUGRdUUo8FzoCExsOSGtYWQsPHRUPDyAEWiYQFQUQZXtlWSIdAhNDXW9vKgsYLAAtABopNgMg" ..
+    "JxIFQVdjRkRCOxdHIgkdBkYlAAoxQVNBXmsBABopGwNuU0R6Q08EHQ4RDRE2WTkKEidPOhMPDzARFToQDE5LEA8WHFowCBgAGgRuKhExNwM6DgkGLwQnPAcN" ..
+    "RlceYldfNRwdVlxUJ0wlBBcjIg8VJhQhNRsvEg5IcEVGQkI+eGMaDhcEQWsnGCwAAAAtADcpASo8EWJCVVwWEHAUCBoSEW96IgsdLRZUNQEGJA0RYBMDQUFV" ..
+    "GzwnEhMHFw8VJkw/LQwgNQEGCQ0mIwE8AQ1DHHFRQkQmEx0TBU4mQiULHCEVRgcbDyAVHScbSgQ4EBIWDRITBxcPFSZMPy0MICgdLh4ELUFJaBsNWRJyU1hM" ..
+    "PhMqFxU8EE8CFjYyBABrTkFjQSMhGwZCRQpmWUo3HgxeIxULTCUEOiMVJhQMKDAuBC0bSycSEBIWRDZSKxcPFQtMCAQNChQMKB0uMwQaaAEKSFw6EhYNcFJJ" ..
+    "VkE2BEMqCxgBABopGwMXDhMvGQdvR0RGWUN+OwQXBhFFEGsnGCwAAAAtADcpASo6EkhccUFFSCRSBgRBNgRDKgsYAQAaKRsDAA0bOxAGbEFDV0INPwBJVEN+" ..
+    "RQ1rRRwuEgtrTkFjQVRoVUJvU15TWEwTEx0+FBYxQiwCFScjGxUaDi1PPSUUBUgSDRJ0TD4TBxciFRFlPgc6Lg4dBAogMBIRPFUNXxISEDwNcFJJEw8Qb0gl" ..
+    "AVBIaywAAAAtADcpASpYUGRdUUo8Fy4DCFo1TDkAFzZBU0EJAC4ETg8QFn5XQkRfTjVaSzUOBgBqPgxba2tkTENBq939rfDHy6uy25eCt9bTkfvwgJrtgcHJ" ..
+    "icnziMziicvGVTdk3Yyo0pDvlf3ehu/LyMLokOT4hvTnifHykdTjhaS12Lqxy9z1jNj7kvOqrsjuSA0BAg8NYyMVJhQMTHFRRn5YMiUMGgIbCEhrWFkLDx0V" ..
+    "Dw8gBFomEBUFEGRXTlkSBx0CDhpHBEEnGCwAAAAtADcpASoiB0FRX19TAx4TBBNBSUUPCQQXIw8PIg8VCxQWHxAOTl1dVxQnEhMHFw8VJkw/LQwgNgsNDQ4u" ..
+    "BFoJGwFFXUJiWUQ+BklLQSIATj8KC3BPAAQZSXNNVHlcaG9TXlNYTBMTHT4UFjJIJwYWLwRAMQESKhUdJxtCEBJldl9AYlwHExZcVQFrVEFuQV9NTkx7V11C" ..
+    "NwNDU15TdUwkOhwUNhEJTiQIHGwyBxsLQX5BIQwcDx8cXldBBWBcUURNVFUBa1VVYldaSGQjIg8VJhQhTEZ4R1R6NR4KGQwRS28qBhIlEwEUAAUADhgnB1EN" ..
+    "DxBxWUE/AFpYBwYKQBkiO2pSXE1OUnFNVHtHSydwUVxXQzExCAIpAQd6LgkaLQwLTywAIAoTOhoXQ1ZkQFdDIwIIBAQaBlRrWFlyT15ZZCMiDxUmFCFMRnhH" ..
+    "VHo1HgoZDBFLbyQXHScTPQgUBBMIDC0ZQhASADh0TD4TBxciFRFlPgcuJw0NDgMEbSABPBogWEZEXVhuPx4GBEFJRUsqCQonaywAAAAtADcpASpYUGdXWk4/" ..
+    "HwxYNREdWWtYWWBDZCMPDyIPFQsUFmVHUmVTQTMdBBNPLixDLwABYlxOUl5rAQAaKRsDblNEekNPBxcFFQ4ZAAMdDAorAwIETlxjFQY9EGhvU15TWEwTEx0+" ..
+    "FBYySCcGFi8EQCANFSoXEWhIQllARVc8bzEcCBgANwRZAxAbFQQCAgEMJk8kKQcHQ0YQDxZvMRwIGAA3BFkDEBsWDgkGAgQEFB1Cfw5CUVFeFm8xHAgYADcE" ..
+    "WQMQGxUEAgIBDCYyHTIQQhASeVxFWTEcChNPGgBaY0csCzIHGwsiLA8HPAcDRFxEEB8nEhMHFw8VJkw/LQwgNgsNDQ4uBCchDwcDf1lcZUQqF0lLQSIATj8K" ..
+    "C3BPAAQZSXFTRGRVVBkbOnBXQzEcCDUAAC1YKTIcLgIBDAsyKhsRZjgDVWFZSFMNbVI/EwIACl95SxcnFkZTVldvQUJ8XGhvU15TWEwTEx0+FBYySCcGFi8E" ..
+    "PQgUBG0xFToQDFkSDRJ0TD4TBxciFRFlPgcuJw0NDgMESWsYJxYDQRJyU1hMPhMqFxU8EE8cABUhDgMELQ4xDxE6VV8Ne15BQkw+EQxYDxESBWkwMAEOHA8L" ..
+    "E2FIfgoUDExcUXFXWRgHCyEEGAZCJgA6LRMABBxPAA4GJhAQf1NUW0NecE9JIyUdCAMlAA5qUUJBX1NqazYpGwNDU3NTQmUlED4TDRcKQC4mFjAPCxNAMSIT" ..
+    "ESYBQhASclNYTD4TKhcVPBBPHAAVIQ4DBGRrLw4XKRlCb1NeU1hMExMdPhQWMkgnBhYvBCcCAQ9jXFQBGxFZU15RUwM+Fx5eQz0ITCwANSMDCw1MSEkjFSYU" ..
+    "DExxUUZ+WDIlDBoCGwhIAgYWLE8gAAMEY1xUajcDQ1NeU3VMJDsKGQ9Wb28qCxgsAC0AGik2AyMtGQFCX1V7VUI+XCsXAh8CXyQQFyY1HAAAEjMABi0bAVQS" ..
+    "DRIHJxITBxcPFSZMPy0MIDYLDQ0OLgQ9KxoMA2JfQV9ZOR0HVlxUMGkiCEtsBxwOAy4lBwctAUoUHhADBQRaMAgYABoEbioRMTcDOQQCAiwMEQEWDUMcY1tM" ..
+    "SHBPSSMlHQgfZQMLLQwhBwgSJhVce01ODQEIGzxvMRwIGAA3BFkDEBsVBAICAQwmKBcnG0xkX1FVUw1tUisXDxULTAgEDQoUDCICDjAEEAkGEUhGEF1EDXJQ" ..
+    "YzQAGgRDKiYYNikbAzkELwIbJRArTl1eHGVOMR4MIhgEAA12RTwsFANPPQIiDREcDBJIHHZbQicSEwcXDxUmTD8tDCA2Cw0NDi4EPSsaDANoeVxSSChSVFZS" ..
+    "RW9vKgsYLAAtABopNgMjLRkBQl9Ve1VCPlw5FxMRC1lrWFkAAAAAAAAAAAAAAAB6V1xRWUA1eGMaDhcEQWsnGCwAAAAtADcpASoiB0FRX19TeTkGBRNBSUVk" ..
+    "JRYNIw8NBEAPJhZcaiEHVUZ8U1RIPFBAfCMVC0wlBDojFSYUDDYmDRcnGAd5W0ReUwMeEwQTQUlFDx8MDS4ETGssAC0AGik2A1l6RVBhSDwRBhsEIAxZJwBX" ..
+    "AAANCgkTLBQaLCEQTFxDQldfNRwKD0FJRRxBJxgsAAAALQA3KQEqIgdBUV9fU3k5BgUTTyQKXiIREC0PTlxONAcIGXpbBF9dXX1QSyMXHV5UQkkNelVQSCMP" ..
+    "Dw8PIiIVPD0XT2VVXlVCPRc9HxUYAAMYDAMnQVNBOyUqDEZmGwdaGgEeFgBmREVWUVhFH3lMcwAAAAAAAAAAAAAAAHpXXFFZQDUmAAINEUtrJAsNYlxOJAAU" ..
+    "Lk8yJxsWA3VfRl5MPTAGGgV+J0wlBBcjIg8VJhQhNhEkFg1AV2RbQkE1XD0TGQBFEGtHn+/Aht7ghf7ek9zdQm9TXlNYTHAxCAJBPBBPaW87Iw8PDw8iIhU8" ..
+    "PRc1SF5TXVtIBBsdGgRaMUgzETotDQETXUF+QTcnGQ1fAR5UREI9IC40SUZQGGdFS3dUQkFcVHZIfgoUDExcUXFXWRgHCyEEGAZCJgAtKxUCBEA1JhkAGxwY" ..
+    "SBINEgcZWjAIGAAaBG4qETE3AzkEAgIsDBEcHBZBVx5mU1UkKigaCBMLQC4LDWJcTiQAFC5PIC0NFnVzXFtRQz0XBwJPOABLP287Iw8PDw8iIhU8PRc1SF5T" ..
+    "XVtIBBsdGgRaP2QlARw6QVNBXVBJIxUmFAxMcVFGflgyJQwaAhsISB8MDS4EQDEPEyYPAGhIQm9TXlNYTBMTHT4UFjJIJwYWLwRkawIOIAAYaDcDQ1NeU3VM" ..
+    "JDocFDYRCU4kCBwKCAAVTlxjKBo7AQNDUVUcWEgnWksiBAwRYSoHHC5DR2ssAC0AGik2A1l6RVBhSDwRBhsEPAxDP0s3IwwLQVNBYSkdJgFAJ3BRXFdDMTEI" ..
+    "AikBB3ouCRotDAspBw83TzYpFglKQF9HWEkEAAgYEgQEXy4LGjtBU0FfawEAGikbA25TRHpDTwcXBRUOGQBlIgsNbDEBEgcVKg4aaEhCeHZZXwQDNgAGGy4S" ..
+    "A14uEVF3V0JBXVVqazYpGwNDU3NTQmUlED4TDRcKQC4tECwVQDIHGyZBSWggJkRfAhxYSCdaWFpBWVMbZ0VJbkFcUUdrAQAaKRsDblNEekNPBxcFFQ4ZAGUi" ..
+    "Cw1sJwEPGkF+QTEmAA8DdF9cQgMXHR0eABlvbyoLGCwALQAaKTYDIy0ZAUJfVXpfQyRcPRMZAEUQa0eQ+f+I8uSF++qRwOJCeHsQ26CmtdXiktzLgrnjR3MA" ..
+    "AAAAAAAAAAAAAAB6V1xRWUA1OgAYFVoxSDMROi0NARNdQX5BNycZDV8BHlREQj0gLjRJRlcYZ0VLcFRCQVxTdkh+ChQMTFxRcVdZGAcLIQQYBkImADErDxpP" ..
+    "OgQ7FSchDwcNDxADBycSEwcXDxUmTD8tDCA2Cw0NDi4EPCEbFgNmVUpCdREeABEPGQBDP0VEYiQAFANPFwQMPC0jQVtXXFtIPgZHOgQSEScJBBcjDw8iDxUL" ..
+    "FBYfEA5OXV1XfkQ+BkcsKBoBSDNFRGJSX2ssAC0AGik2A1l6RVBhSDwRBhsEPAxDP0spIxMLDxpBfkE2KRsDQ1NzU0JlJRA+Ew0XCkAub3MAAAAAAAAAAAAA" ..
+    "AAB6V1xRWUA1XCgVFR0TTD8AHXgiAQ8ABCAVXC4ADE5GWV1YBXl4SVZBVCdMJQQXIyIPFSYUITYRJBYNQFceZF9eORAFE0FJRUsqCQona05BTkEBABopGwNu" ..
+    "U0R6Q08ZASYGBBpFEGsRCzcEZEFOQWM2HSYRDVoIZF1RSjwXQQITAQAEQUVZYkEsAAAALQA3KQEqWFBkXVFKPBcrAxUACkNlLBQjBgtBU0EBABopGwNuU0R6" ..
+    "Q08fAgwYIAcWSD9FFjBBLAAAAC0ANykBKlhQc15ZXjUWKAUSERENJBdZYENkBAAFamt+ZVhCy5+R2omjufLzkf7RjIzkgt34QVtBicbRhMrEneWH17un0JvY" ..
+    "l83Hjsj+yPzDnfrqhsb8QXZRt99AUg3UvLvfpcWW0fuE+/LI9tSQ3d5kTENBp9zLr+HKDUZRQV0DIwIIAQ9UTg0/BAopTxkABxWs3fih9N3It73btYW1+u+T" ..
+    "/sONjMeA4OqE3uxOFSISH2YRB0FTSRLRt9SV8s6E2tzLy8Kc1+6HwOJrYxUVOx5MXkJRRVgFNgcHFRUdCkNjTHNiQU5BGgAwClo/FAtZGgUbPA1wUkkfB1Qn" ..
+    "TCUEFyMiDxUmFCE2ESQWDUBXEFNYSXAwCBgAGgRuKhExNwM5BAICLAwRZiUDX1deRhZZOBcHfEFURQ1rRVliIw8PDw8iIhU8PRdPZVVeVUI9F0cgCAcMTycA" ..
+    "WX9BCAACEiZrVGhVQg0SEBJ0TD4TBxciFRFlPgcuJw0NDgMEbSAXPBwUSBINElBMPAEMfEFURQ0uCx1IBAAFR2tJNh0mEQ1aCH9cckgjBhsZGFwDWCUGDSsO" ..
+    "AElHa2NBVGgFAUxeXBpQWD4RHR8OGk0EQUVZYkFOQU5BKgdUChQMTFxRcVdZGAcLIQQYBkImAFk2CQsPTiMiDxUmFCFMRnhHVHo1HgoZDBFfaS4WDTAOF0lH" ..
+    "QSYPEEJVQg0SEBIWDTkUSTQAGgRDKiYYNikbAzoOJAYYLTIXRBJEWlNDcDAIGAAaBG4qETE3AzoOCQYvBDM9HFhpV0NGREIpWkBWBBoBJ2tFWWIEAAVHa2NB" ..
+    "VGgSB1lVVVxABXlcKAMVGydCPgsNOy0BAAoEJ0FJaBsLQThVXFIEWnhEW0xZSABmSFRvTENMQ0xuTFllWE8AHx0fGwB9X0RbTFlIAGZIVG9MZExDie3rkt3N" ..
+    "aAAfHR8bAH1fRFtMWUgAZkhUb0xDTENMbkxZZVhPAB8dHxsAfV9EW0x+SACj4tOn6vuH4fql/flCKiUDYVVAQEgiIAwRCBsLDXZFWxEIAAYPESwTEWp/PWoc" ..
+    "eF1GYDkcORoADQBfOEVEYldkPilPCw4EBRQafV5RS1NfI1JUVlZ+OmplLRYyLAcPLA42DwAxVV8NAQACBh1gQmMpJlotQjsoGDojARQAFTpBSWgYA1laHlpD" ..
+    "SjV4Y1tMneSVrfb+q/jNhun+ST4zZiYHQVdTRmJIMR9JS0FWNUQ5BA0nEkxrZA0sAhUkVQRYXFNGX0I+UjoTDREGWR8AGC9JR2tOQWNBGCcWA0ESXEIWEHAV" ..
+    "CBsETiJIPzYcMBcHAgtJYTEYKQwHX0ESGxhhPxEIGjEYBFQuF3NiQU5BBwdjDxs8VQ5dHGRXV0BwHRtWDQRLeS4EFGwvDwwLQT1cVBcyTH5XXFdVWQQXCBtB" ..
+    "AA1IJW9ZYkFOQU5BYw0bKxQODVNCVUUNbVISfEFURQ1rRVliQU5BTkMQBAAcEANAABIePA1wUklWQVRFDWtFWR0mQDILDSYCABwQA0A4EBIWDXBSSVYcfkUN" ..
+    "a0VZYkFOBg8MJlszLQExSEBGW1VIeFA7ExEYDE4qERwmMhoOHAAkBFZhTzVMW0R0WV8TGgAaBVxHfy4IFjYEHUNHWxQAHTwzDV9xWFtaSXhQKhkMGSNyaUxD" ..
+    "Cw8YDgUEEAQGPhAQBUdeQldOO1oIBAYHTARBRVliQQsPCmsmDxBCfw5CUVFeFms5Hh0TEyQEXyoCCyMRBkFTQS0IGEJ/TwASdlNFWXAzHQIAFw4nFCJXBAAd" ..
+    "FS8VNwAXI1VfDUZCR1MnDzVHMAAHEWw/ERghCiMOCgRjXFRqk8qM14y9BAW58cGT6fKAlfiN4N2EytCI9MuE++eR35LVpJofD1otLlggABFMKA49KxIaAAAC" ..
+    "JkFJaEBSHThvdRhrMQEdNxUABE4gNgknBApBU0FzT0R9f2gAH3ZAQ0QkUgRHaysiAw0XDCsVHSxfJC0AFiQQQhASREBDSFotLlgnBhBEPxY0cyULDQ8YFQAY" ..
+    "PRBCEBIAHAYYWnhEWyQnNQ0bCRg7BBwSZD4ETzEbJT1gU0NGU19wUklWQVRFDWtYWTYTGwRkPgRPMRslPX5aX0V4TD0XSVZBVEUNa1hZNhMbBGQ+BE8xGyU9" ..
+    "flpfRX5IMR4dHkFURQ1rWFk2ExsEZD4ETzEbJT1+Wl9FckQjBggYAhFFDWtYWTYTGwRkPgRPMRslPXlXUV91QjwdG1ZBVEUNa1hZNhMbBGQ+BE8xGyU9flpf" ..
+    "RXpIJhcFVkFURQ1rWFk2ExsEZD4ETzEbJT1+Wl9FZnsAIR0XFQEWDWtYWTYTGwRkPgRPMRslPX5aX0ViXzERDAQSVEUNa1hZJAACEgtrHCZaDSYycmZCU1VI" ..
+    "IjEGGg4GRQ1rRURiIgENARNwTxI6Gg9/dXIaBBhlXklEVEFJDXlQTGtrMSZAJBAxKwAcBUVeWVVeWRMdBRkTVFgNCAoVLRNdTwgTLAwmDzdKHgIcEgUdfFJa" ..
+    "Rkh+OmplICoSPigOABUQCA4tVUINEhASFhBwQ1t8axgKTioJWRYTDwILEzBBSWgOHyc4HR93WCQdSTMPFQdBLgFZEjc+azEmbSABPBonQ1NSXlN9BiJJS0EA" ..
+    "F1gub3NvTC8UGg5jIwE7GmhydR5zQ1k/MBwFDjELTCkJHCZBU0EaEzYEfkJYT2xHRF0We2N4NjFPNRBZJDNKHSQAAAwNJgVUdVUWX0dVODwAfTMcAg5UMxlB" ..
+    "Oj5sIBsVATd3PjEmFABBV1QSCw0kABwTa35IAAoQDS1BJQQAaxwmWgkAFkJ5VVxzQzEQBRMFVFgNPxcMJ2tkTEOJxMuRw+CLjbTWn5MnDzVHNxQACn4kFwxi" ..
+    "XE4HDw0wBH4kGgFMXhBzQ1k/IQYEFDcKQyVFRGIPBw1kDSwCFSRVLkxBRGFZXyUmABsEVFgNe28VLQIPDU4yDDMhFzYtYn50fWFjcE9JR1F+CUIoBBViLC85" ..
+    "MTIMMyEXMSt+ZnF8dWhwT0lPUURvJ2ZIMSsVDA4WaxwmWgAcFk9dSG1zQzEQBRMFVFgNLQQVMQRkPilPCwgAKhoacmFZSFMNbVJYfD4zS2UiERstGTE1HAAt" ..
+    "EgQpBwdDUUkSCw1gXFx8a1lIbD4RFmInAgQLaxwmWgkAFkJ0XFdTDW1SHQQUEW9yDEs4NxUBJwIEJikkaEhCHgI6bXEDEQcdGScYAEgIChcsQVNBAAgva35l" ..
+    "WELKlYvbr4m1+fyS3OhvcgxLKycMARcLIC0IGWhIQllARVc8chdcOxMMGxNICgsQLyIGABwiLA8aaEhCQ1tcOGlqfiAMGw4CAGwlDBQWEw8CBSIsDxpoSEJD" ..
+    "W1w4PAB9Uj4XDR9FQiVFDiMVCxNkPgRPIykBB19lUV5daD4TCxoEEEUQaxELNwRka0NMpMbPoezGyICZ1IqStfDek8/Hb3IMSysnDAEXCy0iFxUNGwNPXlVW" ..
+    "FhBwBhsDBH4JQigEFWINDxcPMyYMGz4QBg0PEFRXQSMXY3xMWUXK7N6Q28WHzdKJy9iRysKHg4E6bXEDAhcEGRcRIkUkFg0RCQcRIgA1ADEmFABBV1QSCw0k" ..
+    "ABwTaxgKTioJWSUJARIaMisIBAQUFExgVV9ZWzUWSUtBEgRBOABzSExDienLpurhrf31xYGuOGlqfjQ9JlMrIEMqBxUnBU5cTgciDQctfz1qHHZmZh8PNAUf" ..
+    "BhwRbiQLF2JcTg8HDUk+M2YzNn0Ab2JaTCkXGzoEFRNICAoXLEFTQQAIL2srD1skeWICbXdZJBMKHgwRC1lrWFksCAJrMSZtJyAYRz1hW15XV18GFwUZAh0R" ..
+    "VGtYWSwIAmsxJm0nIBhHPWxcRFtxXzEEAAIYVFgNJQwVSD4pTyg1E1MrBBQRWWZVXlNdPwAdIggXDl5rWFk5HGQ+KU8FNSR6KjZIXlVCWV8kIggDEhEwQz8M" ..
+    "FWJcTlFkPgRPMhwlUHJmVV5TXT8AHTAAHQlea1hZORxkPilPBTUkeiogQV1TWVNJFRwdBAAaBkg4RURiGhNrMSZtJyAYRz1vXlFRXUE5AR1WXFQeUEE6Pmwn" ..
+    "OjFcPgsABxwHC0pVVUBTSRgdGVZcVANMJxYcSD4pTyg1E1MrHBwPSF1FRnpEPRsdVlxUVB97b3MdJkAnOjFxPjwhBhZCQEllX0M0HR5WXFRVA3hQcx0mQCc6" ..
+    "MXE+NyQQA19mWV9TQiUGSUtBRVUnFCJXBDU+UzEnLxgnOBAHSRINEgQaZXg2MU8yMX15OjEnCAkJGi4lBwctAUIQEgMCPHIXXC8iMUY6YjkHEDYzDwUHFDBB" ..
+    "SWhAUidtdxxweQBANjkTFgxZAgsNJxMYAAJBfkFEZkVTGzhvdRhrBCJbKS0bEmU7KRYhCj4EHAImDwBoSEIeAjptcQMWJjlEPjoKeS4JHDIOHBU8AC0GEWhI" ..
+    "Qh4CADhpan40PSZTKyZYORccLBU6ABwGJhVUdVUMRF46bXEDFiY5RD4gBF8sAA0ODg0KOgguBFR1VVInbXccYkwiFQwCKR0WWSQXAGJcThoTaxwmWg4hMh9t" ..
+    "Y0ZXXyQmABsEVFgNe28mBU8oNT5THCcYLRAwSEZFQFh9PwFJS0EaDEFBbyYFTyg1PlMcMhUuEDhCXFViWV45BgAZDwdFEGsec2JBTkE5DjENEHlVXw1JOhIW" ..
+    "DXBSSVZBD0VdJBZZf0E4BA0VLBNHZhsHWhodAQYdYF5JRFRESQ15VUx1SEJBHAAnCAE7VV8NBQACFlB8eElWQVRFDWtFAmIRARJOXGM3ESsBDV8BHlxTWnhD" ..
+    "WEZQWEUcfUlZc1VaV0dNYxMVLBwXXhINEgIdYFIUWmtURQ1rGFVIQU5BTjYsExgsR0IQEks4Fg1wUklWQVQeDTsKCmJcTjcLAjcOBntbDEhFGB8HH3xSW09N" ..
+    "VFcVf1VQbkEcAAoINhJUdVVQHQIQTxoncFJJVkFURQ0wRQktEk5cTjcmAgAnB1EDXFVFHgBjRV9aQUVRFGdFSnJWR01OEyIFHT0GQhASAQcGDS1eY1ZBVEUN" ..
+    "a0VZOUEeDh1BfkEiLRYWQkADHFhIJ1pEQFVHUgFrVkl0TU5MWlZwUV1kVRBMVllHRQ1tUlhDUVQYAUFFWWJBE01kQWNBVB8aEEFWAxILDSt4SVZBVEUNa0UC" ..
+    "YhEBEk5cYzcRKwENXwEeXFNaeF9aRVlYRR96SVl3VF1YR01jExUsHBdeEg0SBB1gUhRaa1RFDWtFWWJBFUEeDjBBSWgjB05GX0AFAz4XHl5MRVcYflVVYlJd" ..
+    "VkJBblZBeENLARJCU1JEJQFJS0FAVR1rGFVIQU5BTkFjQVQzVRJCQRAPFns1ER0ZE0dLQy4SUW9UXlVYTWNSRX1ZQgAACQsFBHxSGxcFHRBea1hZcVFeQRNN" ..
+    "SUFUaFVCDRIQSRZdPwFJS0EiAE4/CgtxTwAEGUluUEJ6R1oBEgkeFhlkQUBaQQYESSIQCmJcTlJeUWMcWEJVQg0SEBIWDStSGRkSVFgNHQAaNg4cUkAPJhZc" ..
+    "ek1UFAccEgcZaUdQWkFZXRxiSVkwAAoIGxJjXFR5RVIdAhBPGidwUklWQVRFDTBFCS0STlxONyYCACcHUQNcVUUeFGZBXlpBWVQUc1xVYlhYUFZIb0EGKREL" ..
+    "WEEQDxYcYEJZRkEJSSdrRVliHGQcZGsvDhcpGUJ+RlFAQn41AB8TEzwKXUEJFiEAAkEnEhAAEi0hDWVdQHFeSDMZY3xMWY2q4YLnxmsxJkAyKg0RJgEjRF91" ..
+    "XFdPPBcNVlxUEV8+AHMdJkAyBw0mDwAJHA95U0JVU1kdHQ0TQUlFD6z+16fo44jg96bP7q/v5sqpntSetLf8wJPPwkcnFCJXEQgCBAAVAggZHBADQHFYV1VG" ..
+    "cE9JAhMBACcnChojDU4CGxMxBBo8JgtBV15Gd0Q9JggEBhERDXZFFysNZA0BAiINVCsAEF9XXkZlRDwXBwIgHQh5KhceJxU+Dh1BfkEaIRloJx8dcVdAPB0K" ..
+    "HWsrIgMIBBQuDg0KKw8iAxgtEUIQElZTWl41eGNbTJzih67u7KT10Ifk4aviyUIqJQNzRUZZfjsbBRosFQxDDgsYIA0LQVNBJQAYOxBocnUec0NZPyECHw0Y" ..
+    "MkgqFRYsEk5cThpJQVRoVTkPf1VeU0hyL0lLQQ9vDWtFWWJBTkErDyIDGC1VXw1UUV5FSHx4SVZBVEUNa0UqKQgCDR1BfkEPQlVCDRIQEhYNcFJJVjtUWA0w" ..
+    "RTwsAAwNC0F+QRIpGRFIHhB6WUE0JgAbBFRYDXtFBG5rTkFOQWNBVGhVQg0SaBILDStSLBgAFglIa1hZJAACEgtNYykbJBE2RF9VEgsNYFIUWmtURQ1rRVli" ..
+    "QU5BTkEAQUloDkJoXFFQWkhwT0kQABgWSGdFMS0NCjUHDCZBSWhFQlAeOhIWDXBSSVZBCW8Na0VZP01kQU5BYzpWChkNVRJ2QENEJFA0VlxUHidrRVliQU5B" ..
+    "TiQtABYkEEIQElZTWl41XmNWQVRFDWtFWREKBw0CEmNcVDN/Qg0SEBIWDXBSSVZBLkUQax5ZBw8PAwIEY1xULhQOXlccEn5CPBY9HwwRRRBrVVk/TWRBTkFj" ..
+    "QVRoVUINEhBqFhBwCUkzDxUHQS5FRGIHDw0dBG9BPCcZBnlbXVcWEHBCSQtNfkUNa0VZYkFOQU5BYyJUdVUZDXdeU1RBNVJUVgcVCV4uSVkKDgIFOgguBFR1" ..
+    "VVINTxw4Fg1wUklWQVRFDWtFL2JcThpOJC0AFiQQQhASVlNaXjVeST4OGAF5IggcYlxOUU4cb2tUaFVCDRIQEhYNcFIvVlxUHg0OCxggDQtBU0ElABg7EE4N" ..
+    "el9eUnk5HwxWXFRVDTZJc2JBTkFOQWNBCUJVQg0STR48DXBSSS1DMxBDaThZf0EVa05BY0FUaFVCaFxRUFpIcE9JEAAYFkhnb1liQU5BTkFjMh8hGQ5eEg0S" ..
+    "TSdwUklWQVRFDWtFWWI7TlxOGmMkGikXDkgSDRJQTDwBDFpBPApBLzEQLwROXE5RYxxYQlVCDRIQEhYNcFJJVjlUWA0wRTwsAAwNC0F+QRIpGRFIHhB6WUE0" ..
+    "JgAbBFRYDXtFBG5rTkFOQWNBVGgIaA0SEBJLAVpSSVZBL0d+PAoLJkMzQVNBOGtUaFVCDRIQEnNDMRAFE0FJRUsqCQonTWRBTkFjQVRoVTFGW1xeRQ1tUhJ8" ..
+    "QVRFDWtFWWJBTkFOO2NcVDNVJ0NTUl5TDW1SDxcNBwABay0WLgU6CAMEY1xUeFUfATgQEhYNcFJJVkFURQ0TRURiGk4kAAAhDRFoSEJLU1xBUwFwOgYaBSAM" ..
+    "QC5FRGJRThxCa2NBVGhVQg0STTgWDXBSFFprCW8nJwoaIw1OMgUILw0/LQwvTEIQDxZWWlJJVkEuRRBrIBc3DEAqCxgADhAtWzgBOBASFg0IUlRWJBoQQGUu" ..
+    "HDsiAQULTxtNfmhVQg1xEA8WaD4HBFgqERxuJAEcbCJCa05BY0EiaEhCaFxFXxhmNQsqGQURS3tnb1liQU4nTlxjJBo9GExmV0lxWUk1XC98HH4JQigEFWIy" ..
+    "BQgCDQAOGyQxDVpcZEBXTjtSVFYaCW8nZkg/EjJkPilPFg8YJxYJa2JjEgsNJAAcE2t+SACv2Per5OOHxsCm3ftCKiUDfl9FYEQjBwgaLBsBSGtYWSQAAhIL" ..
+    "axwmWgQaFXtbQ0dXQRMdBxgEFxFEJAtZf0EACAJrSUxZr9LZxKuU2omaue7OfD4zS38uCBY0BCgOCSQtABYkEAYNDxBGRFg1eGNbTBULWSJFOAQqZD4pTwIP" ..
+    "ACE0JGZtdXx3bxw3LVZcVBFfPgBzHSZAIAAVKiAyAyohQlxeV1VZOR0HVlxUC0Qnb3NvTA8PGghjCh0rHmhydR5zQ1k/IAwcDh0LaCUEGy4ECkFTQTcTAS1/" ..
+    "aAAf2LWcyNvnjOnWnMShQQkWIQACQR8UJhQRFxoMckZVXlNdPwAdVlxUFFguEBwdDgA+GgQvBAQnBxYNXUISHl4pHEkXDxBFXjILVzMUCxQLPiwPKzwQDkhC" ..
+    "X0BCBFp4ABBBHRZLIgkcYgAABU4IMAcdJBBKD3NFRllvPwcHAhhaA0QnAFtrQRoJCw9JQVRoVQ5CUVFeFl4lEQoTEgdJDSgKFzYEABVOXGMRFykZDgVURVxV" ..
+    "WTkdB15IVBdIPxALLEEcBA8FJQgYLV1AbEdEXXRCJRwdD08SDEEuR1BiBAAFR2tjQVRoKiUDc0VGWWgoFwoDFRFFEGtNCjcCDQQdEmMAGixVAUJcRFdYWXBP" ..
+    "VFZDABdYLkdQSAQCEgtrY0FUaColA3NFRlloKBcKAxURRRBrEQs3BGQEAAVJaxgnFgNBEmNRREQgBiUZABAWWTkMFyVBU0E1OioHVCEGBEReVRoUbCUGBjQO" ..
+    "AQtZMksfKw0LQ0dBNwkRJn9CDRIQW1ANIhcIEgcdCUhjRzg3FQEjARQtFQ1mEwtBVxIbFhBtUksCEwEAD2sREScPZEFOQWNBVGhVDkJTVEFCXzkcDl4GFQhI" ..
+    "cS0NNhEpBBpJYQkAPAURFx0fQFdafhUAAgkBB1g4AAshDgAVCw83TxcnGE1CWVRbV0M+EwZCVkxITCcRVgAAAAAAAG4iFTxYKlhQH19XRD5dKxcPFQtMCAQN" ..
+    "ChQMTwIUIkNdYV1LJxIQEhZIPhZjEw8QOHBBb1Rvhdbah8DPaysPWzZFV11XFhBwUC0XEx9HJ0EJFiEAAkEPFyIIGCkXDkhmWFdbSCNSVFY2HQtJHixDBQQa" ..
+    "NQYELgQHYFxoQV1TU1oNJBoMGwQ4DF4/RURiGhNrCA4xQQAgEA9IfFFfUwFwLUkfD1QVTCIXCmoAGAAHDSIDGC0hCkhfVUEfDTQdY1ZBVEVZKgcVJ08HDx0E" ..
+    "MRVcPB0HQFd8W0VZfFIdHgQZAGMqCBxrawsPCmtJTFmg8sjIuaXbrJy45eYjKH46amUkDDYOJggKBAYPFSoZB0kSDRJQTDwBDHxrWUjI9M6fz9aH7NtrHCZa" ..
+    "CwAQX1deRn1IKVJUVkMzRycUIlcJBBclBxIiAxgtEUIQElZTWl41eGNbTFlIAGZIVG9MQ0xDTG5MWWVYTwAfHR8bAH1fRFtMWUgAZkhUb0xDa0NMYzoyAS1C" ..
+    "GW8Q27Ogt8/HnubegKbegcbfhMP5ZExuTFllWE8AHx0fGwB9X0RbTFlIAGZIVG9MQ0xDTG5MWWVYTwAfHR88QT8RCBpBNwpDLQweBA4CBQsTY1xUajQXWV1y" ..
+    "XUNDJAs2NQ4aA0QsR3MuDg0AAkEADhouHAVrW1xXFhBwMQYYBx0CayQJHScTTk9AQWFOBy0BFkRcV0FpD3BcR1YVGxZZOQwXJUkiDg0ALzEYKQwHXxxlQVNf" ..
+    "GRZAVk9aRQ9lDwotD0xrAg4gABhoNg1DVFlVZEgxFhBWXFQDTCcWHEgNAQIPDWMiGyYTC0phUURfQzdSVFYHFQleLm8VLQIPDU4iLA8SIRImREBESxYQcBQI" ..
+    "GhIRbycnChojDU4iAQ8lCBMDEBteEg0STSdwUklWQycAXz0ACxAECQgBD2FNVGo9DV1/WVxmQTELDAQSVkkNaS0WMiwPGT4NIhgROgZAARB4XUZgORwrGRQa" ..
+    "EVRpSVlgKQERIwA7Ixs9GxZUEBw4Fg1wUkswAAcRbD8RGCEKTE1OQwUABzw0FllTU1l7QjQXS1pBViRZPwQaKSUHEhoALQIRallCD3RRQUJsJAYIFQonFUgu" ..
+    "AVtuQUwnHBQqFQcFRCdDU1JeUw98UkswEwEMWTgoSAYEAgAXNyINAS1XTicSEBIWDxUhOSksFRZZLhdbbkFMJD0xHDIcJwIsTF9VEBoNcjc6Jj4nDUI8LRwj" ..
+    "DRoJTE1jQzEbJT1+Wl9FckQjBggYAhFHAWtHPBExMTIGDjQ1BikWB19BEh4WDxUhOSk1EQRACAoVLRNMTU5DBjIkFyYKQkV8V0BIPFBFVkMxNn0UNhEtFj43" ..
+    "PjI3AAA9BkABEhJ3ZX0PNAYYFScMVy5HVUhBTkFOQwIUACcwDExQXFdmewBQRXxBVEUNaSQMNg4sFB0OBg8VKhkHSRAcOBYNcFJLNxQACnt4OjwsAAwNCwVh" ..
+    "TX5oVUINEHFHQkIGRjYzDxUHQS4BW25rTkFOQWEgATwaKUhcdVxXTzwXDVRNfkUNa0VbAxQaDj0OMRRWZH9CDRIQEH5EJBAGDj4xC0wpCRwmQ0JBTCkqFRYn" ..
+    "DT1+W0pXFAFwUCEfFRYKVRQxCyMPHREPEyYPFzFXTicSEBIWDxEHHRknGABIaUlZYCAbFQEnLwQRACVAATgQEhYNciAMGw4CAGwlDBRgTWRBTkFjQyMpAQdf" ..
+    "ZVFeXWg+EwsaBBBHAUFFWWJBTDMLDCwXEQQUFEx3XlNUQTUWS1prVEUNa0crJwwBFwsmKw4HPCYKREJ8U0BMFRwIFA0RAQ9nb1liQU5DPQQvBBc8IQdMXxIe" ..
+    "PA1wUklUJyA1HxQgFyMDAgQKQ29BVg4hMh9tdl5PfiAXDBJDWEUPDTEpcD4mBAcGKxU7LhMRSEYSHhYPFiY5RD47F08iESsjBQcUHUNvQVYOITIfbX9AVEQk" ..
+    "OwcCBAYTTCdHVWJDKDU+UxwtGz89EmFdU1lmSCIRDBgVVkkNaSMtElMxLwE1Jg0ROBoQWWBRXFFIcl5JVCcgNR8UMRAvBAEUGi0qDB08V04NEHZmZh8POgAF" ..
+    "FRsXVBwMFyYOGUNCQWEnIBhHPW5eVVNEeTkfDBkUAEcBQUVZYkFMMgcNJg8ACRwPaFxRUFpINFBFVkMnDEEuCw0DCAM1DxMkBAAFGgZIEBwSFH45HgwYFTUM" ..
+    "QB8AGC8iBgQNCmFNfmhVQg0Qc1NbQT8RAjMPFQdBLgFbbmtOQU5BYSABPBoxRltcXntMORwsGAAWCUhpSVlgIBsVATIoCBgkIgdMQl9cRQ98eElWQVRHeCUJ" ..
+    "FiEKKDE9Q29rVGhVQg9+X0VgRCMHCBosGwFIaUlzYkFOQUwzJgwbPhAkQlV1XFdPPBcNVE1+RQ1rRVsDDxoILycIPjEGNCBhd3QQGg1yMxwCDiYARyQMFwcP" ..
+    "DwMCBCdDWEJVQg0SEnNDWT83ERMCARFIaUlzYkFOQUw1KwQZLVdOJxIQEhYPEQcdGSkdAUgOCxggDQsFTE1JQVRoVUBuR0JAU0MkOQwPQ1hFDwAAAAYIHQAM" ..
+    "DSYFVmR/Hyc4XF1VTDxSDwMPFxFEJAtZAQ4eGC0OLQcdLyMDQUdVGkBMPAcMX2tURQ1rDB9iFRcRC0k1ABg9EEsNTA0SFFkxEAUTQ1QRRS4Lc2JBTkFOQWNB" ..
+    "Bi0BF19cEERXQSUXY1ZBVEVIJQFzYkFOQQIOIAAYaBYNXUsQDxZWLXhJVkFUA0I5RRInGEJBBxUmDFQhG0JdU1lARQUmEwUDBF1FSSRvWWJBTkFOQWMCGzgM" ..
+    "OUZXSW8WEHAxBgYYNwpDLQweFAACFAtJKhURJVxoDRIQElNDNHhJVkFUF0g/EAssQQ0OHhhJBBosf2hBXVNTWg02BwcVFR0KQ2smFi4NCwIaIiwPEiESSgQ4" ..
+    "EBIWDTwdChcNVAFMPwRZf0EVHGRBY0FULhoQDW0cEl1IKVIAGEEdFUwiFwpqIgEPCAgkKhExBksNVl84Fg1wUklWQVQMS2s6PhkKCxgzQT1cVCYcDg1GWFdY" ..
+    "J3BSSVZBVEUNa0VZYgUPFQ86KAQNFVVfDXFfQk9uPxwPHwYiBEE+AFEdJjUKCxgeSH5oVUINEhASFkg+FmNWQVRFSCUBc2JBTkEcBDcUBiZVBkxGUThTQzR4" ..
+    "YxoOFwRBawMMLAIaCAEPYyAEOBkbbl1eVF9KeBYIAgBdbw1rRVkrB04VFxEmSRApAQMEEk4PFg8kEwsaBFZFWSMAF2ITCxUbEy1BESYRaA0SEBJQQiJSNlpB" ..
+    "HwBUawwXYggeAAcTMEk3JxsERFV7V09eeVINGWtURQ1rRVliQQcHTgUiFRUTHgdUbxBMCw0+GwVWFRwAQ0FFWWJBTkFOQWNBVGgqJXZZVUtrDW1SKhkRDSZC" ..
+    "JQMQJTcPDRsEawUVPBQ5RldJbx8ncFJJVkFURQ0uCx1IQU5BTgQtBX4tGwYnOFxdVUw8Ug8DDxcRRCQLWREAGAQtDi0HHS9dBEJAU1cfJ3BSSVYIEkVuJAsf" ..
+    "KwY9ABgILQZUJwdCBVxfRhZLPwAKE0EVC0lrCxY2QS0OAAcqBjAhBxZUGxBdRA0kCxkTDhJNWjkMDScHBw0LSGMfSWhXBFhcU0ZfQj5QSQIJEQsna0VZYkFO" ..
+    "QU4TJhUBOhtCS1NcQVMncFJJVgQaASdrRVliIgEPCAgkMhU+HAxKEg0SQl8lF2NWQVRFQSQGGC5BAQpOXGMRFykZDgVURVxVWTkdB15IfkUNa0VZYkFOCAhB" ..
+    "NxgELRoEBVtDVFlBNBcbX0FJWA1pAwwsAhoIAQ9hQRUmEUJZS0BXWUt4HwgdBBIKQS8AC2tBU1xOQyUUGisBC0JcEhJXQzRSBxkVVAxeLQoVJgQcSS0OLQcd" ..
+    "LzMNQVZVQB8NJBoMGGtURQ1rRVliQU5BTkEuAB8tEw1BVlVAHm4/HA8fBjIKQS8AC2trTkFOQWNBVGgQDEk4EBIWDXBSSVYWBgxZLgMQLgRGIgEPJQgTDhwO" ..
+    "SB4QekJZICEMBBcdBkhxLyoNLysPDQ4nBFwLGg5BV1NGdUI+FAARSV1MBEFFWWJBCw8KSElBVGhVIUJcVltRfjEEABgGVFgNLQQVMQRkQU5BYwgSaBoJDUZY" ..
+    "V1gNEx0HEAgTIUQ5EQBiXE4HDw0wBFQtGwYnEhASFl81BhwED1QKRkEAFyZrZA0BAiINVC4ADE5GWV1YDRwdCBIiGwtLIgJRa2tOQU5BKgdUPAwSSF1WGkRI" ..
+    "MRYPHw0RTA01WFlgBxsPDRUqDhpqVQ1fEkRLRkg/FEEfEhIMQS5MWTxcTkMIFC0CACEaDA8SX0AWQz8GSR8SEgxBLk06LQ8ICAknKg0RYVUWRVdeOBYNcFJJ" ..
+    "VkFUF0g/EAssQQgAAhIma1RoVUJIXFQ4Fg1wUgUZAhUJDSQOVWIFDxUPQX5BBCsUDkEaVkdYTiQbBhhJXW8Na0VZYkFOQRwENxQGJlUqWUZAYVNfJhsKE1s+" ..
+    "NmIFIRwhDgoERhMmABAuHA5IGnNdWEs5FS8fDRFMBEFFWWJBCw8KSElBVGhVC0sSX1kWTD4WSQIYBAAFLwQNI0hOXFNBYRUVKhkHDxJEWlNDWlJJVkFURQ1r" ..
+    "JAkyDRciAQ8lCBNgEQNZUxk4Fg1wUklWQVQXSD8QCyxBGhMbBElBVGhVB0NWOhIWDXAADAIUBgsNLQQVMQRkBAAFSWsYJxYDQRJWR1hOJBsGGEE5BF8gJhYs" ..
+    "BwcGKggxFQ1gXGgNEhASdUI+FAARJR0XWTJFRGIVHBQLayYPEEJ/DkJRUV4WZD4bHR8AGCZCJQMQJUFTQS0OLw0RKwEhQlxWW1EFeXglGQAQJkIlAxAlSUdr" ..
+    "BwdjFQ04EEp+V0RGX0M3AUBWXElFDz8EGy4ETEEaCSYPfmhVQg1zQEJaVBMdBxAIE01+LhENKw8JEkdrJg8QQjYNQ1RZVWRIMRYQVlxUEV8+AHNIMgsNCwI3" ..
+    "NREpGEoEODpGV147XBoGAAMLBS0QFyEVBw4ASWprVGhVQlpaWV5TDSQTGh1PAwREP01Ka0EKDmRBY0FUaFVCDVtWEnVCPhQAETMRBEkyRRgsBU4iAQ8lCBMM" ..
+    "HBBZSxBGXkg+eElWQVRFDWtFWWJBTjIPFyYiGyYTC0oaREBDSHl4SVZBVEUNa0UcLAVkQU5BYwQaLH8HQ1YZODwAfV9EW0xZSABmSFRvTENMQ0xuTFllWE8A" ..
+    "Hx0fGwB9X0RbTFlIAGZIc29Mi+vxicDckujNh5Kx2bC5xezdY1tMWUgAZkhUb0xDTENMbkxZZVhPAB8dHxsAfV9EW0xZSABmSFRvTENrQ0yr5t6t/vfLvavU" ..
+    "qqBaHgYVABhFfy4CEC0POAACFCYSVHVVGScSEBIWDx8ADBEOGkcBQUVZYkFMJwIOMQgQKVdOJxIQEhYPBBcRFxJWSSdrRVliQy0AAgglDgYmHAMPHjoSFg1w" ..
+    "UCEZDxMuQiUCW25rTkFOQWEmEToYA0NLEh48DXBSSVQjBgRXIglbbmtOQU5BYTIdJhIDXV1CVxQBWg9jfA0bBkwnRR83Dw0VBw4tQTInBw9MRn5HW081AEEY" ..
+    "SH5FDWtFFS0CDw1ODzYMVHVVD0xGWBxQQT8dG14VGwtYJgccMEkASE4OMUFEYX9CDRIQXllOMR5JBRUGRRBrERYxFRwIAAZrDwElXGgNEhASWkIzEwVWCn5F" ..
+    "DWtFDioIAgROFTEUEWgRDScSEBIWDXBSSQUVBkkNIEVEYhIaEwcPJE8TOwAABUFEQBoNcixBW15RAQZiTVwmRApECkhhTVRqUFMBFwIQHydwUklWQVRFDSID" ..
+    "WSlBU1xOUWMVHC0bQk9AVVNdDTUcDXxBVEUNLgsdSEFOQU4TJhUBOhtCXkZCOFNDNHhjGg4XBEFrAwwsAhoIAQ9jMRU6Bgd+V0JEU18ZHA8ZSQAAVT9Mc2JB" ..
+    "TkEHB2MVDTgQSllXSEYfDS5PSVQSABdEJQJbYg4cQRoEOxVUdUhCDxAQRl5IPnhJVkFURQ1rRQsnFRsTAEEtCBhCVUINElVcUidaUklWQRgKTioJWTAECQgB" ..
+    "D2NcVDwQGlkIXVNCTjhaSyQEEwxCJV9cMUtGT0NIZhJebVhHXhhgXldUNQAaTENdRUI5RQ0nGRpbAwA3AhxgVzBIVVldWBd1AUNeT1lMCDhPXWBIZEFOQWMN" ..
+    "GysUDg1RRUBESD4GORoADQBfOElZLwAWMQIAOgQGO1VfDUZVSkIXPRMdFQlcR30nBAAnEx1bSxJpSVEsXksIQRodE156WkwSSl1HBEFFWWJBAg4NAC9BFicA" ..
+    "DFlLZFdOWXBPSQIEDBEXJgQNIQlGQywONg8AMU9HXhgYaRNJfC9CX0NdbydrRVliCAhBAA43QRc9BxBIXERiWkwpFxsFQRsXDSUKDWIMDxk+DSIYEToGQkJA" ..
+    "EFxZWXAQBgMPABx5Lh0NYhUGBABrY0FUaFVCDRJCV0JYIhxJGAgYbw1rRVknDwprZEFjQVQkGgFMXhBQWVg+BhBWXFQRQiUQFCAEHElGAywUGjwMNkhKRAhR" ..
+    "XiUQQVRNVkkNaUdQa0hkQU5BYwgSaBsNWRJSXUNDJAtJAgkRCydrRVliQU5BThMmFQE6G0JDW1w4Fg1wUgwYBX5vDWtFWTAEGhQcD2MafmhVQg0SEBIWfzUV" ..
+    "ABkPVFgNOQAeKw4AQQETY0MhJh4MQkVeEBoncFJJVkFURQ0bCRg7BBwSTlxjFRsmAA9PV0IaVVgiAAwYFSQJTDIACzFIQmtOQWNBVGhVQmBTSGJaTCkXGwVB" ..
+    "SUVZJAsMLwMLE0YMIhkkJBQbSEBDGxoncFJJVkFURQ0JCgwsFRdBU0EhDgEmARsBOBASFg1wUklWMxUSDXZFDScZGk1kQWNBVDV/B0NWOjhaQjMTBVYHAQtO" ..
+    "PwwWLEEnEj0EMRcROjQOQV1HV1IFORwPGUh+RQ1rRRAkQQAOGkEqDxInVRZFV144Fg1wUklWQVQXSD8QCyxBCAACEiZrVGhVQkhcVDg8DXBSSRoOFwRBawgQ" ..
+    "LDFOXE4VLA8BJRcHXxpvdRhlPwIkHw8kCUwyAAsxSE4OHEF1a1RoVUJBXVNTWg09ExEmQUlFWSQLDC8DCxNGPgRPPCcFL0xKYF5XVDUAGl9BGxcNfG9ZYkFO" ..
+    "DQECIg1UJRwMbxINEkJCPgcEFAQGTXIMSzEtESMIACMsFBo8DEsNXUISBR1gQllGUX5FDWtFFS0CDw1ODCIZNmhIQlldXkdbTzUAQSkmWi1COygYOiMBFAAV" ..
+    "OkhUJwdCQFNEWhhFJRUMfGtURQ1rDB9iCAAHAU8TDRUxEBBeEgwSW0Q+IkkZE1QMQy0KVxINDxgLEzBBSmgYA1ViEEZeSD54SVZBVEUNa0ULJxUbEwBBJQAY" ..
+    "OxBoDRIQElNDNHhjVkFURQBmRZ/M84f4yoT005LzyoaRiNauu8jJ2obK6ZDfl63wwWJfU0GK3fmH6MWQ+4XWiLjftMCd1f9rVEUNawkWIQACQQMAOzEYKQwH" ..
+    "X0EQDxZZPxwcGwMRFwUiCx8tTyMAFjEvAA0tBxEEEl9AFh1aUklWQR0DDSYEARINDxgLEzBBSmhFQkxcVBJfQzYdRyYNFRxIORZZfFxODA8ZEw0VMRAQXhJE" ..
+    "WlNDWlJJVkFURQ1rFxw2FBwPTgciDQctf0INEhBXWElaeElWQVQMS2sMFyQOQCMBFC0VDWhJQkBbXnAWQiJSABgHG0tvJBAXNhhOX04MIhk2aAEKSFw6EhYN" ..
+    "cFJJVkEGAFk+FxdiBw8NHQRJQVRoVQdDVjo4Fg1wUgAQQSsiAxgACzQEHDMLBioOGmgUDEkSb3UYfjUAHxMTJgBKIgoXYh9TQUxDYxUcLRtoDRIQEhYNcFIF" ..
+    "GQIVCQ0/BAslBBozCwYqDhpoSEJZXUNGREQ+FUEpJlo2SDkTHDAzCwYHDi1ITiQaFUhAGBs8DXBSSVZBVEVBJAYYLkEdBBwXJhMmLRILQlwQDxZZPwEdBAga" ..
+    "AgUiCx8tTzwECQgsD11yGQ1aV0IaHydwUklWQVRFDSIDWSwOGkEdBDEXETonB0pbX1wMSzkcDV4VFRdKLhErJwYHDgBNY1BYaAEQWFcZEkJFNRxjVkFURQ1r" ..
+    "RVliQU5BHAQ3FAYmVQRMXkNXPA1wUklWQVRFSCUBc2JBTkELDydrfmhVQg1AVUZDXz5SHQQUEW9IJQFzSA0BAg8NYwcBJhYWRF1eEnRYOR4NMAgYEUg5MRw6" ..
+    "FUZIZEFjQVQkGgFMXhBQWVg+BhAlFQZvDWtFWS4ODQACQS4IGgpVXw1GX1xDQDIXG14+M0tlJBU0Kw8sDhsPNxhdaBoQDQEAAgYdYEJjVkFURUEkBhguQQMA" ..
+    "FiNjXFQXMkxlXUB/V1USHRwYFQ1vJ2tFWWIICEEDADsjVHVIQkBTRFoYRSUVDFYOBkVDJBFZLwAWI04VKwQaQlVCDRIQEhYNMh0cGBUNNlk5RURiEhoTBw8k" ..
+    "TxInBw9MRhgQ1KT1UkwFQ1hFayQXFCMVIBQDAyYTXCUcDG8bGTgWDXBSDBoSEW8Na0VZYkFOQQwONg8AMSYWXxINEkVZIhsHEU8SCl8mBA1qQ0sSTh9jRAdq" ..
+    "WUJrXUJfV1keBwQUBAZNQCILO2tNTicBEy4AAAYAD09XQhpbTCgwQF9rVEUNawAXJmtkQU5BYxMRPAAQQxJDRkREPhVHEA4GCEw/TXNiQU5BTkFjQVa46u69" ..
+    "EtWuhsjd8obL/VEWcSWV5tPEToXU26X0zKfI/ghWEEwWCDRSjczbKAvd1PfJYond/4fm0o7J1FARDx46EhYNcFJJVkEACl4/FxAsBkY+KU8QBAY+EBB/V1db" ..
+    "WUN5XmNWQVRFDWtFWTYOABQDAyYTXBcyTGVdQH9fQwAeCA8EBhYEawoLYldCa05BY0FUaFVCWV1eR1tPNQBBKSZaLUI7KBg6MQIAFwQxEl1oGhANBRw4Fg1w" ..
+    "UklWQVQHQj4LDTsyGhNkQWNBVGF/B0NWOjhaQjMTBVYHAQtOPwwWLEEsFAcNJzIROgMHX3teVFl5NQodXggaA0JnRRMtA0drTkFjQQYtARdfXBBBQl85HA5Y" ..
+    "BxsXQCoRUUhBTkFOQWNBVGqF/aGiENeqnbX/6Znc6EBeFwuJ3fDLQYrb+Yfh8JrfsRdDEhkNdQE1GJHr951rjcrciOnwgdzfRAcUG5KytKQS05ffmvDpjsn5" ..
+    "CDhHVUhBTkFOQWNBVDwaEVlAWVxRBTkcDxlPJgBKIgoXa01kQU5BY0FUaFUWQkFEQF9DN1oAGAcbS30nBAAnEx1IQmtjQVRoVUINEkRdRVkiGwcRSR0LSyRL" ..
+    "NCMZPg0PGCYTB2FZaA0SEBIWDXBSLxkTGQRZBRAUIAQcSQcPJQ5aChoXQ0ZJGxoncFJJVkFURQ0/Cgo2EwcPCUkpDhZhf0INEhAbPEg+FmN8DRsGTCdFHzcP" ..
+    "DRUHDi1BJy0BMkxAUVVETCAaLRMSF01dKhcYJRMPEQZNYxURMAFLJxIQEhZENlIHGRVUFUw5BB4wAB4JThUrBBpoBwdZR0JcFkg+FmNWQVRFRC1FCSMTDwYc" ..
+    "ADMJWhsQFmlXQ1EWWTgXB3xBVEUNa0VZYhEPEw8GMQAEIE8xSEZ0V0VOeAYMDhVdbw1rRVknDR0EBwdjERU6FAVfU0BaGH41BkkCCRELJ2tFWWJBTkFOESIT" ..
+    "FS8HA11aCmFTWXgJSTIEBwYNdkUNJxkaQRNISUFUaFUHQUFVW1ANIBMbFwYGBF0jSyonFToIGg0mQQAgEAwnEhASFg1wUkkGAAYESjkECSpbPQQaNSoVGC1d" ..
+    "EkxAUVVETCAaRyIIAAlIawoLYkOJ9NiEyuyT59yLrIoSHhZZNQodX2tURQ1rABcmawsPCmtJDRsrFA4NVEVcVVk5HQdWMxEDXy4WEQQIAhULExMABikSEExC" ..
+    "WBofJ3BSSVYyERF9KhcYJRMPEQYlJhIXYDMLQUZVQGZMIhMOBAAEDQFrJwwrDQonBw03BAYcEBpZGhkbPEg+FmN8DRsGTCdFHzcPDRUHDi1BJzwaEn5XQkRT" ..
+    "XxgdGV5IfkUNa0UeJxUJBAAXa0haAQYxSEBGV0RlPwIZHw8TRRBrAxguEgtrTkFjQRMtAQVIXEYaHwMDGhwCFR0LSg8KDixBU0EIAC8SEUJ/Qg0SEFtQDTcX" ..
+    "HREEGhMFYksqJxMYBBwpLBE8IREGSFx3R18NJBoMGGtURQ1rRVliQQkEGgYmDwJgXEx+V0JEU18YHRk+CBABSCUiDCtBU0EACC9rVGhVQg0SEBJaQjMTBVYx" ..
+    "GARULhc+NwhOXE4tLAIVJCUOTEtVQAxrORwNMAgGFlkIDRAuBUZDPg0iGBE6MhdEEBk4Fg1wUklWQVQJQigEFWISCxMYBDEjBicCEUhAEA8WfTwTEBMTMxBE" ..
+    "awQXJkE+DQ8YJhMzPRxYa1teVnBEIgEdNQkdCUljRyonExgEHCMxDgM7EBAPGzoSFg1wUklWQR0DDTgACzQEHCMcDjQSETpVFkVXXjgWDXBSSVZBVEUNa0UJ" ..
+    "IQACDUYHNg8XPBwNQxoZOBYNcFJJVkFURQ1rRVliQU4SCxM1BAYKBw1aQVVAGGg+EwsaBBBFEGsDGC4SC2tOQWNBVGhVQg0SEBIWDXBSABBBBwBfPQALABMB" ..
+    "Fh0EMVsyIRsGa1tCQUJuOBsFEklWI18qCBxgSE4VBgQta1RoVUINEhASFg1wUklWQVRFDWtFCicTGAQcIzEOAzsQEAN0QlNbSH4kAAUIFglIa1hZNhMbBGRB" ..
+    "Y0FUaFVCDRIQEhYNcFJJEw8Qbw1rRVliQU5BTkFjQREmEUsnEhASFg1wUkkTDxBvDWtFWScPCmtkBC0FfkIZDU5TXBJQWD4RHR8OGkV+PwQLNjILExgEMSkb" ..
+    "OF1LJxIQEhZENlIOExUTAEM9TVBsKB0yCxM1BAYAGhJdW15VFhBtUh0EFBFFWSMAF0hBTkFOQWNBVDoQFlhAXjgWDXBSDBgFfm8Na0VZJQQaBgsPNUldZjwR" ..
+    "fldCRFNfGB0ZBggaAg12RQ0wFAtrTkFjQRMtAQVIXEYaHwMDGhwCFR0LSg8KDixBU0EaEzYEfkJVQg0SHR8Wdrb98pD9+Y2bzoPgwDxOiPjqpsb/rvr5y669" ..
+    "14ihuPnMkP3egLHjVpzK54fx9oTGxpLA5Yenrda9rcvM/4bK+5DdpK3Qzqvh3IXU7aXUw6v148mIvNSDmrny25LZ/YOY/IrFzoTr14fF24jzxZzin9aMiNCx" ..
+    "3Zfw3mtURQ1rCRYhAAJBBg4zMgApBxZ5W11XFhBwBgAVClxMJ2tFWWIVDxIFTzARFT8bSktHXlFCRD8cQV9rVEUNa0VZYkEZCQcNJkETLQEFSFxGGh8DGQE6" ..
+    "ExMCAF8DCgkyCAAGTgUsa1RoVUINEhASFg1wUgAQQQAMTiBNUGJMTgkBERAVFToBNkRfVRIIEHBDUUZBAA1IJW9ZYkFOQU5BY0FUaFVCDRIQXllOMR5JBg0V" ..
+    "BkgCAVl/QQkAAwRtMRgpFgdkVjoSFg1wUklWQVRFDWtFWWJBBwdOFSIDGC1bBERcVBpNGmRGUEJTR1MefklZc1FeUF9WcFJFeUdRHQoJTxoNIB4IFQQ9AQRr" ..
+    "EREnD2RBTkFjQVRoVUINEhASFg1wUklWQVlIDa/d8KTU2UGM59FBkPL5hJiFOhIWDXBSSVZBVEUNa0VZYkFOQU5BMwIVJBlKS0deUUJEPxxBX2tURQ1rRVli" ..
+    "QU5BTkFjQVRoVUINEhASFg0CFxkaCBcEWS4BKjYOHAAJBG0zESUaFkhBHnFZQD00NkwoGhNCIAAqJxMYBBxJYTUGKQMHQXZCV0VeIh0aF0Ndbw1rRVliQU5B" ..
+    "TkFjQVRoVUINEhASU0M0W2NWQVRFDWtFWWJBTkFOQWNBESQGB0RUEEZXTzwXRxAIGgEFMFFNdlNcVlxQe1JYaEJbHQsBBQYeYkRcQFRDGAFrFRUjAgsoCkhj" ..
+    "FRwtG2gNEhASFg1wUklWQVRFDWtFWWJBTkxDQafb+K7A1Q3QtqAWyej7j8PWfkUNa0VZYkFOQU5BY0FUaFVCDRIQQlVMPB5BEBQaBlkiChdqSGRBTkFjQVRo" ..
+    "VUINEhASFg1wUklWQVRFDWs3HDINBwIPFSYFJzwaEExVVRxkSD0dHRMSWiZCJgg/HVsnDxgOKAQnLQcUSEAYEGJfMQQMGjsbEA9ib1liQU5BTkFjQVRoVUIN" ..
+    "EhASFg1wFwcSSH5FDWtFWWJBTkFOQWNBVGhVB0FBVTgWDXBSSVZBVEUNa0VZYkFOQU5BY0xZaJDnm9aLpB7J6PKPw9ZdRc/N91mn/tmJz+2q5vmh9dDJjorU" ..
+    "qqC168F8QVRFDWtFWWJBTkFOQWNBVGhVQg1CU1NaQXgUHBgCAAxCJU1QSEFOQU5BY0FUaFVCDRIQEhYNcFJJVkFURUoqCBx4JgsVPQQxFx0rEEoPZlVeU10/" ..
+    "AB0lBAYTRCgAW2tbOgQCBDMOBjxdBUxfVRxmQTERDD8FWEVhJAYYLjECABcEMUh+aFVCDRIQEhYNcFJJVkFURQ1rRVknDwpIZEFjQVRoVUINEhASFg1wUkkT" ..
+    "DxBvDWtFWWJBTkFOQWNBVGhVQkpXRFVTQyZaQFgoBzZIORMcMCkBER4ILQZUdVUETF5DVzwNcFJJVkFURQ1rRVliQU5BHAQ3FAYmf0INEhASFg1wUklWQREL" ..
+    "SUFFWWJBTkFOQWNBVGgBA15ZHkVXRCRaXF9rVEUNa0VZYkELDwprY0FUaBAMSRs6OBYNcFJEW0EvgIPCgPzqh8TDiP7mPFStyufEkrjXmKS198GS2eCCqeo1" ..
+    "LxKG5eGI5MiH/cWd4ZDbprnTituU5u2H6Ogna0VZYggIQScSEAASLSENZV1AcV5IMxlJFw8QRUMkEVkLEj0ACAQXDjwnBSFFV1NZHgRwBgETD35FDWtFWWJB" ..
+    "ThYGCC8EVC8QFkpXXkQeBH47GiUEBhNIOS0WMhEHDwlBIg8QaDwRflNWV2JCGB0ZNQkRBkZrBBcmQQAOGkEKEicpEwd5XXhdRm44FwodSV1FSSRvWWJBTkFO" ..
+    "QWNBVGhVFkxBWxxBTDkGQUdIfkUNa0VZYkFOBAAFSUFUaFVCDRIQW1ANPh0dVgYREUouCw9qSEAoHTImEwItBypCQkBbWEpwBgETD35FDWtFWWJBTkFOQWMT" ..
+    "ETwAEEM4EBIWDXBSSVYEGgEna0VZYgQABWRrY0FUaBkNTlNcElVYIgAMGBU+Ck8CAVl/QQkAAwRtKxsqPAYnEhASFkE/EQgaQQAXRC4BMy0DHUFTQTgcfmhV" ..
+    "Qg1eX1FXQXAhDAQXERdvOQoOMQQcMwsMLBURaEhCf1dAXl9OMQYMEjIACl8qAhx4JwcPCicqEwc8NgpEXlQaFHIPIQwEFxEXbzkKDjEEHENHa0lBVGhVDkJR" ..
+    "UV4WSTkADBUVJwBfPQALMUFTQQAIL2tUaFVCRFQQYVNfJhcbNBMbEl4uFysnDAEVC0E3CREmf0INEhASFg1wFAYEQStJDSYADSoOCkEHD2MIBCkcEF4aSxIU" ..
+    "SjUGOhMTAgBfOEdVYkMIBBoCKzIROgMHX0ESHhYPNxcdJQQGE0g5KRAxFUxNTkMlBAArHUABEhJBU18mFxsFQ1hFDzgAGDACBjILEzUEBjtXQlAbEFZZJ3BS" ..
+    "SVZBVEUNa0VZYg0BAg8NYw4fZFUQSEFFXkINbVIZFQAYCQUtEBchFQcOAElqa1RoVUINEhASFg1wUklWQVQXSD8QCyxBPQQcFyYTNjoaFV5XQmBTQD8GDEwo" ..
+    "GhNCIAAqJxMYBBxJLgQAIBoGBDgQEhYNcFJJVkFURQ0uCx1ra05BTkFjQVRoVUINEllUFkI7UggYBVQRVDsAUTAEHRQCFWpBSXVVQFlTUl5TD3AGARMPfkUN" ..
+    "a0VZYkFOQU5BY0FUaFUOQlFRXhZMIgBJS0EGAF4+CQ1sMgsTGAQxElQnB0JfV0NHWll+IQwEFxEXYSIWDWIOHEEcBDAUGDxbJkxGURJZX3AADAUUGBEna0VZ" ..
+    "YkFOQU5BY0FUaFVCDVtWEkJUIBdBFxMGTA12WFlgFQ8DAgRhQQAgEAwnEhASFg1wUklWQVRFDWtFWWJBTkECDiAAGGgFA19BVVYWEHAJFHxBVEUNa0VZYkFO" ..
+    "QU5BY0FUaFVCDVRfQBZyfFIaVggaRUQ7BBAwEkYAHBNqQRAnf0INEhASFg1wUklWQVRFDWtFWWJBTkFOQSoHVDwMEkgaQxsWEG1SSwIAFglIaUUNKgQAa05B" ..
+    "Y0FUaFVCDRIQEhYNcFJJVkFURQ1rRVliQU4NAQIiDVQiGgBkVhAPFl5+OAYUKBBFQjlFCmwrAQNODjFBB2YcBg1dQhJFAyQXBRMRGxdZDwQNI2tOQU5BY0FU" ..
+    "aFVCDRIQEhYNcFJJVkFURQ1rRVliCAhBGhgzBFwiGgBkVhkSCxBwUBoCEx0LSmlFGCwFThUBEjcTHSYSSkddUntSBGoUABgFXEcAaUlZc01OFRwUJkhUPB0H" ..
+    "QzgQEhYNcFJJVkFURQ1rRVliQU5BTkFjQVRoVUINEhASFlkxEAUTTx0LXi4XDWoRDxMdBCdNVDN/Qg0SEBIWDXBSSVZBVEUNa0VZYkFOQU5BY0FUaFVCDRIQ" ..
+    "EhYNGh0LPwVUWA0/Cgo2EwcPCUkpDhYBEUsBOBASFg1wUklWQVRFDWtFWWJBTkFOQWNBVGhVQg0SEBIWDXBSSSQEEwxCJUVEYhUBEhoTKg8TYAZMf1dXW1lD" ..
+    "cB0bVhJaN0gsDBYsLw8MC0EsE1Q7WxBIVVldWA0/AElUQ11JJ2tFWWJBTkFOQWNBVGhVQg0SEBIWDXBSSVZBVEUNa0VZYkFOQT4NIhgROgZCEBJEXVhYPRAM" ..
+    "BEkHS30nBAAnEx1BARNjEloYGQNUV0JxWVg+BkkZE1QWAwgQCzAEABU+DSIYEToGQkJAEEEYTiUAGxMPADVBKhwcMBJHQQETY1FYQlVCDRIQEhYNcFJJVkFU" ..
+    "RQ1rRVliQU5BTkFjQVRoVUINEhASFmAxCjkaAA0AXzhFRGIVAQ8bDCEEBmAGTGBTSGJaTCkXGwVBGxcNOEs0IxkHDBsMEw0VMRAQXhJfQBZefh8IDjEYBFQu" ..
+    "FwprQQETTlFva1RoVUINEhASFg1wUklWQVRFDWtFWWJBTkFOQWNBVGhVQg0SEHBZWD4GEFZcVBFCJRAUIAQcSR1PAQ4BJgEbDV1CEkUDAxcbAAQGJ0I+Cw07" ..
+    "QQETThJtAxs9GxZUGxBdRA1gXmNWQVRFDWtFWWJBTkFOQWNBVGhVQg0SEBIWDXBSSVZBVBgEQUVZYkFOQU5BY0FUaFVCDRIQEhYNcFJJVkFURQ0uCx1IQU5B" ..
+    "TkFjQVRoVUINEhASFg1wUklWQVRFSCUBc2JBTkFOQWNBVGhVQg0SEBIWDXBSDBgFfkUNa0VZYkFOQU5BY0FUaFVCDRIQW1ANcwIIBBIRAQ11RUliFQYEAGtj" ..
+    "QVRoVUINEhASFg1wUklWQVRFDWtFWWIFBxMLAjcyEToDB19BEA8WXTEAGhMFfkUNa0VZYkFOQU5BY0FUaFVCDRIQEhYNcBAbEwAfbw1rRVliQU5BTkFjQVRo" ..
+    "VUINEhASU0M0eElWQVRFDWtFWWJBTkFOQWMEGix/Qg0SEBIWDXBSSVZBEQtJQUVZYkFOQU5BJg8QQlVCDRJVXFInWlJJVkEYCk4qCVk3EgspBwUnBBoPAAsN" ..
+    "DxBUV0EjF2NWQVRFQSQGGC5BJw8dCCcEVHVVDEReOhIWDXAbD1YPGxENLwwLJwIaMgsTNQQGO1UWRVdeOBYNcFJJVkFUCUIoBBViMQIAFwQxJgEhVV8Nfl9R" ..
+    "V0EAHggPBAZfeioMDQQOHCIGCC8FXGolDkxLVUBxWDlQQHxBVEUNa0VZYg0BAg8NYxIROgMHX3BCXUFeNQBJS0EkCUwyAAsFFAdbKAgtBTIhBxFZcVhbWkl4" ..
+    "UDoTEwIAXwkXFjUSCxNMSElrVGhVQg0SEBJfS3AcBgJBBwBfPQALABMBFh0EMUEAIBAMJxIQEhYNcFJJVkFURUouER4nDxhJR08KEictBxRIQHhdRl05HA5W" ..
+    "XFQDTCcWHEhBTkFOQWNBVGhVQg1AVUZDXz54SVZBVEUNa0UcLAVka05BY0FUaFVCWEFVel9JNBcHMRQdRRBrEQs3BGRBTkFjQVRoVQVIRldXWFt4W0clBAYT" ..
+    "SDktFjIpBwUKBC0mASFVXw1GQkdTJ1pSSVZBVEUNaxUaIw0CSQgULQIAIRoMBRs6EhYNcFJJVkFURQ1rDB9iEgsTGAQxIwYnAhFIQAp0X0M0NAAEEgAmRSIJ" ..
+    "HWpDKBMPDCZDXWgBCkhcOhIWDXBSSVZBVEUNa0VZYkEdBBwXJhM2OhoVXldCHHBfMR8MWDcdFkQpCRxiXE4HDw0wBH5oVUINEhASFg1wUkkTDxBvDWtFWWJB" ..
+    "TkELDydIfkJVQg0SEBIWDSMXGwAEBidfJBIKJxNAJAAAIQ0RLFVfDUZCR1MnWlJJVkFURQ1rFRojDQJJCBQtAgAhGgwFGzoSFg1wUklWQVRFDWsMH2ISCxMY" ..
+    "BDEjBicCEUhACnRfQzQ0AAQSACZFIgkdakMoEw8MJkNdaAEKSFw6EhYNcFJJVkFURQ1rRVliQR0EHBcmEzY6GhVeV0IccF8xHwxYNx0WRCkJHGJcTgcPDTAE" ..
+    "fmhVQg0SEBIWDXBSSRMPEG8Na0VZYkFOQQsPJ0h+QlVCDRIQEhYNPB0KFw1UI0QnERwwEk5cThImEwItByBfXUdBU19+NBsXDBFfayILHQQIHBIaIisIGCxd" ..
+    "QGtbXEZTXyNQQHxBVEUNa0VZYg0BAg8NYzIRKQcBRWBVVV9CPlJUVicdCVkuFwpiAAAFTicqDQAtBxEXdFlcUms5ABoCIhwMQS9NWxEEDxMNCREEEyEaDA8b" ..
+    "OhIWDXBSSVZBGApOKglZFgQWFSwOO0FJaCYHTEBTWmRINxsGGEEVC0lrNhwjEw0JPAQkCBsmTyREXFR0X18jBioeCBgBBWkxHDoVLA4WQ2prVGhVQg0SEBJf" ..
+    "S3AmDA4VNgpVaxERJw9kQU5BY0FUaFVCDRIQZlNVJDAGDk8gAFU/RURiPilPPQQxFxE6JwdKW19cPA1wUklWQVRFSCUBc0hBTkFOQWNBVCQaAUxeEGFVXz8e" ..
+    "BR8PEyNfKggcYlxOEgsTNQQGCgcNWkFVQBhrIhMEE08nBl8kCRUrDwknHAAuBH5oVUINEhASFkE/EQgaQTIERi42GjAOAg1OXGMSEToDB19wQl1BXjUARzAT" ..
+    "FQhIZSMYKQQ9AhwOLw1+aFVCDRIQEhZkPgEAEgRUWA0NBBInMg0TAQ0vQRUmEUJrU1tXZU4iHQUaWzIMQy8jEDASGiIGCC8FXGo8DF5bVFcUBFp4SVZBVEUN" ..
+    "a0UNIxIFTx0RIhYaYBMXQ1FEW1lDeFtjVkFURQ1rRVliQU5BGQkqDRFoEgdZVVVcQAV5XCAFMhEXWy4XMS0RHggABmMFG0JVQg0SEBIWDXBSSVZBVEUNIgNZ" ..
+    "EQIcDgINKg8TDgcDQFcQRl5IPnhJVkFURQ1rRVliQU5BTkFjQVRoVTFOQF9eWkQ+FS8EABkAAwgEFzQAHTEBEioVHScbQhASZldVWT8AW1gPERIFe0lZLwAa" ..
+    "CUATIg8QJxhKHAIAHhYaYEJZX0h+RQ1rRVliQU5BTkFjQVRoVQdDVjoSFg1wUklWQVRFDWtFWWJBGgAdCm0WFSEBSh0cAxs8DXBSSVZBVEUNa0VZJw8Ka05B" ..
+    "Y0FUaFVCSFxUGzwNcFJJEw8QbydrRVliFQ8SBU80AB08XVIDBxk4PA1wUkkCAAcOAzgVGDUPRgcbDyAVHScbSgQ4EBIWDXBSSVYWHAxBLkUeJxUJBAAXa0ha" ..
+    "AQYxSEBGV0RlPwIZHw8TRUkkb1liQU5BTkFjQVRoVQ5CUVFeFk4xHA0fBRURSGtYWSwIAmtkQWNBVGhVQg0SEBIWRDZSDR8TEQZZGAALNAQcEk4VKwQaQlVC" ..
+    "DRIQEhYNcFJJVkFURQ0tCgtiPkJBHUEqD1QhBQNEQEMaUkQiFwoCMhEXWy4XCmtBCg5kQWNBVGhVQg0SEBIWDXBSSVZBVEVELUUKbCsBAycFYx9JaBYXX0BV" ..
+    "XEJnPxAgEkEVC0lrCxY2QRoTBwQnKxsqBjleHHpdVGQ0L0kCCRELJ2tFWWJBTkFOQWNBVGhVQg0SEBIWDXBSSRoOFwRBawwXJA5OXE4aSUFUaFVCDRIQEhYN" ..
+    "cFJJVkFURQ1rRVliQU5BTkERBBMhGgwNDxBBGH81FQAZD1hvDWtFWWJBTkFOQWNBVGhVQg0SEBIWDXBSSVZBVDVBKhwcMBJOXE4SbTEYKQwHX0EcOBYNcFJJ" ..
+    "VkFURQ1rRVliQU5BTkFjQVRoVUINEhB/V1UAHggPBAYWDXZFCmwsDxk+DSIYEToGTicSEBIWDXBSSVZBVEUNa0VZYkFOQU5BY0FUaFVCb11FXEJUcE9JBU82" ..
+    "ClglEQBua05BTkFjQVRoVUINEhASFg1wUklWQVRFDTZvWWJBTkFOQWNBVGhVQg0SEBIWDXBSSVZBHQMNAhYqJxMYBBwgLw0bPxAGBVteVFkEcAYBEw9+RQ1r" ..
+    "RVliQU5BTkFjQVRoVUINEhASFg1wUklWQRcEQy8MHSMVC0FTQThBHSYTDQ0PEFtYSz9eSRwOFkUQaxZXCA4MKApBPmtUaFVCDRIQEhYNcFJJVkFURQ1rRVli" ..
+    "QU5BTkFjAwYtFAknEhASFg1wUklWQVRFDWtFWWJBTkFOQWNBESYRaA0SEBIWDXBSSVZBVEUNa0VZYkFOBAAFSUFUaFVCDRIQEhYNcFJJVkERC0lBRVliQU5B" ..
+    "TkFjQVRoEA5eV1lUFlgjFyEfBRAAQwwQEGIAAAVOKC0SHSwQQllaVVw8DXBSSVZBVEUNa0VZYkFOQQgOMUErZFUWSF9AXldZNVIAGEEdFUwiFwpqKAASBwUm" ..
+    "WzMtASFFW1xWREg+WkBfQRAKJ2tFWWJBTkFOQWNBVGhVQg0SEBIWRDZSHRMMBAlMPwBXDAADBE5cfkFWHBAPXV5RRlMPcAYBEw9+RQ1rRVliQU5BTkFjQVRo" ..
+    "VUINEhASFg1wHgYVABhFRyQMFwAUGhUBD2NcVDwQD11eUUZTFxYbBxInHRdePyYRKw0KSUwrLAgaalxoDRIQEhYNcFJJVkFURQ1rRVliQU5BTkFjDRsrFA4N" ..
+    "RlVKQmExEAwaQUlFWS4ICS4AGgRUJyoPEA4cEF5Gc1pfQTRaSyIEDBFhKgccLkNHa05BY0FUaFVCDRIQEhYNcFJJVkFURQ1rRRUtAg8NTggtBxtoSEJZV0hG" ..
+    "ekwyFwVWABoBDRsECzEEPQQcFyYTPSYTDQVGVUpCYTEQDBpPIABVP0xzSEFOQU5BY0FUaFVCDRIQEhYNcFJJVkFURUQtRRMtCAAjGxU3DhpoFAxJEllcUEJw" ..
+    "EwcSQT0Wfi4XDycTLw0CDjQEEGAcDEtdGRJCRTUcY1ZBVEUNa0VZYkFOQU5BY0FUaFVCDRIQEhYNcFIFGQIVCQ0hChtiXE4LAQgtIwE8AQ1DCHdXQmwkBhsf" ..
+    "AwERSGNHMy0DTEhkQWNBVGhVQg0SEBIWDXBSSVZBVEUNa0VZYkFOQQcHYwsbKlUDQ1YQRlleJAAAGAZcD0IpTEMkCAAFRkNuQ1hoRE4NRkJHUwRwBgETD35F" ..
+    "DWtFWWJBTkFOQWNBVGhVQg0SEBIWDXBSSVZBVEUNaw8WIEFTQRoOMBUGIRsFBVhfUB8ncFJJVkFURQ1rRVliQU5BTkFjQVRoVUINEhASFg1wUkkfB1QPQilF" ..
+    "B39BDRQcEyYPAAIaAGRWEFNYSXAcBgJBABdELgEzLQMdOgQOITxUPB0HQzgQEhYNcFJJVkFURQ1rRVliQU5BTkFjQVRoVUINEhASFg1wUkkVABoBRC8EDSdB" ..
+    "U0EVQSoPEidVXw1bXlRZAXAYBhRBSUVHJAdZP2tOQU5BY0FUaFVCDRIQEhYNcFJJVkFURQ1rRVliQU5BTkFjQVQqBwdMWToSFg1wUklWQVRFDWtFWWJBTkFO" ..
+    "QWNBVGhVQg0SEBIWDTUcDXxBVEUNa0VZYkFOQU5BY0FUaFVCDRIQEhYNcFJJEw8Qbw1rRVliQU5BTkFjQVRoVUINEhASFg1wUgwYBX5FDWtFWWJBTkFOQWNB" ..
+    "VGhVQg0SEFdYSVpSSVZBVEUNa0VZYkFOQU5BJg8QQlVCDRIQEhYNcFJJVgQaASdBRVliQU5BTkFjQVRoHAQNUVFcUkQ0Ex0TQRULSWsCHDYGCw8YSWpPPTsm" ..
+    "B19EVUB+QiACABgGVBFFLgtzYkFOQU5BY0FUaFVCDRIQEhsAcJTm7Yfo6MjC6JzE7IjNz4bh25zi+IeDu9W3nsno5o7ywCQzfazu+aTk5WtOQWNBVGhVQg0S" ..
+    "EBIWDXBSABBBPRZ+KgMcFg4mDh4iKwQXI1UDQ1YQXFlZcDsaJQASAHkkLRYyIgYEDQprSFQ8HQdDOBASFg1wUklWQVRFDWtFWWJBTkFOFSISH2YCA0RGGAMf" ..
+    "J3BSSVZBVEUNa0VZYkFOQU4ELxIRQlVCDRIQEhYNcFJJVkFURQ1rRVliEQ0AAg1rBwEmFhZEXV4aHydwUklWQVRFDWtFWWJBTkFOQWNBVGhVQg1hVUBASCIw" ..
+    "GxkWBwBfGQAULRULWycPNQ4fLSYHX0RVQB4PJBcFExEbF1lpSVkhAAAFBwUiFRFmHw1PGzoSFg1wUklWQVRFDWtFWWJBTkFOQSYPEGF/aA0SEBIWDXBSSVZB" ..
+    "VEUNa0VZYkFOFRwIJgU+JxcRdlFRXFJENBMdE08eCk8WRURiFRwUC2tjQVRoVUINEhASFg1wUklWBBoBJ2tFWWJBTkFOQWNBVC0bBic4EBIWDXBSSVZBVEUN" ..
+    "PwQKKU8ZAAcVa1RdQlVCDRIQEhYNNRwNfEFURQ0uCx1rawsPCmtJTFkOFBFZEnFGQkwzGWMaDhcEQWsDDCwCGggBD2MoBwkZC1tXGFFeTCJbY1ZBVEVELUUX" ..
+    "LRVOAgYAMUEAIBAMDUBVRkNfPlIPFw0HAA0uCx1IQU5BTg0sAhUkVQpYXxAPFk44ExtMJx0LSQ0MCzEVLQkHDScuEgsZA15BGBB+WD0TBxkIEEcEQUVZYkEc" ..
+    "BBoUMQ9UIAAPDVNeVhZFJR9HPgQVCVkjRUdiUWQEAAVJaxgnFgNBEmNXQlk5HA4FQUlFVkFFWWJBIwAWNSITEy0BEQ0PEAAGAVpSSVZBNRBZJDYaIw88BAMO" ..
+    "NwQHaEhCWUBFVzxQWngFGQIVCQ0YERg2BE5cThpJQVRoVSRCR15WZEg9HR0TQUlFQyIJVUhBTkFOJywUGiwnB0BdRFd/SXBPSRgIGEkna0VZYgIBDx0EIBQA" ..
+    "IQMHa1NZXkNfNQFJS0FESSdrRVliDA8ZLQ4tEhErABZERFV0V0Q8BxsTElRYDX5Jc2JBTkFkQWNBVAVEPX9XXV1CSCNSVFYPHQkBQUVZYkEjUDEvJhVUdVUM" ..
+    "RF4cOBYNcFIkRz4mAEoiFg0nEy8VGgAgClR1VQxEXhw4Fg1wUiRHPiYASiIWDScTJggaQX5BGiEZTicSEBIWYGEtLBgEGQxIOEVEYg8HDWQcSWsYJxYDQRJW" ..
+    "R1hOJBsGGEEzAFkZBBcmDgM3Dw0qBSQpBxYFRlFAUUgkW2NWQVRFRC1FFy0VThUPEyQEAGgBCkhcEEBTWSUAB1YPHQkNLgsdSEFOQU4NLAIVJFUKX0IQDxZZ" ..
+    "MQAOExVOI0QlAT8rEx0VLQkqDRBgVypYX1FcWUQ0IAYZFSQEXz9HUEhBTkFOCCVBGicBQkVAQBJCRTUcSQQEABBfJUUXKw1OBAAFSUFUaFUOQlFRXhZdMQAd" ..
+    "BUFJRVZrb1liQU5BTkFjFRU6EgdZCHZbWEkWGxsFFTcNRCcBUWApCwAKQ2pNVEJVQg0SEBIWDSQTGxEEAF9rIgsdBAgcEhoiKwgYLF1AeEJAV0R5PwAaGUNd" ..
+    "SQ1BRVliQU5BTkE3AAYvEBYXdFlcUms5ABoCIhwMQS9NWw4OGQQcNSwTBydXSwESOhIWDXBSSVZBAARfLAANeCcHDwonKhMHPDYKRF5UGhR5PwAaGUNdSQ1B" ..
+    "RVliQU5BTkErEwRof0INEhBPPA1wUkkaDhcEQWsTGC4ICjEPEzcSVHVVGVA4EBIWDTYdG1Y+WEVdawwXYggeAAcTMEkEKQcWXhsQVlkncFJJVkFURQ0iA1ky" ..
+    "QQ8PCkEzWz07NEoPcFFBU30xAB1USFQRRS4LWTYADA0LTyoPBy0HFgVEUV5fSQATGwISWEVdYkUcLAVkQU5BYwQaLH9CDRIQW1ANcwQIGggQNUw5EQpiX05R" ..
+    "ThUrBBpoBwdZR0JcFlsxHgASMRUXWTg+FCMVBk8cAC0FGyVdUwESE0RXQTkWORcTABYEFkUcLAVkQU5BYxMRPAAQQxJYQEYnNRwNfGsdAw0YAA02CAAGHU8C" ..
+    "FAAnJgFMXGJXW0IkFxpWFRwAQ0FFWWJBGgAdCm0SBCkCDAVURVxVWTkdB15IfkUNa0VZYkFODQECIg1ULhoOSVdCQRYQcAlJfEFURQ1rRVliQU5BTjMmERgh" ..
+    "FgNZV1RhQkIiEw4TWzIMQy8jEDASGiIGCC8FXGogFkReEhsaDVpSSVZBVEUNa0VZYkE8BB4NKgIVPBAGfkZfQFdKNUgvHw8QI0Q5Fg0BCQcNCklhIhslGA1D" ..
+    "EBkeFidwUklWQVRFDWtFWWIzCxECCCAAAC0RMVldQlNRSGo0ABgFMgxfOBE6KggCBUZDEQQZJwEHXhAZHhYncFJJVkFURQ1rRVliMwsRAgggAAAtETFZXUJT" ..
+    "UUhqNAAYBTIMXzgROioIAgVGQwISBy0BEQ8bHBI8DXBSSVZBVEUNa0VZEAQeDQcCIhURLCYWQkBRVVMXFhsHEicdF14/JhErDQpJTCcbQ11of0INEhASFg1w" ..
+    "D2NWQVRFDWtFWS4ODQACQSUUGisBC0JcEFFeSDMZKh4IGAEFKA0QLgVHa05BY0FUaFVCDRIQEl9LcBEBHw0QX2Q4JFFgMwsMARUmJAItGxYPGxBTWElwEQEf" ..
+    "DRBfai4RODYVHAgMFDcEXGo8Bg8bEEZeSD54SVZBVEUNa0VZYkFOQU5BYzIAKQEHA3RfR1hJAhcEGRURLElrWFkhCQcNClsEBAAJARZfW1JHQkh4UCASQ11v" ..
+    "DWtFWWJBTkFOQWNBVGhVQn5GUUZTAxYdHBgFJgBAJBEcYlxOAgYILwV+aFVCDRIQEhYNcFJJEw8Qbw1rRVliQU5BCw8na1RoVUINEhASUEIiUjZaQRIKQS8A" ..
+    "C2IIAEEHESIIBjtdBEJeVFdEXnlSDRlrVEUNa0VZYkFOQU5BKgdULhoOSVdCEkJFNRxjVkFURQ1rRVliQU5BTkFjQRInB0JyHhBRXkQ8FkkfD1QMXSoMCzFJ" ..
+    "CA4CBSYTTg8QFm5aWV5SXzUcQV9IVAFCawYRJwIFIgYILwVcKx0LQVYZElNDNHhJVkFURQ1rRVliQU5BTkFjBxskEQdfHHNaX0E0Mw0SBBBfbiQLFycCGkkN" ..
+    "CSYCHwsdC0FWGTgWDXBSSVZBVEUNa0UcLAVkQU5BY0FUaFUHQ1Y6EhYNcBcHEkh+AEMvb3MuDg0AAkElFBorAQtCXBB/B3ITGgwVCjULSQwADQEOHAQtDi4R" ..
+    "GyYQDFlBGBs8DXBSSR8HVDZZKhEcbCxfPjwELg4ALQZCTFxUEmVZMQYMWCxFOmMuEVkjDwpBPRUiFRFmOFNyYFVVX14kFxs3FQAETiBFGCwFTjIaADcEWgVE" ..
+    "PX9XV1tFWTUAIR8VVARDL0UqNgAaBEAscj4xJhAPRFdDEkJFNRxjVkFURQ1rRVkwBBoUHA9jMgApAQcDfwFtZEg9HR0TElhFfj8EDSdPI1AxLyYVWGgmFkxG" ..
+    "VRx7HA8gDBEIBxFIOSQNNgANCkJBEBUVPBBMYANvYFNKOQEdExM8DFlnRSo2ABoEQCxyPjEmEA9EV0M4Fg1wUgwYBX5FDWtFFS0CDw1OMyYMGzwQEQ0PEGBT" ..
+    "XTwbChcVEQF+PwoLIwYLWygILQUyIQcRWXFYW1pJeFA7EwwbEUg4R1BIQU5BTg0sAhUkVS9CVkVeU15wT0kkBAQJRCgEDScFPRUBEyIGEXIzC0NWdltEXiQx" ..
+    "AR8NEE0PBgodNw0LEkxISUFUaFUOQlFRXhZjNQYgGBIABEMoAFl/QSMOChQvBAdoFAxJEn1dUlg8FxpMJx0LSQ0MCzEVLQkHDSdJVgYQFg8bOhIWDXAeBhUA" ..
+    "GEV/LgI4NhUPAgVBfkE6LQErQ0FEU1hONVIIGAVUTWMuETAsEhoAAAImWzIhGwZrW0JBQm44GwUSSVY3aGQ3HCUIHRULEwIVACkWCQ8bEF1EDR4XHT8PBxFM" ..
+    "JQYceCcHDwonKhMHPDYKRF5UGhR/NRUABRURF2w/ERghCkxIR2tjQVRoGQ1OU1wSZEg3OgACQUlFYy4RMCwSGgAAAiZBFSYRQgV8VUZ/QyMGCBgCEV9rIgsd" ..
+    "BAgcEhoiKwgYLF1Af3cfYFNKOQEdExM8DFlpTFktE04vCxUKDwc8FAxOVwp0X0M0NAAEEgAmRSIJHWpDPAQJCDAVETo9C1kQGRs8DXBSSRoOFwRBayAXJwwH" ..
+    "BB1BfkEDJwcJXkJRUVMXFhsHEicdF14/JhErDQpJTCQtBBkhEBEPGxBdRA0nHRsdEgQETi5fPysPCicHEzAVNyAcDkkaEnxmbiNQQHxBVEUNQUVZYkEHB04z" ..
+    "JgwbPBARDVNeVhZgPxYcGgQHRUwlAVkMBBooABI3ABorEEJMXFQSZEg3Mx0CABcODSoLHWIzCwYmCDdBFSYRQmhcVV9fSCNSHR4EGm8Na0VZYkFOQT0VIhUR" ..
+    "ZjhTcmBVX1lZNQFJS0EmAEAkERwxa05BTkFjQVRoJhZMRlUcexwPPAwCQUlFYy4RMCwSGgAAAiZrVGhVQg0SEBJlWTEGDFgsRTp/LgIQMRULEy8VNwAXI1Vf" ..
+    "DWBVVXdZJBMKHWtURQ1rRVliQT0VDxUmTzl5KjBIVVlBQkgiOgACQUlFfy4CMSsVZEFOQWNBVGhVMVlTRFcYYGEtLBgEGQxIOEVEYiQABAMIJhJ+aFVCDRIQ" ..
+    "EhZfNQYcBA9UN0gmCg0nEkJBIAQ3KBo7AQNDUVUeFn81FSgCFRUGRmdFKycGJggaTWMkGi0YC0hBOhIWDXAXBxJrVEUNaxccNhQcD04PKg1YaBsLQR4QXF9B" ..
+    "fFIHHw1YRUMiCXMnDwprZA0sAhUkVQRYXFNGX0I+UiRHPjMEWSMACwMNAjUPEyQEADtdLVlaVUBFaD4XBB8EB0wna0VZYg0BAg8NYwwNGBoRDQ8QfllOMR45" ..
+    "GgANAF9lJhEjEw8CGgQxQRUmEUJhXVNTWn08ExATE1omRSoXGCEVCxNAMTEIGSkHG31TQkYWTD4WSToOFwRBGwkYOwQcTy0JIhMVKwEHXxxgQF9AMQAQJgAG" ..
+    "EQMbCgorFQcOAGtjQVRoHAQNXF9GFkApIgYFQQANSCVFCycVGxMAQS0IGGgQDEk4EBIWDVpSSVZBGApOKglZJAgcEhoxIhMAaEhCQ1tcOBYNcFJjVkFURUEk" ..
+    "BhguQTFNTj5vQStkVT0BEnVcU0A5FxowDhgBSDlFRGIsXz4tCSYCHwkbBmpXRHFZXzUxBhsRGwtIJREKakhkQU5BYwgSaDAMSF9ZV0VrPx4NExNUEUUuC3Ni" ..
+    "QU5BTkFjQRInB0JyHhB3WEg9C0kfD1QMXSoMCzFJKw8LDCoEBw4aDklXQghxSCQxAR8NEBdIJU1Qa0EKDmRBY0FUaFVCDRIQEhZENlIsGAQZHA12WFkODg0A" ..
+    "AjEvAA0tB0xuWlFAV04kFxtWDgZFQyQRWQsSLw0HFyZJMSYQD1QbEEZeSD5SChkPAAxDPgBZJw8Ka05BY0FUaFVCDRIQElpCMxMFVgQaAEAyNxYtFU5cTiQt" ..
+    "BBkxTyREXFR0X18jBioeCBgBBWktDC8AAA4HBREOGzwlA19GEhs8DXBSSVZBVEUNa0VZKwdODwEVYwQaLRgbf11fRhZZOBcHVgIbC1kiCwwnQQsPCmtjQVRo" ..
+    "VUINEhASFg1aUklWQVRFDWtFWWJBBwdOSSYPESUMMEJdRBxmQiMbHR8OGkUAawgAEg4dSEAsIgYaIQEXSVcQDhZyF1woAhUVBkYPDAo2AAACC0E3CREmf0IN" ..
+    "EhASFg1wUklWQVRFDWsJFiEAAkEIDjYPEBgUEFkSDRJxSCQgCBgFGwh7KgkQJjEPExpJBg8RJQxLJxIQEhYNcFJJVkFURQ1rRVkrB04HARQtBSQpBxYNRlhX" ..
+    "WCdwUklWQVRFDWtFWWJBTkFOQWNBVDwUAEFXHltYXjUAHV4uAA1IORY8LAQDCAsSb0EPDRsHQEscElBCJRwNJgAGEVBib1liQU5BTkFjQVRoVUINEhASFg1w" ..
+    "Gw9WDxsRDS0MCzEVPgAcFWMVHC0bQktbQkFCfTEAHVZcVANCPgsdEgAcFU4ELQV+aFVCDRIQEhYNcFJJVkFURUglAXNiQU5BTkFjQVRoVUJIXFQ4Fg1wUklW" ..
+    "QVQAQy9vWWJBTgQABUlBVGhVaA0SEBJQQiJSNlpBOxFFLhcpLgAXBBxBKg9UIQUDREBDGmZBMQsMBBJOIkg/NRUjGAsTHUlqSFQsGmgNEhASFg1wUgAQQTsR" ..
+    "RS4XKS4AFwQcQX5cVAQaAUxeYF5XVDUASQIJEQsNKAoXNggAFAtBJg8QQlVCDRIQEhYNPB0KFw1UKlkjAAsBCQ8TTlxjLgAgEBB9XlFLU19+MQEXExUGWS4X" ..
+    "c2JBTkFOQWNBHS5VDEJGEHtFbDwbHxNJOxFFLhc6KgAcSE4VKwQaaBYNQ0ZZXENIcBcHEmtURQ1rRVliQQIODQAvQREmEA9UYF9dQg1tUiYCCREXbiMEC3gn" ..
+    "Bw8KJyoTBzw2CkReVBoUZSUfCBgOHQF/JAoNEgAcFUxISUFUaFVCDRIQW1ANPh0dVgQaAEAyNxYtFU4VBgQtQRcnGxZEXEVXFkg+FmNWQVRFDWtFWUhBTkFO" ..
+    "QWNBVCETQgVXXldbVAIdBgJPJApeIhEQLQ9OTE4MOjEbO1xMYFNXXF9ZJRYMVl1UOmplJA02AA0KKggwFRUmFgcNRlhXWCdwUklWQVRFDWtFWWINAQIPDWMH" ..
+    "Gz0bBn1TQkYWEHA1DAIzFQtJJAgvIw0HBT4AMRVcBwEKSEBzWldfeXhJVkFURQ1rRVliQU4ICEElDgEmETJMQEQSQkU1HGNWQVRFDWtFWWJBTkFOQWNBACkX" ..
+    "DkgcWVxFSCIGQTkVHABfOCAXJwwHBB1NYxo7PB0HX3FYU0QBcBQGAw8QNUw5EQRra05BTkFjQVRoVUINEhASFg05FEkYDgBFSyIXCjYxDxMaQTcJESZVBERA" ..
+    "Q0ZmTCIGSUtBEgpYJQEpIxMaQQsPJ2tUaFVCDRIQEhYNcFIMGAV+RQ1rRVliQU4EAAVJQVRoVQdDVjoSFg1weElWQVQXSD8QCyxBCAgcEjcxFToBaEhcVDg8" ..
+    "QT8RCBpBEhBDKBEQLQ9OLF8+AhUAKRYJBXBRQVN9MQAdWkE7EUUuFwoHDwsMBwQwSH5oVUINXl9RV0FwLUVWPlhFWS4ICR0zCwYHEjcEBgkBFkxRWx4WWTUf" ..
+    "GSkzEQJEOBEcMCkHFUJBHEFJaDhTcnFYV1VGERwNMQQAJkI5ADotDB4OAAQtFQdgXGgNEhASX0twHAYCQVwnTDgAKSMTGkEPDydBOzwdB19BdVxTQDkXGlYA" ..
+    "GgENaCoNKgQcEisPJgwdLQZCExIAEldDNFIdEwwEOn8uAhAxFQsTLxU3ABcjVQNDVhBGU0AgLTsTBh0WWS4XMSsVR0EaCSYPfmhVQg0SEBIWfiQTHRNPFwpD" ..
+    "OAAaNxUHFwsnIggYPQcHXhINEmVZMQYMWAIbC14uBgw2CBgEKAAqDQE6EBENGRADPA1wUklWQVRFRC1FKjYAGgRAAiwPBy0WF1lbRldwTDkeHAQEB0UTdkUq" ..
+    "NgAaBEAMIhk3JxsRSFFFRl9bNTQIHw0BF0g4RQ0qBABrTkFjQVRoVUINEhASZVkxBgxYLEU6fy4IFjYEHUFTQS0IGHNVMVlTRFcYYGEtJxMVVFgNJQwVeUE9" ..
+    "FQ8VJk85eSowSFVZQUJIIjMdAgAXDg12RRcrDVVBPRUiFRFmOFNyYFVVX14kFxs+CABFEGsLEC5aTjIaADcEWgVEPWhcVV9fSCNSVFYPHQkWazYNIxULTw0O" ..
+    "LRIRKwAWRERVdFdEPAcbExJUWA17b1liQU5BTkFjBBosf0INEhASFg1wAAwCFAYLJ2tFWWIEAAVkQWNBVBsBA1lXHlFZQyMXCgMVHRNIDQQQLhQcBB1BfkFE" ..
+    "QlVCDRJcXVVMPFIaAwIXAF44SVkdQVNBHgIiDRhgExdDUURbWUN4W2NWQVRFDWtFWTYEAxExMyYGHTsBB19zREZXTjtILx8TETZIORMcMEleT11ISUFUaFVC" ..
+    "DRIQRlNAIC07EwYdFlkuFzErFVQnBxMmMhE6AwdfGnJTRUgAExsCTVQqWSMACzEkAAQDCCYSXUJVQg0SVVxSBFpSSVZBHQMNJQoNYhIbAg0EMBJUPB0HQxJj" ..
+    "RldZNVwkRz4mAEoiFg0nEy8VGgAgClR1VQxEXgsSZVkxBgxYLEU6fy4CEDEVCxMmCDdBSWgbC0ESVVxSJzUcDXxrGApOKglZJBQAAhoILA9UGBAQS11CX3dZ" ..
+    "JBMKHSwbAUh6TVBIQU5BTg0sAhUkVS1ZWlVARWg+FwQfBAdFEGseBEhBTkFODSwCFSRVEl9bXVNEVAQTGxEEADVMORFZf0EjUDEmIhUcLQcjQV5kU0RKNQYa" ..
+    "Xi4ADUg5FjwsBAMICxJqa1RoVUJEVBAReVk4FxsFJBoAQCIACmJfTlFOFSsEGmh/Qg0SEBIWDXA/WCkgABFMKA5RMhMHDA8TOjUVOhIHWWJRQEIBcD0dHgQG" ..
+    "FmglABQrBB1ITmtjQVRoEAxJOFVcUidaHgYVABhFSz4LGjYIAQ9OJiYVOScRBx9mUUBRSCQBQV9rVEUNawkWIQACQQ0JIhNUdVUuQlFRXmZBMQsMBE83DUw5" ..
+    "BBo2BBxrTkFjQRgnFgNBEkJdWVlwT0kVCRUXDSoLHWICBgAcWwUIGiwzC19BRHFeRDwWQVQpAQhMJQoQJjMBDhoxIhMAalxoDRIQEl9LcBwGAkEGCkI/RQ0q" ..
+    "BABBHAQ3FAYmVRlQElVcUidwUklWDRsGTCdFDSMTCQQaEmNcVDMIaA0SEBJaQjMTBVYMDTVCOEVEYhMBDhpPEw4HIQELQlw6EhYNcHhJVkFUCUIoBBViEgEU" ..
+    "HAImJxskEQdfQRAPFlZaUklWQVRFDWsSFjAKHREPAiZbMiEbBmtbQkFCbjgbBRJJViBDLggQJxJMSEJrY0FUaFVCDRJHXURGIwIIFQROI0QlAT8rEx0VLQkq" ..
+    "DRBgVyx9cUMQHwFaUklWQVRFDWsSFjAKHREPAiZbMiEbBmtbQkFCbjgbBRJJViZFKhcYIRULEx1DamtUaFVCUDgQEhYNWlJJVkEYCk4qCVkkFAACGggsD1Qr" ..
+    "HQdOWX1dUkg8WgQZBREJBEFFWWJBTkFOQSoHVCYaFg1fX1ZTQXAdG1YMGwFIJ0VEf0ENCQ8TYxUcLRtCX1dER0RDcBcHEmtURQ1rRVliQQIODQAvQQAaGg1Z" ..
+    "Eg0SW0I0FwVMJx0LSQ0MCzEVLQkHDSdJVgAAD0xcX1tSfz8dHSYABhEPYm9ZYkFOQU5BYw0bKxQODUZ4R1sNbVIEGQURCRcNDBcmJwcTHRUACR0kEUoPekVf" ..
+    "V0M/Gw1USH5FDWtFWWJBTggIQTczGycBQkxcVBJCZSUfSRcPEEVZAxAUbCkLAAIVK0FKaEVCWVpVXDwNcFJJVkFURQ1rRVkuDg0AAkEnCAc8VV8NGkRgWUIk" ..
+    "XDkZEh0RRCQLWW9BAxg+DjBIWgUUBUNbREdSSFpSSVZBVEUNa0VZYkEHB04FKhIAaElfDW13HHdZJBMKHSUdFlkqCxonQRoJCw9JQVRoVUINEhASFg1wUklW" ..
+    "QQAETycAVysPHQQcFWsVFToSB1lBHBJNDVpSSVZBVEUNa0VZYkFOQU5BY0FUaDgNSVdcEgsNPR0NEw1YRSdrRVliQU5BTkFjQVRoVUINEhASFn8/HR1WXFQR" ..
+    "fyQKDW5BZEFOQWNBVGhVQg0SEBIWDXBSSVZBPABML0VEYgwBBQsNeScdJhEkREBDRnVFOR4NXkM8AEwvR1BiDhxBGjMsDgBof0INEhASFg1wUklWQVRFDWsY" ..
+    "UEhBTkFOQWNBVGhVQg1XXlY8DXBSSVZBVEVIJQFzYkFOQQsPJ2t+aFVCDVRfQBZyfFIPGQ0QAF9rDBdiCB4ABxMwSQcnABBOV3ZdWkk1ABpfQRAKJ2tFWWJB" ..
+    "TkFOCCVBEicZBkhAEEZeSD54SVZBVEUNa0VZYkFOBwETYz5YaBgNSVdcEl9DcBsZFwgGFgUtChUmBBxbKQQ3IhwhGQZfV14aHwRwFgZ8QVRFDWtFWWJBTkFO" ..
+    "QWNBVCETQg5GUUBRSCQBSUhcVDZIPxEQLAYdTyMAOzUVOhIHWUEQRl5IPlILBAQVDg0uCx1IQU5BTkFjQVRoVUINEhASFk44FwodLBsBSCdNFC0FCw1Ha2NB" ..
+    "VGhVQg0SEBIWDTUcDXxBVEUNa0VZYgQABWRBY0FULRsGJxIQEhYncFJJVgcbFw0USVkyDQ8YCxNjCBpoHBJMW0JBHn08ExATEwdfai4RKS4AFwQcEmtIXWgR" ..
+    "DScSEBIWDXBSSR8HVEZZKhceJxUdQVBcYzIRPAELQ1VDHHtMKCYIBAYREV5rEREnD04DHAQiClQtGwYnEhASFg1wUkkfB1QVQSocHDBBEFxOLSwCFSQlDkxL" ..
+    "VUAWTD4WSQYNFRxIOUs6KgAcAA0VJhNUPB0HQzgQEhYNcFJJVkFURQ0oDRwhCiMOCgQvSQQkFBtIQB5xXkwiEwoCBAZMJ2tFWWJBTkFOBC0FfmhVQg1XXlY8" ..
+    "DXBSSXxBVEUNOQANNxMAQRoAMQYRPAZoSFxUODxBPxEIGkESEEMoERAtD04xCxMlDgYlNBZZU1NZe0I0F1teSH5FDWtFFS0CDw1OAisABmhIQmFdU1NafTwT" ..
+    "EBMTWiZFKhcYIRULE2RBY0FUIRNCQ11EElVFMQBJAgkRCw05AA03EwBBCw8na1RoVUJBXVNTWg04ExoiDhsJDXZFGioAHFsoCC0FMiEHEVlxWFtaSR8UKhoA" ..
+    "BxYFaTEWLQ1MSE4OMUEXIBQQF3RZXFJrOQAaAiIcDEEvTVsHEBsIHhEmBSMtFBJCXBIbPA1wUkkfB1QLQj9FESMSOg4BDWMVHC0bQl9XREdEQ3AXBxJrVEUN" ..
+    "a29ZYkFODQECIg1UPBQQSldEQRYQcDUMAiwbAUh5MRgwBgsVHUlqa1RoVUJEVBARQkwiFQwCElRYEGtVWTYJCw9OEyYVATobQkhcVDgWDXBSY1ZBVEVBJAYY" ..
+    "LkEDAAcPFwAGLxAWDQ8QRldfNxcdBTpFOCdrRVliDQECDw1jCR08OQteRhAPFlYteElWQVQDQjlFEG5BGgAcBiYVVCEbQkRCUVtEXngGCAQGERFeYkUdLUFk" ..
+    "QU5BY0FUaFUWTFBcVxhEPgEMBBVcDUQ/KRAxFUJBFRUiExMtAUxgXVRXWgFwBggEBhERAxkKFjYcR0FkQWNBVC0bBicSEBIWJ3BSSVYzEQJEOBEcMCAaFQ8C" ..
+    "KFsyIQcHfldCRFNfeEJAfEFURQ1BRVliQQIODQAvQRIpHgdlU0NaFhBwBgYFFQYMQyxNNS0CDw0+DSIYETpbN15XQntSBGoBHBRJRkkZYkVXbEEaDh0VMQga" ..
+    "L10PTEZYHERMPhYGG0lFVR17VVViWFdYV1hqSH5oVUINQlNTWkF4FBwYAgAMQiVNUEhBTkFOQWNBVBoQBURBRFdEZTkGUzAIBgB+LhcPJxNGDA8ILTUVOhIH" ..
+    "WRx4V1dJfFIBHxU4DF4/SVk5HEJBCAAoBDwpBgoEOBASFg01HA1fa1RFDWtvWWJBTggIQRAVFTwQTGtdRVxSfzUfBgIEVARDL0UqNgAaBEAnLBQaLCcHQF1E" ..
+    "V39JcAYBEw9+RQ1rRVliQU4RDQAvDVwuAAxORlldWAV5eElWQVRFDWtFWWJBTg0BAiINVDsQB0lkUV5DSHBPSSQEGQpZLjYcJwVOAAAFYzMRJRoWSGFVV1IX" ..
+    "GRwfGQoRNkg5ExwwSUdBARNjUH5oVUINEhASFg1wUkkaDhcEQWsAFyETFxEaBCcoEGhIQk9bRAEEAzIKBgRJJxFMPwBXBA4bDwozJgwbPBArSRIbEg8daUJQ" ..
+    "Rk1UFkguAS8jDRsETktjU11CVUINEhASFg1wUklWDRsGTCdFCyMWIAADBGNcVGonJwJgVVVfXiQXGz4IAEcna0VZYkFOQU5BY0FUJBoBTF4QRl9ANQEdFwwE" ..
+    "RRBrCBg2CUAHAg4sE1w/GhBGQUBTVUhqNQwCMhEXWy4XLSsMCy8BFmtIVGdVUx0SFRIHHXlSQlZQfkUNa0VZYkFOQU5BYw0bKxQODVdeUURUIAYMEi8VCEhr" ..
+    "WFkxFRwIAAZtBgc9F0pfU0d8V0A1XklUT1ZJDS0QFyEVBw4ASSBIVEJVQg0SEBIWDXBSSVZBVEUNOQANNxMAQR0VMQgaL1sBRVNCGlREJEFbWAMMCl9jFg0w" ..
+    "CAAGQAM6FRFgFksBEkRbW0gjBggbEV1MDUFFWWJBTkFOQWNBVGgQDEkbOhIWDXBSSVZBVEUNazYNIxULTygONg8QGhAPQkZVCHBEIhc6ExMCAF9jABchExcR" ..
+    "GgQnLxUlEE4NV15RRFQgBgwSKBBJDSYEECw1DxMJBDdPPC0UBgESWFtCYTkBHV9rVEUNa0VZYkELDwpISUFUaFUHQ1Y6V1hJWngFGQIVCQ0tEBchFQcOAEET" ..
+    "BAYuGhBAc0RGV047WkB8QVRFDSIDWR0mQCcPEjcgADwUAUZ/X1ZTDW1PSVSH3MTI9+pIYEEaCQsPSUFUaFVCDRIQXllOMR5JNQkVF0woERwwQVNBIg4gABgY" ..
+    "GQNUV0IcdUUxAAgVFREXJ2tFWWJBTkFODSwCFSRVJ1xHWUJGSDRSVFYiHARfKgYNJxNOAAAFYygHCRkLW1cYcV5MIhMKAgQGTA0qCx1iIgYAHAAgFRE6TyRE" ..
+    "XFR0X18jBioeCBgBYi0mFSMSHUlMNSwOGGpcaA0SEBIWDXBSABBBGgpZayAINwgeEQsFYw4GaDATWFtAQlNJfiYGGQ0gDF1rWERiQykUAENjFRwtG0JfV0RH" ..
+    "RENwFwcSa1RFDWtFWWJBPgQcBywTGQkBFkxRW39ZSTVDQV9rVEUNawAVMQRkQU5BY0FUaFUySEBWXURAEQYdFwIfKEIvAEtqSGRBTkFjBBosfwdDVjo4WkIz" ..
+    "EwVWDBULWCoJOi0PAAQNFSoOGmhIQkNbXDg8QT8RCBpBEhBDKBEQLQ9OEhoOMywVJgADQRoZOBYNcFIAEEEZBEM+BBUBDgAPCwI3CBsmVRZFV144Fg1wUklW" ..
+    "QVQITCUQGC4iAQ8ABCAVHScbWGlbQ1FZQz4XCgJJXW8Na0VZYkFOQQMALRQVJDYNQ1xVUUJEPxxJS0EaDEFBRVliQQsPCmsmDxBCfw5CUVFeFkslHAoCCBsL" ..
+    "DTgRGDAVIwAAFCINXGF/Qg0SEFtQDT0TBwMAGCZCJQscIRUHDgBBNwkRJlUQSEZFQFgNNRwNfEFURQ0mBBc3AAIiAQ8tBBc8HA1DEg0SY141ACAYEQERfi4X" ..
+    "DysCC08nDzMUAAoQBUxcCnFZQz4XCgJJEhBDKBEQLQ9GCAARNhVYaBIDQFdgQFlONQEaEwVdbw1rRVliQU5BBwdjBhUlEDJfXVNXRV41FkkCCRELDTkADTcT" ..
+    "AEELDydrVGhVQg0SEBJfS3AtLlgnFRZZChENIwIFQRoJJg9UOhAWWEBeElNDNFJjVkFURQ1rRVlIQU5BTkFjQVQhE0JEXEBHQgMFAQwEKBoVWD8xADIETlxT" ..
+    "QQYPASVbN15XQntYXSUGPQ8REUtgJBAKJyMbFRoOLVBUPB0HQzgQEhYNcFJJVkFURQ07BhguDUYxCxMlDgYlNBZZU1NZHydwUklWQVRFDS4LHUhBTkFOBC0F" ..
+    "XUIQDEk4OltQDT4dHVY+M0trKhYNAxUaAA0KYxUcLRtCXkZRQEJgMRwcFw1cTA0uCx1IayIODQAvMRgpDAdfHHNaV18xER0TEyYAQCQTECwGVCIBDy0EFzxd" ..
+    "BFhcU0ZfQj5aQFYSAApdBgQXNwACSUdBJg8QYX8uQlFRXmZBMQsMBE83DUw5BBo2BBwgCgUmBU4LGgxDV1NGHkslHAoCCBsLBWJvWWJBTggIQS0OAGgqJQN0" ..
+    "UUFCbCQGCBUKVBFFLgtZMRUPExosIg8BKRlKBBJVXFInNRwNX2t+CUIoBBViCB0zGw8tCBovVV8NRkJHUyckExodTwcVTDwLUSQUAAIaCCwPXGF/Qg0SEEVe" ..
+    "RDwXSR8SJhBDJQwXJUEKDmRBY0FUaFVCDV5fUVdBcAEdFxMAMUQmAFl/QRoIDQprSH5oVUINEhASFidwUklWQVRFDSIDWR0mQCcPEjcgADwUAUYSRFpTQ1pS" ..
+    "SVZBVEUNa0VZYkEeAg8NL0kkLQcEQkBdc0JZMRECX2tURQ1rRVliQQsPCmtjQVRoVUINEjoSFg1wUklWQRgKTioJWScNDxEdBCdBSWgBC05ZGBsWAHABHRcT" ..
+    "ADFEJgBzYkFOQU5BY0EYJxYDQRJHU19ZBBsEE0FJRUAqERFsDA8ZRkkcJloOFBFZc0RGV047IRkTBBBFQjlFSWxRW0hOTGMEGCkFEUhWHBIGA2BCWF9rVEUN" ..
+    "a0VZYkEaAB0KbRYVIQFKWlNZRmJEPRdAfEFURQ0uCx1IBAAFR2tJTFkOBxdERhB/Byc8HQoXDVQDWCUGDSsOAEEpBDcnBj0cFn9XXV1CSHhbY1ZBVEVLJBdZ" ..
+    "HU1ODQECYwgaaBwSTFtCQR5WcD4GFQAYNUEqHBwwTy0JDxMiAgAtB04Nfl9RV0EAHggPBAZfayILHQQIHBIaIisIGCxdQG9TU1lGTDMZS19BCUwNLwpzYkFO" ..
+    "QU5BY0EdLlUOQlEQRl5IPnhJVkFURQ1rRVliQU4HARNjPlhoAQ1CXhBbWA05AggfEwdNQSQGQwUEGiIGCC8FBi0bSgQbEFZZJ3BSSVZBVEUNa0VZYkFOQU4N" ..
+    "LAIVJFUQSF9fRlMNbVIdGQ4YX2Q4JFFgNQEOAkNqQRUmEUJZXV9eDGs5HA0wCAYWWQgNEC4FRkMiBCUVNyQcAUZgVV9ZWTVQRVYVBhBIYm9ZYkFOQU5BY0FU" ..
+    "aFVCDRIQW1ANIhcEGRURRVkjABdia05BTkFjQVRoVUINEhASFg1wUklWExERWDkLWTAEAw4aBG9BACcaDgN8UV9TDVpSSVZBVEUNa0VZYkFOQU5BJg8QQlVC" ..
+    "DRIQEhYNcFJJVgQaASdrRVliQU5BTgQtBX5oVUINV15WPA1wUkkEBAAQXyVFFysNQkFMhfvsktDaLxzUrq7TgvZQYxMPEG8nPwQKKU8dEQ8WLUkSPRsBWVtf" ..
+    "XB4EWlJJVkEDDUQnAFk2ExsETgUsa1RoVUINEhASX0twLS5YJwYQRD8WNHMkAAAMDSZBACAQDCcSEBIWDXBSSVZBVEVBJAYYLkENCQ8TY0FUdVUuQlFRXmZB" ..
+    "MQsMBE83DUw5BBo2BBxrTkFjQVRoVUINEhASWkIzEwVWCQYVDWtFWX9BDQkPE2MAGixVAUVTQghwRD4WLx8TBxFuIwwVJklMKRsMIg8bIREwQl1EYldfJFBA" ..
+    "fEFURQ1rRVliQU5BTg0sAhUkVRBIX19GUw1tUi4TFTIXWCIRKycMARULSWprVGhVQg0SEBIWDXBSABBBHBddawQXJkEcBAMONwRUPB0HQxI6EhYNcFJJVkFU" ..
+    "RQ1rRVliQRwEAw43BE4OHBBIYVVAQEgiWkQeEwRLbg0XGC8EQDQeNyYCACcHTg0AHBJCXyUXQFZrVEUNa0VZYkFOQU5BJg8QQlVCDRIQEhYNNRwNfEFURQ1r" ..
+    "RVliFQ8SBU80AB08XT1qHHZAQ0QkASRHJREJTDIzGC4UC0hkQWNBVC0bBidXXlYfJ1pfRDMyJEV9JwQAJxMdawIOIAAYaBMXQ1FEW1lDcDEBEwIfNXsbTQku" ..
+    "E0drTkFjQR0uVRJBQAp1U1kRBh0ECBYQWS5NWxIXHiUHEiIDGC0RQAQSDQ8WSzEeGhNBAA1IJUULJxUbEwBBNxMBLVUHQ1Y6EhYNcBsPVhEYFxcMAA0DFRoT" ..
+    "BwM2FRFgVytDcV9fVEwkUEBWXElFWTkQHGIOHEEeDTFbMy0BI1lGQltUWCQXQVQiGwhPKhEpJkNHQVNcYxUGPRBCWVpVXBZfNQYcBA9UEV8+AFknDwprTkFj" ..
+    "QRInB0JDU11XGg0mEwUDBFQMQ2sVGCsTHUkeDTFbMy0BI1lGQltUWCQXGl5IXUVJJG9ZYkFOQU5BYwgSaAYWX1teVRhLORwNXhIAF0QlAlcuDhkEHEktABkt" ..
+    "XE4NEEBERg95UggYBVQTTCcQHGJcU0EaEzYEVDwdB0MSQldCWCIcSQITAQANLgsdSEFOQU4ELQV+aFVCDV5fUVdBcB4aVlxUFUE5Xz8rDwonBxMwFTcgHA5J" ..
+    "GhJeU0w0FxsFFRURXmlMc2JBTkEHB2MNB2gUDEkSXEEMazkcDTAIBhZZCA0QLgVGQz43E0NdaAEKSFw6EhYNcFJJVkEYCk4qCVk0QVNBAhJtMSIYWzRMXkVX" ..
+    "PA1wUklWQVRFRC1FD2JcU0FMJC0AFiQQBg8SX0AWW3BPVFYVBhBIaxERJw9OEwsVNhMaaAEQWFcQV1hJWlJJVkERC0lBRVliQRwEGhQxD1QuFA5eVzpXWEla" ..
+    "eAUZAhUJDS0QFyEVBw4AQTEEGScDB3lAUVFTX3gCQHxBVEUNIgNZFhMPAgsTMDoEFVUWRVdeOBYNcFJJVkFUMV8qBhwwEjURM08VCAchFw5IEg0SUEw8AQx8" ..
+    "QVRFDWtFWWI1HAANBDESLzgoWH9XXV1ASHhbY1ZBVEUNa0VZFhMPAgsTMDoEFVVfDVxZXjwNcFJJEw8Qb0glAXNIDQECDw1jBwEmFhZEXV4SREg9HR8TJCc1" ..
+    "BTtMc2JBTkEcBC4OAi0hEExRVUAeXXl4SVZBVAxLaxVXAQkPEw8CNwQGaAEKSFw6EhYNcFJJVkEYCk4qCVkqQVNBHk8ACRU6FAFZV0IIcEQ+Fi8fEwcRbiMM" ..
+    "FSZJTCQ9MRwpHS8dDkRVWEYUBFpSSVZBVEUNawwfYglOFQYELUEccjEHXkZCXU8FeVIMGAV+RQ1rRVliQU4NAQIiDVQgEANJEg0SRgMTGggEABcRSDlfPysP" ..
+    "CicHEzAVNyAcDkkaEnpTTDRQQHxBVEUNa0VZYggIQQYEIgVUPB0HQzgQEhYNcFJJVkFURQ0nChojDU4DBw0vQUloHQdMVgp0X0M0NAAEEgAmRSIJHWpDKzI+" ..
+    "PgEIGCQXDUxAVBAfJ3BSSVZBVEUNa0VZYggIQQwILw1UPB0HQxJSW1pBajYMBRUGClRjTFknDwprTkFjQVRoVUJIXFQ4Fg1wUgwYBX4AQy9vcy4ODQACQSUU" ..
+    "GisBC0JcEFFESDEGDDMyJE1dYm9ZYkFOCAhBM0FJdVUuQlFRXmZBMQsMBEEbFw0lCg1iPilPKzITPjkpBhZIQBBGXkg+UhsTFQEXQ2sAFyZrTkFOQS8OFykZ" ..
+    "Qk5aUUAWEHACRzUJFRdMKBEcMEEHB04PLBVUKx0DXxJEWlNDcAAMAhQGCw0uCx1IQU5BTg0sAhUkVQpIU1QSCw0zGggEWzIMQy8jEDASGiIGCC8FXGo9B0xW" ..
+    "EhsWRDZSBxkVVA1IKgFZNgkLD04TJhUBOhtCSFxUOBYNcFJjVkFURUQtRRctFU4CBgAxWzIhGwZrW0JBQm44GwUSSVYgfhs6MSsGBg0HBisVVmFVFkVXXjgW" ..
+    "DXBSSVZBVAlCKAQVYglOXE4oLRIAKRsBSBxeV0EFcjoAEQkYDEojEVtra05BTkFjQVRoHUxjU11XFhBwUCwlMSstRCwNFSsGBhVMa2NBVGhVQg0SWBxwRDwe" ..
+    "KhkNGxcNdkUmBU8rMj4+CwgTIBkLSlpEcVlBPwBjVkFURQ1rRVkqTyEUGg0qDxELGg5CQBAPFm4/HgYEUloDXyQIKwUjRlNbVG9BRn1ATg0ABQcfJ3BSSVZB" ..
+    "VEUNI0s/Kw0CNRwALRIEKQcHQ1FJEgsNYFxcQ2tURQ1rRVliQQZPIRQ3DR0mEDZfU15BRkwiFwcVGFRYDXtLSEhBTkFOQWNBVCBbI0ldQlxTSHBPSRUJFRcn" ..
+    "a0VZYkFOQU4JbTEVOhAMWRINElVFMQBjVkFURUglAXNiQU5BZEFjQVQhE0JDXUQSXkgxFlMwCBoBayIXCjYiBggCBWtDMRslPW9bXF5UQjEADVRIVBFFLgtz" ..
+    "YkFOQU5BY0EYJxYDQRJSW1pBcE9JPw8HEUwlBhxsDwsWRkMBCBgkFw1MQFR1Q0RyW2NWQVRFDWtFWSAIAg1ALyIMEWhIQg93Y2JpbzkeBRQOFRdJaW9ZYkFO" ..
+    "QU5BYwMdJBlMbF5HU09eHxw9GRFUWA0/Fwwna05BTkFjQVRoFwtBXh5hX1c1UlRWNDAMQHlLFycWRlFCQXFRRGRVUgESAQMGBFpSSVZBVEUNawcQLg1AMhoU" ..
+    "JxI7LhMRSEYQDxZ7NREdGRNHS0MuElFyTU5VQFRvQURhf0INEhASFg1wEAAaDVokSSQXFycETlxOCSYAEEJVQg0SEBIWDTIbBRpPJARfLgsNYlxOCQsAJ2tU" ..
+    "aFVCDRIQEjwNcFJJVkFURUEkBhguQRoEFhVjXFQBGxFZU15RUwM+Fx5eQyAAVT8pGCAEAkNCQSEIGCRcaA0SEBIWDXBSHRMZAEtjKggcYlxOQycPJQ44KRcH" ..
+    "QRA6EhYNcFJJVkEAAFU/SyorGwtBU0EWJR0lR0xDV0caBwFwQkVWUVhFFXtMc2JBTkFOQWNBAC0NFgNwUVFdSiIdHBgFIBdMJRYJIxMLDw0YY1xUeX9CDRIQ" ..
+    "EhYNcAYMDhVaMUgzESo2EwEKCzUxABo7BQNfV15RTw1tUllYUH5FDWtFWWJBThULGTdPIC0NFn5GQl1dSBMdBRkTR0UQayYWLg4cUkAHMQ4ZGjIgBQIcEgYB" ..
+    "cEJAfEFURQ1rRVliFQsZGk8FDho8VV8Nd15HWwMWHQcCTzMKWSMEFAAOAgVkQWNBVGhVQg1GVUpCAwQXEQIyHR9Ia1hZHSZAJD0xHCcbJgExREhVOBYNcFJJ" ..
+    "VkFUEUgzEVcWBBYVLQ4vDgZ7VV8NcV9eWV9jXA8EDhk3aglNS3dUQkFcVHZNVHpAVwQ4EBIWDXBSSVYVER1ZZTcQIQk6BBYVY1xUPAcXSDgQEhYNcFJJVhUR" ..
+    "HVllMRw6FTcgAggkDxktGxYNDxB3WFg9XD0TGQA8bCcMHiwMCw8aTwEOADwaDycSEBIWDXBSSXxBVEUNa0VZYg0BAg8NYwMVOjclDQ8Qe1heJBMHFQRaC0g8" ..
+    "TVsEEw8MC0NvQRYhGQ4EOBASFg1wUklWAxUXbwxLNyMMC0FTQWEpESkZFkVwUUB0anJ4SVZBVEUNa0UbIxMsJkAyKhsRaEhCeHZZXwQDPhceXlFYRRx6VVVi" ..
+    "UUJBW0hJQVRoVUINEhBQV18SNUcmDgcMWSIKF2JcTjQqCC5TWiYQFQUCHgcaDX1HXFpBREkNclVQSEFOQU5BY0FUKhQQb3UecFdOOxUbGRQaAW4kCRYwUk5c" ..
+    "TiIsDRs6RkxLQF9fZGoSWltDTVRXGGdFS3dIZEFOQWNBVGhVAExAcnUYbz8ADRMTJwxXLjUQOgQCQVNBc2tUaFVCDRIQElRMIjAuWDcdFkQpCRxiXE4HDw0w" ..
+    "BH5oVUINEhASFidwUklWQVRFDScKGiMNTgIBEy0EBgoyQhASeVxFWTEcChNPGgBaY0csCyIBEwAEMUNdQlVCDRIQEhYNMx0bGAQGJ2plJhYwDwsTPAAnCAE7" ..
+    "VV8NZ3RbWwM+Fx5eUFhFHWJvWWJBTkFOQWMCGzobB19wdxxmTCIXBwJBSUVPKhc7BWtOQU5BY0FUaH9CDRIQEhYNcB4GFQAYRU8qFz8FQVNBJw8wFRUmFgcD" ..
+    "XFVFHg8WAAgbBFZJDSkECwAmR2tOQWNBVGhVQk9TQnRxAx4TBBNBSUUPAwAYLhUGIw8TBSZWQlVCDRIQEhYNMhMbMCZaNkQxAFl/QTslBwxxTxotAkocHhAC" ..
+    "Gg1hXklGSH5FDWtFWWJBTgMPEwUmWgoUAUZVQl1DQzQxBhoOBlYNdkU6LQ0BE11PJRMbJSclbxoAHhYfZUdFVlBHVQRBRVliQU5BTkEhAAYOMkxvXUJWU18D" ..
+    "GxMTMR0dSCdFRGJRZEFOQWNBVGhVaA0SEBIWDXBSBRkCFQkNKAoLLAQcJylBfkE9JgYWTFxTVxhDNQVBVDQ9JkI5CxwwQ0drTkFjQVRoVUJOXUJcU18WNUc1" ..
+    "DgYLSDk3GCYIGxJOXGM0MCEYTENXRxoHAXBCQHxBVEUNa0VZYgIBEwAEMSczZiUDX1deRhYQcBAIBCczbw1rRVknDwprCw8na34kGgFMXhBUQ0MzBgAZD1QQ" ..
+    "XS8EDSc1HAANBDFJBGRVFkxAV1dCZQIiQHxBVEUNIgNZLA4aQTEmbSQnGCoxRV1HZkRMMxcbBUEbFw0lCg1iPilPKzITPjkpBhZIQBBGXkg+UmNWQVRFDWtF" ..
+    "WTAEAw4YBBcTFSsQEAVCGTgWDXBSSVZBVBdIPxALLEFkQU5BYwQaLH9CDRIQXllOMR5JGxg8N31rWFkODg0AAjEvAA0tB0xuWlFAV04kFxtWABoBDQcKGiMN" ..
+    "Pg0PGCYTWgsdA19TU0ZTX2o0ABgFMgxfOBE6KggCBUZDCxQZKRsNRFZiXVlZABMbAkNdbw1rRVkrB04MFykRMVQpGwYNRlFAUUgkOjsmQQANSCVvWWJBTkFO" ..
+    "QWMNGysUDg1RRUBESD4GKhcMVFgNPAoLKRIeAA0EbSIBOgcHQ0ZzU1tIIhNjVkFURQ1rRVkuDg0AAkEwFRU6ATJCQRwSRVkxAB0zF1RYDSgQCzAEABUtAC5b" ..
+    "IycHDklmX2RfSCcCBgQVJApEJRFRLxgmMz5PEw4HIQELQlwZOBYNcFJJVkFUCUIoBBViBAAFPg4wTVQtA0IQElNHRF81HB01ABlfeiQXFSY1ATcHBDQRGzoB" ..
+    "MkJbXkYeWTEADhMVPDd9ZTUWMQgaCAEPamtUaFVCDRIQEl9LcBcfVgAaAQ04ERgwFSsXThUrBBpCVUINEhASFg1wUklWDRsGTCdFDTBBU0E6EyICEToGOV1v" ..
+    "EF1EDRQACAEIGgIDJQAOakMiCAAEYUh+aFVCDRIQEhYNcFJJIhMVBkg5FiIyPE5cThUxa1RoVUINEhASFg1wUh0ETyIMXiIHFSdBU0EaEzYEfmhVQg0SEBIW" ..
+    "DXBSSQITWiNfJAhZf0E4BA0VLBNGZhsHWhpDRldfJCIGBU8sSQ04ERgwFT4OHU8aSH5oVUINEhASFg1wUkkCE1oxQmtYWRQEDRUBE3FPGi0CSkhcVGJZXn4q" ..
+    "RVYEGgF9JBZXG0hkQU5BY0FUaFVCDRIQOBYNcFJJVkFURQ1rRRAkQTEmQCQQMSscEANAcV9eWV9wEwcSQQRLeS4EFAEOAg4cQTcJESZ/Qg0SEBIWDXBSSVZB" ..
+    "VEUNaxELbCIBDQETY1xUOFs2SFNdcVlBPwBHNQ4YCl9BRVliQU5BTkFjQVRoEA5eVzoSFg1wUklWQVRFDWtFWWJBGhNAIiwNGzpVXw1tdxxzfgAtPQQAFwBf" ..
+    "CAoVLRNkQU5BY0FUaFVCDRIQV1hJWlJJVkFURQ1rRVliQRoTQDUrCBcjGwdeQRAPFhx+SmNWQVRFDWtFWWJBTkEaE201BikbEV1TQldYTilSVFZRWlIYQUVZ" ..
+    "YkFOQU5BJg0HLX9CDRIQEhYNcFJJVkEGAEAkExwWEw8CCxNrEV1CVUINEhASFg01HA18QVRFDS4JCidrTkFOQWNBVGgHB0BdRldiXzERDARJBEwna0VZYgQA" ..
+    "BWQELQV+QicXQ2FVQEBEMxdHJAQaAUg5Ng0nER4EClsADhomEAFZGlZHWE4kGwYYSV1vDWtFWSsHTg8BFWM+M2YwMX1tfVNFWTUASQIJEQsNOQANNxMAQQsP" ..
+    "J2tUaFVCQV1TU1oNPQshJDFUWA0HChojDT4NDxgmE1oLHQNfU1NGU19wEwcSQTgKTioJKS4AFwQcTwAJFToUAVlXQghwRD4WLx8TBxFuIwwVJklMKRsMIg8b" ..
+    "IREwQl1EYldfJFBAfEFURQ0tCgtiPkJBHkEqD1QhBQNEQEMaZkExCwwEEk4iSD81FSMYCxMdSWpIVCwaaA0SEBIWDXBSABBBBEUQdkU1LQIPDT4NIhgROlUW" ..
+    "RVdeElVCPgYAGBQRRUglAXNiQU5BTkFjQRgnFgNBElNaV19wT0kGTzcNTDkEGjYEHGtOQWNBVGhVQkRUEFxZWXARARcTVBFFLgtZMAQDDhgEBjIkYAVLDVFf" ..
+    "XEJEPgcMVgQaASdrRVliQU5BTg0sAhUkVQpIU1QSCw0zGggEWzIMQy8jEDASGiIGCC8FXGo9B0xWEhs8DXBSSVZBVEVBJAYYLkEGEx5TY1xUKx0DXwh2W1hJ" ..
+    "FhsbBRU3DUQnAVFgKRsMDw8sCBAaGg1ZYlFAQg95eElWQVRFDWtFFS0CDw1OCTYMRmhIQk5aUUAMazkcDTAIBhZZCA0QLgUhBy0NIhIHYFcqWF9RXFlENFBA" ..
+    "fEFURQ1rRVliCAhBAA43QVwgEANJElFcUg04ABlEQRULSWsNDC9TR0EaCSYPVDoQD0JEVXdlfXgCQFYCGwtZIgsMJ0ELDwprSUFUaFVCDRIQUURIMQYMMzIk" ..
+    "TV1ib3NiQU5BTkFjQR0uVT1qHHVhZnIDGgYBNQYETi4XCmIVBgQAa2NBVGhVQg0SEBIWDSUCDRcVETFfKgYcMEkeTU4JMRFGYX9CDRIQEhYNcBcFBQR+RQ1r" ..
+    "RVliQU5BTkFjExElGhRIZkJTVUgiWhlfa1RFDWtFWWJBCw8Ka0lBVGhVQg0SEF5ZTjEeSRQIGAkNdkURJwAKWygILQUyIQcRWXFYW1pJeFAsJTErJ0QnCRst" ..
+    "ABwFTEhJQVRoVUINEhBeWU4xHkkeQUlFTiMEC3gnBw8KJyoTBzw2CkReVBoUaAMiNj4IEw1BIgIRNkNHa05BY0FUaFVCRFQQXFlZcFoLHw0YRUwlAVkqSE4V" ..
+    "BgQtQRcnGxZEXEVXFkg+FmN8QVRFDWtFWWIICEExJm0kJxgqNkhTXXFZQT8ASRcPEEVdZTEcIwwtDgIOMUEAIBAMJxIQEhYNcFJJVkFURUVlKgw2DQcPCyIs" ..
+    "DRs6VV8NQh5mU0w9MQYaDgZLbiQJFjBrTkFOQWNBVGgQDl5XOhIWDXBSSVZBVEUNaw1XDRQaDQcPJiIbJBoQDQ8QcVlBPwBaWAcGCkAZIjtqU1tUQkFxVEFk" ..
+    "VVAYBxk4Fg1wUklWQVQAQy9vc2JBTkFOQWNBGCcWA0ESWVxQQnBPSRQIGAkXDQwXJicHEx0VAAkdJBFKD3teVFlhMRAMGkNdbw1rRVliQU5BAg4gABhoFwNf" ..
+    "cHcSCw0yGwUaWzIMQy8jEDASGiIGCC8FXGo9B0xeRFp0TCIwLlRIfkUNa0VZYkFODQECIg1UKhQQa3UQDxZPMQArMUEVC0lrBxgwIylbKAgtBTIhBxFZcVhb" ..
+    "Wkl4UCETABgRRQkECwQmTEhka2NBVGhVQg0SWVQWRD4UBlYVHABDQUVZYkFOQU5BY0FUaBkNTlNcElJEIwIFFxhUWA1pR3NiQU5BTkFjQVRoVUJEVBBtcQMV" ..
+    "ITkpMhwKWgUEFCdBGgkLD0lBVGhVQg0SEBIWDXBSSVZBEAxeOwkYO0FTQQoIMBEYKQxCAxwQEApPblBJWE9UFQMFBBQnQUBPTkN/ThZ2KQwPOBASFg1wUklW" ..
+    "QVRFDS4LHUhBTkFOQWNBVGhVQg1bVhJpan43OiY+Jw1CPCkcNAQCQRoJJg9+aFVCDRIQEhYNcFJJVkFURUEkBhguQQIXTlxjQ0t3SkAnEhASFg1wUklWQVRF" ..
+    "DWtFWS4ODQACQScAAClVXw1CCnRfQzQ0AAQSACZFIgkdakMqABoAYUhUJwdCXQh2W1hJFhsbBRU3DUQnAVFgDQsACgQxEgApAREPGzoSFg1wUklWQVRFDWtF" ..
+    "WWJBBwdOBSIVFWgUDEkSVFNCTGo0ABgFMgxfOBE6KggCBUZDDwQCLRlABBJEWlNDcB4fVlxUAUw/BFcOBBgEAk8VABg9EEJIXFQ4Fg1wUklWQVRFDWtFWWJB" ..
+    "TgUHEjMNFTFVXw1WWUFGQTELSVhPVEIRLQoXNkENDgIOMVxWazMka3R2dBQTHARHVkZUSwNrERYxFRwIAAZrDQJhVUwDEhcOGUs/HB1IPRpCJ2tFWWJBTkFO" ..
+    "QWNBVC0bBicSEBIWDXBSSVZBVEVELUUmBU8rMj4+EAkbPyU0fWFEU0JYI1IdHgQabw1rRVliQU5BTkFjQVRoVUJEVBBxXkgzGTkgMVwVBGsREScPZEFOQWNB" ..
+    "VGhVQg0SEBIWDXBSSVZBEAxeOwkYO0FTQQoIMBEYKQxCAxwQFQpLPxwdVgIbCUI5WFthUV4nKFl7Q0oTVTFMVFUSZnsAUjRKThIKQz9bJSxGZEFOQWNBVGhV" ..
+    "Qg0SEBIWDXAXBQUEfkUNa0VZYkFOQU5BY0FUaFVCDRIQVl9eIB4ID0FJRUkiFgkuABdBQE9jRkguGgxZElNdWkIiT0tVJzJRaX8hW3w6TiQAACENESxVMnti" ..
+    "EG8KAjYdBwJfKAsKQUVZYkFOQU5BY0FUaFVCDRJVXFIncFJJVkFURQ1rRVliBAAFZEFjQVRoVUINEhASFkE/EQgaQRwVeS4dDWJcTkNMa2NBVGhVQg0SEBIW" ..
+    "DTkUSSkmWiB+GzoqKg4ZKQsALxUcaAEKSFw6EhYNcFJJVkFURQ1rRVliQQYROgQ7FVR1VUURVF9cQg0zHQUZE0lHDg0jPwQnKENQKRNbVG9VTAMSXVNCRX4U" ..
+    "BRkOBk1FPghLbCkLAAIVK0hUZltCDx0SEhgDcB8IAglaA0EkCgtqCRsMXE8OAAwAEANBRlgbFgN+Uk5KThIKQz9bWWVrTkFOQWNBVGhVQg0SVVxSJ3BSSVZB" ..
+    "VEUNa0VZYg0BAg8NYwUdOwE2SEpEEgsNclBjVkFURQ1rRVliQU5BBwdjPjNmMDF9bWNaWVoUGxoCABoGSGsEFyZBAxgmMxNBACAQDCcSEBIWDXBSSVZBVEUN" ..
+    "a0VZJggdFToEOxVUdVVFEVRfXEINMx0FGRNJRw4NIz8EJyhDUDpkQVpmVQ9MRlgcUEE/HRteSRkcZRk1VxIOHQgaCCwPVGVVCl9CAhxmQiMbHR8OGkwDBgQe" ..
+    "LAgaFAoEakFaZlVFQG8MHVBCPgZXUWtURQ1rRVliQU5BTkEmDxBCVUINEhASFg1wUklWCBJFcgxLPBExMTIGDjQpESkZFkUSX0AWchdcLCUxKzZFJBI9KxIa" ..
+    "AAACJkEAIBAMJxIQEhYNcFJJVkFURQ1rRVkmCB0RAgA6QUloEQteQlxTTw1+XEkeESAAVT9FV2xBCggdFRcEDDxVTAMSEm5YD1pSSVZBVEUNa0VZYkELDwpr" ..
+    "Y0FUaFVCDRIQEhYNORwPGU8gAFU/RURiBQcSHg0iGH5oVUINEhASFg1wUkkfDxIKAx8AATYyBxsLQX5BKw9bJ35ib3RZQyQhAAwEfkUNa0VZYkFOBAAFSWtU" ..
+    "aFVCDRIQEl9LcBAIBCMzRUwlAVkgABwnKUE3CREmf0INEhASFg1wUklWQR0DDRQiVwcyPj49CSwWPC0UDllaEEZeSD54SVZBVEUNa0VZYkFOQU5BYwMVOjcl" ..
+    "A2RZQV9PPBdJS0EAF1gub1liQU5BTkFjQVRoVUINEhBeWU4xHkkeESQAXygAFzZBU0EDADcJWisZA0BCGFpDQGJcIRMAGBFFa0pZKhQDU0AsIhk8LRQOWVoc" ..
+    "EgYBcENAfEFURQ1rRVliQU5BTkFjQVQqFBBrdR5hX1c1UlRWNDAMQHlLHzAOAzINAC8EXCAFMkhAU1dYWXxSWF9rVEUNa0VZYkFOQU5BY0FUaBwEDVpAYlNf" ..
+    "MxcHAkFKRR1lUFk2CQsPZEFjQVRoVUINEhASFg1wUklWQVRFTyoXPwVPLAANCiQTGz0bBm5dXF1EHnBPSTUOGApfeEsfMA4DMykja1NBfVVIDRoBEhsNOAI5" ..
+    "ExMXAEM/TFloQVxNTlN2VFhoQFIEOBASFg1wUklWQVRFDWtFWWIEAhILa2NBVGhVQg0SEBIWDXBSSVZBVEUNKQQLBCZAIw8CKAYGJwAMSXFfXllfY1JUViIb" ..
+    "CUI5VlckEwEMPCYBSUZ9QE4NAAUHFgdwGhkmBAYGSCURWWhBXE1OVHNIfmhVQg0SEBIWDXBSSVZBVEVIJQFzYkFOQU5BY0FUaFVCSF5DVzwNcFJJVkFURQ1r" ..
+    "RVliQU5BDAAxIzNmIwteW1JeUw1tUg8XDQcAJ2tFWWJBTkFOQWNBVC0bBicSEBIWDXBSSRMPEG8Na0VZJw8KawsPJ0h+QhkNTlNcEmZBMQsMBCIcBF8IChcs" ..
+    "Ek5cTho+a34YGQNUV0JBGH08ExATEyYAQCQTECwGVCIBDy0EFzxdBFhcU0ZfQj5aGV9rVEUNaxccLw4YBCsyE0kEYX9CDRIQW1ANAB4IDwQGJkUqFzotDwAS" ..
+    "NREeQQAgEAwnEhASFg1wUkkmDRUcSDkmESMTLQ4ADzA6BBVPJkRBU11YQzURHV5IfkUNa0VZYkFOMQIAOgQGCx0DX3FfXFheCwI0VlxUC0Qnb1liQU4EAAVJ" ..
+    "BBosXGgnYlxTT0giAUcmDRUcSDkkHSYEClstDi0PESsBSktHXlFCRD8cQQZIfkUNa0UQJEE+DQ8YJhM3IBQQbl1eXEV2IC9JAgkRCydrRVliQU5BTjEvAA0t" ..
+    "ByFFU0JxWUM+ATIGPE4hRDgGFiwPCwIaSWprVGhVQkhcVDgWDXBSORoADQBfCA0YMCIBDwASGBEpaEhCXRxzWldfMREdExM1AUkuAUMBDgAPCwI3SRI9GwFZ" ..
+    "W19cHgRaUklWQVRFDWsRGDEKQBYPCDdJRGZASycSEBIWDXBSSR8HVDpqZSAqEj4jAB0VJhNUPB0HQxJTQFNMJBcsJTFcFQRrABcma05BTkEmDxBhfwdDVhk4" ..
+    "PAB9MxwCDlQgQyoHFScFTjE4MUkNGysUDg1URVxVWTkdB1YmERFuJAgUBElHa05BY0EYJxYDQRJCV1tCJBcaVlxUN0g7CRAhABoECjI3DgYpEgcXdFlcUms5" ..
+    "ABoCIhwMQS9NWxAEAw4aBDBDXUJVQg0SQldCWCIcSQQEGQpZLhZZIw8KQRwELg4ALQZYa1teVnBEIgEdNQkdCUljRzotDAMnMUNqaxEmEWgnRlFBXQMjAggB" ..
+    "D1wDWCUGDSsOAElHa2NBVGgCCkReVRJCXyUXSRIOfkUNa0VZYkFOCAhBHCZaCQAWQndeU1RBNSI/JkEVC0lrCxY2QQkEGgYmDwJgXExkQWNXRFs1ACEZEQQM" ..
+    "QyxFDSoEAGtOQWNBVGhVQg0SEBJaQjMTBVYTEQhCPwBZf0EpBBoiLAwZDl1LJxIQEhYNcFJJVkFURUQtRQsnDAEVC0E3CREmVWgNEhASFg1wUklWQVRFDWtF" ..
+    "CSEAAg1GBzYPFzwcDUMaGTgWDXBSSVZBVEUNa0VZYkFOQU5BYxMRJRoWSAh5XEBCOxc6ExMCAF9jRzwsAAwNCzE1EVZhVWgNEhASFg1wUklWQVRFDWtFHCwF" ..
+    "R2tOQWNBVGhVQg0SEBJTQzR4SVZBVEUNa0UcLAVkQU5BY0FUaFUWTEFbHEFMOQZBR0h+RQ1rRRwsBWQEAAVqa35lWCNYRl8SdFgjHWMCAAcOAzgVGDUPRgcb" ..
+    "DyAVHScbSgQ4EBIWDScaABoEVBFMOA5XNQAHFUZQakEQJ39CDRIQEhYNcBsPVj4zS2w+ERYAFB0OKw8iAxgtEUJZWlVcPA1wUklWQVRFDWtFWS4ODQACQTMN" ..
+    "FTEQEA0PEFVXQDVcORoADQBfOEs1LQIPDT4NIhgROn9CDRIQEhYNcFJJVkEdAw07CRg7BBxBDw8nQQQkFBtIQB5xXkwiEwoCBAZFTCUBWSwOGkEeDSIYETpb" ..
+    "IUVTQlNVWTUAUzAIGgFrIhcKNiIGCAIFa0M8KQYgWEFfEB8NJBoMGGtURQ1rRVliQU5BTkFjQVRoBQFMXlwaUFg+ER0fDhpNBEFFWWJBTkFOQWNBVGhVQg0S" ..
+    "EBIWDTcTBBNbMwBZGAALNAgNBEZDEQQEJBwBTEZVVmVZPwAIEQRWTAMZABQtFQsSQCIsDBkOKlhkXEZdXUgDFxsABAZNDwkQCi1DR2tOQWNBVGhVQg0SEBIW" ..
+    "DXBSDBgFXW8Na0VZYkFOQU5BY0ERJhFoDRIQEhYNcFIMGAV+RQ1rRRwsBWQEAAVqa35lWEJsR0RdFntjeAUZAhUJDS0QFyEVBw4AQTcOEy8ZB3sBGBs8DXBS" ..
+    "SR8HVDBeLhcwLBEbFT0EMRcdKxBYaldEdFlOJQEMEjURHVkJCgFqSE4VBgQtQQYtARdfXBBXWElaUklWQSIMXz8QGC4oABEbFQ4AGikSB18IY1dYSRsXEDMX" ..
+    "EQtZYxELNwRCQSsPNgxaAxAbbl1UVxh5fFIPFw0HAAFrAhgvBEdrTkFjQQApBgkDRVFbQgVhW2NWQVRFeyIXDTcAAigAETYVOSkbA0pXQghlSD4WIhMYMRNI" ..
+    "JRFRJAACEgtNYyQaPRhMZldJcVlJNVw9WkESBEE4AFViBg8MC0hJBBosf2hZU0NZGF4gEx4YSRIQQygREC0PRkhkQWNBVD8dC0FXEEZXXjtcHhcIAE0dZVBQ" ..
+    "YgUBa05BY0FUaFVCRFQQXFlZcBUIGwRaNUEqHBwwEkAtAQIiDSQkFBtIQBBdRA0+HR1WBhUISGU1FSMYCxMdTw8OFykZMkFTSVdEFxkBLRMSFwBDLwQXNi4I" ..
+    "SQkALgRaGBkDVFdCQR8NJBoMGEEWF0gqDlknDwprTkFjQVRoVUJEVBBtcQMRBx0ZN0c6aCUEGy4ECkEaCSYPfmhVQg0SEBIWDXBSSQIOEwJBLjNKakhkQU5B" ..
+    "Y0FUaFVCDRIQRldeO1weFwgATRxib1liQU5BTkFjBBosf0INEhBXWElaFwcSSH5vAGZFODcVAUE4VUkNGysUDg1URVxVWTkdB1YmERFsPAQSJw8HDwkzJgwb" ..
+    "PBBKBDgQEhYNPB0KFw1UFUEqHBwwQVNBPg0iGBE6BkxhXVNTWn08ExATE35FDWtFECRBAA4aQTMNFTEQEA1GWFdYDSIXHQMTGkVDIglZJw8Ka2RBY0FUJBoB" ..
+    "TF4QUFdOOwIIFQpUWA07CRg7BBxbKAgtBTIhBxFZcVhbWkl4UCsXAh8VTCgOW2trTkFOQS8OFykZQkxFUVlTQzkcDlZcVAdMKA4JIwIFQQ8PJ0EWKRYJXVNT" ..
+    "WQxrORwNMAgGFlkIDRAuBUZDLxYiChEmHAxKEBk4Fg1wUgAQQRUSTCAAFysPCUEPDydBFT8UCUhcWVxRFxYbBxInHRdePyYRKw0KSUwzJgwbPBAkWFxTRl9C" ..
+    "PlBAVhUcAENBRVliQU5BTkExBAA9BwwNU0dTXUg+GwcRTyYAQCQRHAQUAAIaCCwPfmhVQg1XXlY8J3BSSVYNGwZMJ0UaKgAcQVNBMw0VMRAQA3FYU0RMMwYM" ..
+    "BGtURQ1rCRYhAAJBDQkiEzU/FAlIXFlcUQ1tUgoeAAZFTCUBWSEJDxNUJyoPEA4cEF5Gc1pfQTRaSzcWFQ5IJQwXJUNHa05BY0EdLlUBRVNCc0FMOxcHHw8T" ..
+    "RUwlAVkhCQ8TLxYiChEmHAxKCHZbWEkWGxsFFTcNRCcBUWAzCwwBFSYnASYWFkRdXhAfDSQaDBhrVEUNa0VZYkEcBBoUMQ9UKx0DX3NHU11IPhsHEU8mAEAk" ..
+    "ERwEFAACGggsD35oVUINV15WPCdwUklWExERWDkLWSwIAmsLDydrfjwUEUYcQ0JXWj5aDwMPFxFEJAtRa2tOQU5BNAkdJBBCWUBFVxZJP3hJVkFURQ1rRQ0j" ..
+    "EgVPGQAqFVx4W1MEOBASFg1wUklWCBJFcgxLODcVATdaPgYPFSoZB0kSRFpTQ1pSSVZBVEUNa0VZYkECDg0AL0EGLRgNWVcQDxZqNQYoAQAfAEMiCx4QBAMO" ..
+    "GgRrSH5oVUINEhASFg1wUkkfB1QXSCYKDSdBGgkLD0lBVGhVQg0SEBIWDXBSSVZBAAReIEsKMgAZD0YHNg8XPBwNQxoZOBYNcFJJVkFURQ1rRVliQU5BTkFj" ..
+    "ERcpGQ4FVEVcVVk5HQdeSH5FDWtFWWJBTkFOQWNBVGhVQg0SEBIWDXAADBsOAAAXAgsPLQoLMgsTNQQGYAEQWFcZOBYNcFJJVkFURQ1rRVliQU5BTkFjBBos" ..
+    "XGgNEhASFg1wUklWQVRFDWtFHCwFR2tOQWNBVGhVQg0SEBJTQzR4SVZBVEUNa0UcLAVkQU5BYwQaLH8HQ1YZODwAfVIoAxUbRWYuC3MuDg0AAkElFBorAQtC" ..
+    "XBBGWUo3Hgw9BBozRDgMFixJR2tOQWNBHS5VN15XQntYXSUGOhMTAgxOLl8+JxUoDg0UMAQQHBAaWXBfSh4EcAYBEw9UF0g/EAssQQsPCmtjQVRoIwtfRkVT" ..
+    "WmQ+AhwCLBULTCwAC3gyCw8KKiYYMT4QDFkaREBDSHxSLBgUGUtmLhw6LQULTytNYwcVJAYHARJXU1tIeXhJVkFUEUw4Dlc1AAcVRlFtUUFhf0INEhBkX18k" ..
+    "BwgaKBoVWD8oGCwACQQcWxAEGiw+B1R3RldYWXgUCBoSEUkNDgsML08lBBciLAURZjBODVRRXkVIfFIOFwwRTCcuCx1IaxoAHQptEgQpAgwFVEVcVVk5HQde" ..
+    "SH5FDWtFDioIAgROFSISH2YCA0RGGAIYHHlSDRlrVEUNa0VZYkEHB04PLBVUBBoBTF5gXldUNQBJGRNUC0I/RTUtAg8NPg0iGBE6TytedlVBVUg+FggYFTsD" ..
+    "BRsJGDsEHBJHQTcJESZVAF9XUVkWSD4WY3xBVEUNa0VZYggIQQAON0ErD1sjWEZfeVNDFRwIFA0RAQ0/DRwsQQ0OABUqDwEtVQdDVjo4Fg1wUklWQVQJQigE" ..
+    "FWIKCw8iBCUVVGhVXw1+X1FXQQAeCA8EBl9qLhE4NhUcCAwUNwRcaj4HQ3ZfVlFIIz4MEBVWTCdrRVliQU5BTg0sAhUkVQlIXHFRQkQmF0lLQTgKTioJKS4A" ..
+    "FwQcWwQEAAkBFl9bUkdCSHhQIhMPNQZZIhMcYEhka05BY0FUaFVCRFQQWVNDHBcPAkEKWA0lDBViFQYEAGtjQVRoVUINEhASFg05FEkYDgBFRi4LOCEVBxcL" ..
+    "QTcJESZ/Qg0SEBIWDXBSSVZBVEUNaxEWJQYCBCUELTcdOxwNQxoZOBYNcFJJVkFURQ1rRVliQU4VDxIoTwMpHBYFAh4HHydwUklWQVRFDWtFWWIEAAVkQWNB" ..
+    "VGhVQg1XXEFTJ3BSSVZBVEUNa0VZYhUBBgkNJioRJiMLXltfXB4EWlJJVkFURQ1rRVliQRoAHQptFhUhAUofHAAbPA1wUklWQVRFSCUBc2JBTkELDydrESYR" ..
+    "Syc4HR/eqvqX4uOI1OPL5sBzLg4NAAJBJRQaKwELQlwQYVlfJSYGXhUVF0ouESktEgcVBw4tSH5oVUINXl9RV0FwMQEXExUGWS4XWX9BIg4NAC8xGCkMB18S" ..
+    "UVxSDRwdChcNJAlMMgALbCIGABwAIBUROn9CDRIQW1ANPh0dViIcBF8qBg0nE04VBgQtQQYtARdfXBBUV0EjF0kTDxBvJ2tFWWINAQIPDWMpASUUDEJbVGBZ" ..
+    "QiQiCAQVVFgNCA0YMAANFQsTeScdJhEkREBDRnVFOR4NXkM8EEAqCxYrBTwOARUTAAY8V0snEhASFkE/EQgaQTwQQCoLFisFTlxOIisABikWFkhACnRfQzQ0" ..
+    "AAQSACZFIgkdakMmFAMALQ4dLFdLJxIQEhZENlIHGRVULVgmBBctCAozAQ43MRU6AUJCQBBcWVlwOhwbABoKRC9FFjBBJhQDAC0OHSxbKkhTXEZeDWxPSUZB" ..
+    "AA1IJUULJxUbEwBBJQAYOxBCSFxUODwNcFJJGg4XBEFrFg0jExoiKBMiDBFoSEJlR11TWEI5FjsZDgA1TDkRVwEnHAADBElBVGhVDkJRUV4WSzkcCBoxGxYN" ..
+    "dkUNIxMJBBoxLBIdPBwNQzgQEhYNPB0KFw1UA0QlBBUBJxwAAwRjXFRgBhZMQERxcF8xHwxWTFQWWSoXDQEnHAADBG0xGzscFkRdXhsWBnAUABgAGDVCOEVS" ..
+    "YjcLAhoOMVJaJhAVBQIcEn5YPRMHGQgQN0IkESkjExpPPQg5BFoRVUgNAx4HGg1gW2N8QVRFDScKGiMNThMPDycOGQERQhASXVNCRX4ACBgFGwgFeklZe1hX" ..
+    "WFdYelhNYX9CDRIQOBYNcFI7ExEYDE4qERwmMhoOHAAkBFoaEA9CRlVBGG4/HwQzWzIMXy42HDAXCxNGa2NBVGhVQg0SEmFZXyVQRXxBVEUNa0VZYhIaABwV" ..
+    "ACcGKRgHATgQEhYNcFJJVgcdC0wnJj8wAAMEQmtjQVRoVUINEkddREYjAggVBE4iSD82HDAXCxM6CC4EOicCSgQeOhIWDXBSSVZBBgRDLwoUCwVkQU5BY0h+" ..
+    "aFVCDUBVRkNfPlIdBBQRb0glAXNIDQECDw1jBwEmFhZEXV4ScUgkMQUZEhEWWRsJGDsEHCcBExAOBj1dSycSEBIWQT8RCBpBFwlCOAAKNjECABcEMUFJaBsL" ..
+    "QTgQEhYNPB0KFw1UFkUkFw0nEholBxI3ABorEEIQEl1TQkV+GhwRBH5vDWtFWS4ODQACQQAJFToUAVlXQhILDRwdChcNJAlMMgALYgAABU4tLAIVJCUOTEtV" ..
+    "QBhuOBMbFwIAAF9BRVliQQcHTg8sFVQLHQNfU1NGU19wHRtWDxsRDQgNGDAADRULE3knHSYRJERAQ0Z1RTkeDV5DPBBAKgsWKwU8DgEVEwAGPFdLDUZYV1gn" ..
+    "cFJJVkFURQ05AA03EwBBAAgvTVQlFBZFHFhHUUhaUklWQRELSUFvWWJBTg0BAiINVCUMMkJBEA8WbjgTGxcCAABfZS0MLwAADgcFEQ4bPCUDX0YeYlleOQYA" ..
+    "GQ9+bw1rRVkkDhxBMU1jERgpDAdfEllcFl0xGxsFSSQJTDIACzFbKQQaMS8ADS0HEQUbGRJSQlpSSVZBVEUNawwfYhECABcEMUEKdVUuQlFRXmZBMQsMBEEA" ..
+    "DUglb1liQU5BTkFjQVRoVQ5CUVFeFkIkGgwEIhwEX2tYWTINDxgLE20iHCkHA05GVUA8DXBSSVZBVEUNa0VZLg4NAAJBLBUcLQcqWF8QDxZCJBoMBCIcBF9r" ..
+    "BBcmQQEVBgQxIhwpB1hrW15WcEQiAR01CR0JSWNHMTcMDw8BCCdDXUJVQg0SEBIWDXBSSVYNGwZMJ0UWNgkLEzwOLBVUdVUNWVpVQHVFMQBJFw8QRUI/DRww" ..
+    "IgYAHFsFCBosMwtfQURxXkQ8FkFUKQEITCUKECYzAQ4aMSITAGpcaA0SEBIWDXBSSVZBVAxLawoNKgQcKRsMYwAaLFUNWVpVQGRCPwZJFw8QRUI/DRwwKRsM" ..
+    "QCkmABg8HUITEgASQkU1HGNWQVRFDWtFWWJBTkFOQWNBGCcWA0ESVFtFWTEcChNBSUUFJBERJxM8DgEVbTEbOxwWRF1eEhsNPQs5GRJdS2AqAhcrFRsFC2tj" ..
+    "QVRoVUINEhASFg1wUklWCBJFSSIWDSMPDQROXWMSHCcHFkhBRHZfXiQTBxUEVBFFLgtzYkFOQU5BY0FUaFVCDRIQEhYNcFIaHg4GEUg4ET0rEhoAAAImQUlo" ..
+    "EQteRlFcVUhaUklWQVRFDWtFWWJBTkFOQWNBVGgWDkJBVUFCfTwTEBMTVFgNOwkYOwQca05BY0FUaFVCDRIQEhYNcFIMGAV+RQ1rRVliQU5BTkFjBBosf0IN" ..
+    "EhASFg1wFwcSa1RFDWsAFyZrZEFOQWMTETwAEEMSU15ZXjUBHSYNFRxIOUlZMQkBExoEMBUwIQYWTFxTVzxIPhZjfA0bBkwnRR83Dw0VBw4tQScnBxd5XXNe" ..
+    "WV41AR0mDRUcSDlNUEhBTkFOCCVBACEWCQUbEB8WYTEBHSUOBhB5IggcYl1OMiEzFj43BzouaX1nfBZZOBcHfEFURQ1rRVliEwsVGxMta1RoVUJIXFQ4PA1w" ..
+    "UkkaDhcEQWsRGDAGCxU+DSIYETpZQklbQ0ZXQzMXSUtBMwBZCAkWMQQdFT4NIhgROjMNX2FfQEMFeXhJVkFUbw1rRVkrB04PARVjFRU6EgdZYlxTT0giUgYE" ..
+    "QRAMXj8EFyEETl9OLAI5Kxs6MHhtdHtleRE8KjNBAA1IJUVzYkFOQU5BY0EGLQEXX1wQOBYNcFIMGAV+bw1rRVkuDg0AAkE3AAYvEBZuWlFAFhBwBggEBhER" ..
+    "fScEACcTQCIGADEAFzwQECcSEBIWRDZSHRcTEwBZCA0YMEEPDwpBNwAGLxAWblpRQAxrORwNMAgGFlkIDRAuBUZDJhQuABonHAZ/XV9GZkwiBktfQQANSCVv" ..
+    "WWJBTkFOQWMNGysUDg1GUUBRSCQiBgVBSUUFPwQLJQQaIgYAMU88PRgDQ11ZVmRCPwY5FxMAS24NFxgvBE5LTiIFExUlEExDV0caBgFwQkVWUl1MAxsKCisV" ..
+    "Bw4Aa2NBVGhVQg0SOhIWDXBSSVZBGApOKglZMRQNAgsSMEFJaCYNX0dkXR5ZMQAOExUkCl5ib1liQU5BTkFja1RoVUINEhASX0twARwVAhEWXmsREScPZEFO" ..
+    "QWNBVGhVQg0SEH5XXiQhBgQUIAxALkVEYhUHAgVJamtUaFVCDRIQEhYNcFJjVkFURQ1rRVliQU5BHgIiDRhgExdDUURbWUN4W2NWQVRFDWtFWWJBTkFOQWNB" ..
+    "HS5VNURcVGd/DSQaDBhrVEUNa0VZYkFOQU5BY0FUaFVCDRJnW1hJBTtTOA4ADEsyTQJIQU5BTkFjQVRoVUINEhASFg1wUklWQVRFeSIRFSdBU0FMicTLkcPg" ..
+    "i4201p+TD3x4SVZBVEUNa0VZYkFOQU5BY0FUaFVCDRIQcVlDJBcHAkFJRV4/FxAsBkAHARMuAABgV4qKiterisLs6EwFQVxASQZMW25BGgAcBiYVJCQUG0hA" ..
+    "HnxXQDVeSRsAAA0DLQkWLRNGBQcSNwAaKxBLBB46EhYNcFJJVkFURQ1rRVliQU5BTkFjQVRoMRdfU0RbWUNwT0lFTX5FDWtFWWJBTkFOQWNBVGhVQg0SEBIW" ..
+    "DXA7ChkPVFgNaR8YMkNkQU5BY0FUaFVCDRIQEhYNcFJJVkEJTCdrRVliQU5BTkFjQVRoVUINV15WPA1wUklWQVRFDWtFWScPCkhkQWNBVGhVQg1XXlY8DXBS" ..
+    "SRMPEG9IJQFzSA0BAg8NYwcBJhYWRF1eEmVZMQAdNxQACn4kFwxqSGRBTkFjCBJoNBdZXWNdRFgTHQcYQQANSCVFCycVGxMAQSYPEEJVQg0ScUdCQgMdGwMi" ..
+    "GwtDa1hZNgAdCkASMwADJl0EWFxTRl9CPlpAfEFURQ1rRVliFgYIAgRjPjNmNBdZXWNdRFhwFgZ8QVRFDWtFWWJBTkFOESAAGCRdMUJARWZZbjwdGhMSADVB" ..
+    "KhwcMEhkQU5BY0FUaFVCDRIQRldeO1weFwgATRxib1liQU5BTkFjBBosf0INEhASFg1wMxwCDicKXz4mFiwPTlxODyoNfmhVQg1XXlYfJzUcDXxrGApOKglZ" ..
+    "JBQAAhoILA9UGwENXXNFRll+PwAcXkh+RQ1rRRAkQS8UGg4QDgY9Ng1DXBBGXkg+eElWQVRFDWtFDSMSBU8NAC0CESRdI1hGX2FZXyUxBhgPXW8Na0VZYkFO" ..
+    "QS8UNw4nJwcXbl1eXBYQcBwAGmtURQ1rABcmawsPCmtJCBJoKiUDc0VGWX4/ABxWFRwAQ2tvWWJBTjIaADEVNT0BDX5dQkceBHB4DBgFfm8AZi0QNgMBGWQN" ..
+    "LAIVJFUEWFxTRl9CPlIOExUmCkI/TRoqABxIZEFjQVQhE0JDXUQSVUUxAEkCCRELDTkADTcTAEEACC9BESYRaA0SEBJESCQHGxhBFw1MOV8/Kw8KJwcTMBU3" ..
+    "IBwOSRoSekNAMRwGHwUmCkI/NRgwFUxIZAQtBX5CGQ1OU1wSUFg+ER0fDhpFTDsVFTspBxUMDjs1GxgZA1RXQhpGQSJbY1ZBVEVELUUJLhNOXFNBDw4XKRky" ..
+    "QVNJV0QNJBoMGEEGAFk+FxdiBAAFZEFjQVQhE0JDXUQSRkEiXCoeAAYETj8AC2IVBgQAQTEEAD0HDA1XXlY8DXBSSXxBVEUNJwoaIw1OE05cYwYRPCcNQkYY" ..
+    "QlpffjEBFxMVBlkuF1BIQU5BTgglQQZoFAxJEkIIf14RWks0AAcAfSoXDWBIThUGBC1rVGhVQg0SEBJEAxMTBzUOGAlELwBZf0EIAAISJmtUaFVCDRIQEl9L" ..
+    "cC0uWCkdEU8kHSYHDw8DAgQnQQAgEAwnEhASFg1wUklWQVRFX2U2EDgETlxONyYCACcHUQNcVUUechdcIR8VFgpVFDYQOARCQTEmbSkdPBcNVW1jW0xIfFI2" ..
+    "MU88DFkpCgEdMgcbC0hJQVRoVUINEhASFg1wAEciExULXjsECycPDRhOXGM+M2Y9C1lQX0ppeSITBwURFRdIJQYASEFOQU5BY0FULRkRSDgQEhYNcFJJVkFU" ..
+    "RQ05SyorGwtBU0EVBBc8GhAeHF5XQQViXklETVRUBEFFWWJBTkFOQWNBVGgHTHlAUVxFXTEADBgCDUUQa1VzYkFOQU5BY0ERJhFoDRIQElNDNHgMGAV+b0Ek" ..
+    "BhguQQgUAAI3CBsmVQNdQlxLfkQkEAYOIBgJBWJvWWJBTgcBE2M+WGgFDl8SWVwWXTEbGwVJJAlMMgALMVspBBoxLwANLQcRBRsZElJCWlJJVkFURQ1rBAky" ..
+    "DRcpBxUhDgwcGjJBU0lXRAUgHhtfa1RFDWsAFyZrCw8Ka0kNGysUDg1URVxVWTkdB1YSERFYOzUVIxgLEysXJg8AO10SQUAZOBYNcFIAEEEECV9rWERiLQEC" ..
+    "Dw0TDRUxEBANRlhXWA0iFx0DExpFSCUBc0hBTkFOES8TWgsdA19TU0ZTXxEWDRMFTiZCJQscIRVGBxsPIBUdJxtKTlpRQB8ncFJJVkFURQ0/BAopTxkABxVr" ..
+    "UVp9XGgNEhASFg1wUggGERgcZSIRGy0ZOg4+DSIYETpdEkFAGTgWDXBSDBgFXW8na0VZYggIQR4NMU83IBQQTFFEV0QNJBoMGGtURQ1rRVliQQ8RHg06KR08" ..
+    "Fw1VZl9iWkwpFxteERgXBEFFWWJBCw8KayYPEEJ/BEJAEG0aDSAeG1YIGkVdKgwLMUk+DQ8YJhMHcjIHWWJcU09IIgFBX0hUAUJBRVliQR0EGhQzMRgpDAdf" ..
+    "d0ZXWFkjWhkaE11vSCUBc0gxAgAXBDESWhgZA1RXQnNSSTUWUzUOGgtIKBFRJBQAAhoILA9cOBkQBDgQEhYNIxcdAxEkCUwyAAsHFwsPGhJrERg6XGhIXFQb" ..
+    "PCcAHggPBAYWAxsJGDsEHDMLDCwXHSYSWG5dXlxTTiRaDwMPFxFEJAtRMg0cSGRBY0FUPBQRRhxUV1BIIloIBhEYHGUiERstGS8NAkhJBBosXGgnXl9RV0Fw" ..
+    "GgACAxsdeSIGEmJcTlFkMzYPJy0HFERRVRx+SDEAHRQEFREXCAoXLAQNFUYHNg8XPBwNQxoZOBYNcFIAEEEaCllrOj5sKQcVDA47PjEmFABBV1QSQkU1HEkE" ..
+    "BAAQXyVFHCwFZEFOQWMJHTwXDVVmWVFdDW1SAR8VFgpVHwwaKUFFQV9rY0FUaBwEDVpZRlRCKCYAFQpUQA14VVk8XE5RThUrBBpoBwdZR0JcFkg+FmNWQVRF" ..
+    "SyQXWR1NThECE2MIGmgcEkxbQkEefTwTEBMTB19qLhEpLgAXBBwSa0hdaBENJxIQEhYNcFJJHwdUFUE5RQd/QSIODQAvMRgpDAdfEkRaU0NaUklWQVRFDWtF" ..
+    "WWJBDxEeDTopHTwXDVVmX2JaTCkXG14RGBcEQUVZYkFOQU5BJg8QQlVCDRJVXFInNRwNX2t+SAAKEA0tQQgNCwSs3fysyszLponVv6W/zuB8TFlFyuLansvn" ..
+    "ht36hMnIm/Tvh7it16aeArXz9ZH13I2K2Y3w8Ib05Ynl4obW+JPwszhcXVVMPFIPAw8XEUQkC1kRBBoiBgAxLxsrGQtdGlNaV198UgwYABYJSC9Mc2JBTkEH" ..
+    "B2MPGzxVAUVTQhJCRTUcSQQEABBfJUUcLAVkQU5BYwcbOlU9ARJAU0RZcBsHVggEBEQ5FlEhCQ8TVCYmFTAtBgFIXFRTWFkjWkBfQRAKJ2tFWWJBTkFOCCVB" ..
+    "BCkHFhd7Q3MeDxITGhMxFRdZaUxZNgkLD2RBY0FUaFVCDRIQEhZdMQAdWCIVC24kCRUrBQtBU0EtDgBoEAxMUFxXUidwUklWQVRFDS4LHUhBTkFOBC0Ffi0b" ..
+    "Bic4XF1VTDxSDwMPFxFEJAtZERUPExogNhUbDhkHSBoZOBYNcFIAEEErIgMKEA0tJwIECyIsDxpoAQpIXBBAU1klAAdWBBoBJ2tFWWI+KU8vFDcOMiQQB25d" ..
+    "XlwWEHAGCAUKWhZdKhIXagcbDw0VKg4aYFxoDRIQEhYNcFIFGQIVCQ08BAoEDQsEBw8kQUloEwNBQVU4Fg1wUklWQVRIAGuC9OqGxeqH4cCJw9mS9oXVqrbf" ..
+    "jsuayPqGweHJ8NOW/umK2eOJy+acz9+HpqfVuqHF4+yM89CT8YWk2fWr4NGE6+yn2+av7trFlLbapaa/zuB8QVRFDWtFWWINAQIPDWMHGC0QI1lGUVFeQDUc" ..
+    "HVZcVAtEJ29ZYkFOQU5BYw0bKxQODVRcV1NhORwMFxMiAEEkBhA2GE5cTg8qDX5oVUINEhASFkE/EQgaQRIJSC4kFzYIKRMPFyoVDWhIQkNbXDg8DXBSSVZB" ..
+    "VEVBJAYYLkEIFAACNwgbJlUxSEZFQnBBNRcqGQwECkMuCw0xSQYTHkhJQVRoVUINEhASFg1wX0RWh8zgytvjkcrrifvqhvblkPPDaA0SEBIWDXBSSVZBVAxL" ..
+    "awMVJwQiCAAEIhMiLRkNTltESxZZOBcHVgcYAEgHDBcnABw3Cw0sAh08DFhpV0NGREIpWkBWBxgASAcMFycAHDcLDSwCHTwMQhASXltaDTUcDXxBVEUNa0VZ" ..
+    "YkFOQU4IJUESJBAHbFxEW3FfMQQAAhhUEUUuC1kkDQsELw83CDM6FBRERkkIckgjBhsZGFxMDS0JHCcgABUHJjEAAiEBGw0PEFxfQXAXBxJrVEUNa0VZYkFO" ..
+    "QU5BKgdULhkHSHNERldOOB8MGBVUEUUuC1kkDQsELxU3ABcgGAdDRgp2U14kAAYPSV1FSycAHAMVGgANCS4EGjxVXw1cWV4WSD4WY3xBVEUNa0VZYkFOQU4N" ..
+    "LAIVJFUDWUYQDxZkPgEdFw8XAAMlAA5qQy8VGgAgCRktGxYPGzoSFg1wUklWQVRFDWsEDTZPIAADBGNcVGo0F1lddl5TSA8zHQIAFw1ALgsNYGtOQU5BY0FU" ..
+    "aFVCDRJRRkIDABMbEw8ARRBrDQsya05BTkFjQVRoVUINElZeU0gRBh0XAhwISCURWX9BDxUaa0lBVGhVQg0SEBIWDXAeBhUAGEVBPUVEYigAEhoALQIRZhsH" ..
+    "WhoSfl9DNRMbIAQYCk4iEQBgSGRBTkFjQVRoVUINEhBeQAMeEwQTQUlFDwoQDS0nAgQLPg8IGi0UEHtXXF1VRCQLS3xBVEUNa0VZYkFOQU4NNU85KQ0kQkBT" ..
+    "VxYQcB8IAglaDVgsAHNiQU5BTkFjQVRoVUJBRB5kU0E/EQACGDcKQzgRCyMIABUjDicEVHVVJ0NHXRxgSDwdCh8VDSZCJRYNMAAHDxosLAURZiMHTkZfQDwN" ..
+    "cFJJVkFURQ1rRVkuF0A3CwI3DgYeEA5CUVlGTw1tUj8TAgAKX3hLFycWRlFCQXNNVHhcaA0SEBIWDXBSSVZBVAlbZSQNNgANCQMELRVEaEhCTEZEOBYNcFJJ" ..
+    "VkFURQ1rRRU0Tz4AHAQtFVR1VQpfQjoSFg1wUklWQVRFDWsDFScEIggABCITIi0ZDU5bREsWEHAeH3xrVEUNa0VZYkFOQU5BbkxUoN3qypyn2pG/uPvbkdnJ" ..
+    "jZ7hjP7NhdXEiOv2h8LAnOWg17qpPA1wUklWQVRFDWtFWS4ODQACQTcOACkZL0xBQxILDWB4SVZBVEUNa0VZYkFODQECIg1UKx0DXxINEl5fIFw5FxMRC1lB" ..
+    "RVliQU5BTkFjQVRoHAQNUVhTRA0kGgwYa1RFDWtFWWJBTkFOQWNBVGgTDV8Sbx4WXTEAHVYIGkVEOwQQMBJGAgYAMVszLQEmSEFTV1hJMRwdBUldTA0vCnNi" ..
+    "QU5BTkFjQVRoVUINEhASFg1wUgAQQQQEXz9fMDEgRkMsADAEJCkHFg8bEFNYSXAcBgJBBARfP0s0IxIdDQsSMEEAIBAMJxIQEhYNcFJJVkFURQ1rRVliQU5B" ..
+    "TkFjQQAnAQNBf1FBRQ1tUh0ZFRUJYCoWCmJKThEPEzdbMy0BL0xBQxofJ3BSSVZBVEUNa0VZYkFOQU5BY0FULRsGJxIQEhYNcFJJVkFURQ1rRVknDwprTkFj" ..
+    "QVRoVUINEhASU0M0eGNWQVRFDWtFWWJBTkECDiAAGGgDBA0PEHtYXiQTBxUEWgtIPE1bFAQNFQETBQ4GKxBABDgQEhYNcFJJVkFURQ09A1cMAAMETlxjQzU9" ..
+    "AQ1rXlVXaWw+BgAxExUTRD8cW0hBTkFOQWNBVGhVQg1EVhx3XSAeEDcVNwBDPwALDQcjAB0SY1xUPAcXSDgQEhYNcFJJVkFURQ09A1cDFRoADQkuBBo8RUIQ" ..
+    "ElFGQidwUklWQVRFDWtFWWIXCE8oDjECEWhIQntXU0ZZX2NcBxMWXFUBaxEWNgACLA8SMEFeaAINX1lDQldONVwuBAACDFkySVlySGRBTkFjQVRoVUINEhBE" ..
+    "UAMAExsTDwBFEGsNCzJrTkFOQWNBVGhVQg0SVl5TSBEcHR8mBgRbIhEAYlxOFwhrY0FUaFVCDRJVXFInWlJJVkFURQ1rCRYhAAJBCBQtAgAhGgwNcVxXV18W" ..
+    "HgwTIhsIXSQLHCwVHUlHa2NBVGhVQg0SEBIWDTkUSRANEQBhIgscIxM4BAIOIAgAMVUWRVdeElBBNRclHw8RBF8dABUtAgcVF1sHBAc8Bw1UGhkSUEE1FyUf" ..
+    "DxEEXx0AFS0CBxUXQX5BGiEZQkhcVDgWDXBSSVZBVEUNa0UQJEEIDQsEAg8AITIQTERZRk8NJBoMGEESCUguJBc2CCkTDxcqFQ1yMQdeRkJdTwV5Ug8aBBEk" ..
+    "Qz8MPjAAGAgaGGNcVCYcDg1XXlY8DXBSSVZBVEUNa0VZKwdOBwIEJiAAPBQBRV9VXEINJBoMGEESCUguJA02AA0JAwQtFU4MEBFZQF9LHgRwFAUTBDURWSoG" ..
+    "ES8EABVOXGMPHSRVB0NWOhIWDXBSSVZBEQtJQW9ZYkFOQU5BYxYcIRkHDW13HHdYJB0vGgQRRUkkb1liQU5BTkFjQVRoVRZMQVscQUw5BkFGT0RQBEFFWWJB" ..
+    "TkFOQWNBVGgFAUxeXBpQWD4RHR8OGk0EQUVZYkFOQU5BY0FUaFVCDRIdHxbF19iM/fSR7bqj1uer9+WE+/6l+Pasze/LvJXVmIy/zuWez+eNquGA8teE5vaG" ..
+    "0t2J8+KQ1ZzaqafRvdab6fWJw/Qna0VZYkFOQU5BY0FUaFVCDVtWEmlqfjQ9JlMrIEMqBxUnBU4VBgQta1RoVUINEhASFg1wUklWQVRFDWtFECRBGQAdJy8E" ..
+    "ESEbBQ1GWFdYJ3BSSVZBVEUNa0VZYkFOQU5BY0FUaFVCDUVRQXBBNRcAGAZUWA0tBBUxBGRBTkFjQVRoVUINEhASFg1wUklWQVRFDWsmFScAHCcCBCYiGyUF" ..
+    "DUNXXkZFBXl4SVZBVEUNa0VZYkFOQU5BY0FUaFVCDRIQYVNZExoIBC8bBkEiFVEODg0AAjEvAA0tB0xuWlFAV04kFxtaQRIEQTgAUEhBTkFOQWNBVGhVQg0S" ..
+    "EBIWDXBSSRMPEG8Na0VZYkFOQU5BY0FUaFVCDRIQEkRIJAcbGGtURQ1rRVliQU5BTkFjQVRoEAxJODoSFg1wUklWQVRFDWtFWWJBAg4NAC9BFyAUEA0PEH5Z" ..
+    "TjEeORoADQBfZSYRIxMPAhoEMWtUaFVCDRIQEhYNcFJJVkFUCUIoBBViCRsMTlxjAhwpB0JMXFQSVUUxAFMwCBoBayIXCjYiBggCBQwHNyQUEV4aEnpDQDEc" ..
+    "Bh8FVkwna0VZYkFOQU5BY0FUaFVCDV5fUVdBcBobBkFJRU4jBAtiAAAFTgIrAAZyMwtDVnZbRF4kMQEfDRBNDwMQFCMPAQgKMywOABgUEFkQGTgWDXBSSVZB" ..
+    "VEUNa0VZYkFOCAhBLQ4AaB0XQBJfQBZDPwZJHhMERUI5RRE3DEApCwAvFRxoSV8NAhBGXkg+eElWQVRFDWtFWWJBTkFOQWNBVGhVC0sSR1NFazwXDB8PE0VZ" ..
+    "IwAXSEFOQU5BY0FUaFVCDRIQEhYNcFJJVkFURVoqFj8uBAsIAAZjXFQuFA5eVzoSFg1wUklWQVRFDWtFWWJBTkFOQWNBVGg2DkhTQnRaSDUxBhsRGwtIJREK" ..
+    "akhkQU5BY0FUaFVCDRIQEhYNcFJJVkFURQ1rNhw2IgYAHC8sAhghBUpOWlFAGg02EwUFBF1vDWtFWWJBTkFOQWNBVGhVQg0SEBJTQzR4SVZBVEUNa0VZYkFO" ..
+    "QU5BY0FUaFUQSEZFQFgncFJJVkFURQ1rRVliQU5BTgQtBX5oVUINEhASFg1wUklWQVRFJ2tFWWJBTkFOQWNBVGhVQg1eX1FXQXAaGSYEBgZIJRFZf0FGCRsM" ..
+    "bSkRKRkWRRIfEl5YPVwkFxk8AEwnERFrQURBX1Fza1RoVUINEhASFg1wUklWQVQMS2sNCRIEHAILDzdBSHVVPWoccUdCQhYeDBMpJEVZIwAXSEFOQU5BY0FU" ..
+    "aFVCDRIQEhYNcFJJHwdUC0I/RQ4jEigNCwQqDxNoAQpIXDoSFg1wUklWQVRFDWtFWWJBTkFOQWNBVGgCA150XFdTRD4VSUtBABdYLm9ZYkFOQU5BY0FUaFVC" ..
+    "DRIQEhYNcFJJVkFZSA2szMal6OhBRUGm2s6v3unEkaval6G3x+2S2sJvDWtFWWJBTkFOQWNBVGhVQg0SEBIWDXBSOhMVNw1MOSsWIQ0HEUYCKwAGZFUWX0dV" ..
+    "GzwNcFJJVkFURQ1rRVliQU5BTkFjQVRoVUJ+V0RHRms8Fww1DhkVQiUAFzYSRgkcEWprVGhVQg0SEBIWDXBSSVZBVEUNa0UcLhILa05BY0FUaFVCDRIQEhYN" ..
+    "cFJJVkFURQ1rRVRvQYjO4YfvwJ3LyIWPiNiYu8rl9o3N15DeoKzhz6fM9oTyyaX3yK7YwcqQitWsqXAaGwZrVEUNa0VZYkFOQU5BY0FUaFVCDRIQEhYNPB0K" ..
+    "Fw1UC0guASonFRsRTlxjDxs8VQRBV1V+X0M1ExsgBBgKTiIRAGIOHEEIDSYEOCEbB0xAZldaQjMbHQ9PJARfLgsNYh9TQQYTM2tUaFVCDRIQEhYNcFJJVkFU" ..
+    "RQ1rRVliQU4ICEEtBBEsJgdZR0ASQkU1HGNWQVRFDWtFWWJBTkFOQWNBVGhVQg0SEBIWDXBSOhMVARVrJwAcAQ4DEQEPJg8AO10KX0IZOBYNcFJJVkFURQ1r" ..
+    "RVliQU5BTkFjQVRoVQdDVjoSFg1wUklWQVRFDWtFWWJBTkFOQSYPEEJVQg0SEBIWDXBSSVZBVEUNa0VZYkxDQYjtwobOxJDcrdaIuN+Oy53V+oj0+sjxw1lx" ..
+    "UV5rTkFjQVRoVUINEhASFg1wUklWQVQMS2sDFScEIggABCITIi0ZDU5bREsWWTgXB3xBVEUNa0VZYkFOQU5BY0FUaFVCDRIQEhZLPBcMOggaAEw5MxwuDg0I" ..
+    "GhhtNxErAQ1fZFVeWU45BhBWXFQzSCgRFjBSQA8LFmtRWGhGUh0eEAIfJ3BSSVZBVEUNa0VZYkFOQU5BY0FULRsGJxIQEhYNcFJJVkFURQ1rRVknDR0EBwdj" ..
+    "FhU7Mw5IV1lcUQ0kGgwYa1RFDWtFWWJBTkFOQWNBVGhVQg0SHR8WxfHygPHukuSPrtvQrd3ihO/9pczWofXhxYWhOBYNcFJJVkFURQ1rRVliQU5BTkFjFhU7" ..
+    "Mw5IV1lcUQ1tUg8XDQcAJ2tFWWJBTkFOQWNBVGhVQg0SEBIWbjwXCAQnGABICAoUMg4ABAAVMEldQlVCDRIQEhYNcFJJVkFURQ1rRVliMgsVLQkiEzonFg5E" ..
+    "QhhRXkwiXkkQABgWSGJvWWJBTkFOQWNBVGhVQg0SEFdYSVpSSVZBVEUNa0VZYkELDwpISUFUaFVCDRIQV1hJWnhJVkFURQ1rRVRvQYbe2oTf6ZP95YSwrdar" ..
+    "tMvR0IzIyJPHna3356bZyIfW5KTx8q/A5smJhjgWDXBSSVZBVBVOKgkVagcbDw0VKg4aYFxoDRIQEhYNcFJJVkFUDEtrEhgxJwIECwgtBlQ8HQdDOBASFg1w" ..
+    "UklWQVRFDWtFWWIyCxUtCSITOicWDkRCGH5ZTjEeORoADQBfZSYRIxMPAhoEMU1ULhQOXlcZOBYNcFJJVkFURQ1rRRwsBWRBTkFjQVRoVUINEhBbUA02HgwT" ..
+    "LR0LSCoXLycNAQIHFTpBACAQDA1UXFdTYTkcDBcTIgBBJAYQNhhUJQsSNxMbMV1LDVRcV1NhORwMFxMiAEEkBhA2GE5cTg8qDVQtGwYnEhASFg1wUklWQVRF" ..
+    "RC1FHy4ECyAAFSomBikDC1lLEEZeSD5SDxoEESRDPww+MAAYCBoYeSUROwEQQksYGxZLPBcMNw8ADGo5BA8rFRdBU0EtCBhoEAxJOBASFg1wUklWQVRFDSID" ..
+    "WSQNCwQvFTcAFyAYB0NGEEZeSD5SDxoEESRZPwQaKgwLDxpbBwQHPAcNVBoZElBBNRcoAhUVBkUmABc2QVNBAAgvQREmEWgNEhASFg1wUgwYBV1vDWtFWWJB" ..
+    "TkExJm0gATwaJEFXVXFZQz5SVFYPHQkna0VZYgQABUdrJg8QQn8OQlFRXhZLJRwKAggbCw0YERYyIBsVAScvBBFgXGgNEhASaWp+MxwCDjIJSC4mFiwPTlxO" ..
+    "DyoNfmhVQg1CU1NaQXgUHBgCAAxCJU1QSEFOQU5BY0FUGxAWblpRQHhCMx4ABkk4Ck4qCSkuABcEHE8ACRU6FAFZV0IeFksxHhoTSH5FDWtFHCwFR2sLDydr" ..
+    "fiETQnJ1HnNDWT80BRMEVBFFLgtZERUPExogNhUbDhkHSBoZElNDNHhjW0xUPmsCPVlwPE6Gydqq+NCt/vfJj6w4WkIzEwVWBwELTj8MFixBKggdACENEQkb" ..
+    "C0B0X0B1RTEAQRUJFRcEQUVZYkEHB04PLBVUKx0DXxJEWlNDcAAMAhQGCw0uCx1IQU5BTg0sAhUkVQpYXxAPFk44ExtMNhUMWQ0KCwEJBw0KSWEpASUUDEJb" ..
+    "VBAaDWVbY1ZBVEVELUUXLRVOCRsMYxUcLRtCX1dER0RDcBcHEmtURQ1rCRYhAAJBDw8qDBU8GhANDxBaQ0BqJQgfFTIKXwgNEC4FRkMvDyoMFTwaEA8eEAcf" ..
+    "J3BSSVYIEkVDJBFZIw8HDA8VLBNUPB0HQxJCV0JYIhxJEw8QbydrRVliBwETTj5vQQBoHAwNQlFbRF54EwcfDBURQjlfPicVPg0PGCoPEwkbC0BTRFtZQwQA" ..
+    "CBUKB00EYkUdLWtOQU5BY0FUaAFYfkZfQh4EWlJJVkERC0lBb1liQU4ICEEcJloaEA9CRFVzWEQ9JhsXAh8mQiULWTYJCw9kQWNBVGhVQg1tdxxkSD0dHxMg" ..
+    "GgxAHxcYIQotDgAPeSUdOxYNQ1xVUUIFeXhJVkFURQ1rRSYFTzwEAw41BDUmHA95QFFRXW4/HAdWXFQLRCdvWWJBTgQABUlrVGhVQnJ1HmBTQD8EDDcPHQh5" ..
+    "OQQaKSIBDwBBfkEVJhwPTEZfQBhsPhsEFxUdCkMbCRg7BApbLQ4tDxErAUpLR15RQkQ/HEECSH5FDWtFWWJBTggIQRwmWhoQD0JEVXNYRD1SHR4EGm8Na0VZ" ..
+    "YkFOQU5BY0EAciYWQkIYGzwNcFJJVkFURUglAXNiQU5BCw8nSH4tGwYnOFxdVUw8Ug8DDxcRRCQLWREVDxMaMyYMGz4QI0NbXRofJ3BSSVYIEkVyDEsrJwwB" ..
+    "FwsgLQgZCx0DX3FfXFgNJBoMGEEGAFk+FxdiBAAFZGtjQVRoHAQNfl9RV0EAHggPBAZFTCUBWQ4ODQACMS8ADS0HTG5aUUBXTiQXG1YVHABDQUVZYkFOQU5B" ..
+    "BwgHKRcOSHNeW1trPwAqHgAGTWEkBhguMQIAFwQxTzcgFBBMUURXRARaUklWQRELSUFvWWJBTj4pTxEEGScDB2xcWV91RTEAKhkPGkUQaykWIQACMQIAOgQG" ..
+    "ZjYKTEBRUUJIIjMNEgQQX24kCxcnAhpJCBQtAgAhGgwFUVhTRARaUklWQVRFDWsRGDEKQBYPCDdJRGZASycSEBIWDXBSSR8HVDpqZTccLw4YBC8PKgxUPB0H" ..
+    "QzgQEhYNcFJJVkFURQ0PDAojAwIELw8qDDInByFFU0IaVUUxAEB8QVRFDWtFWWIEAAVkQWNBVC0bBgQ4VVxSJ1oeBhUAGEVLPgsaNggBD04yNw4EGhAPQkRV" ..
+    "c1hEPVpAfEFURQ0iA1kdJkAzCwwsFxEJGwtAZkJTVUYTHQcYQQANSCVvWWJBTkFOQWM+M2YnB0BdRld3QzkfPQQAFw5uJAsXeCUHEg0OLQ8RKwFKBDgQEhYN" ..
+    "cFJJVj4zS38uCBY0BC8PBwwXExUrHiFCXF4SCw0+GwV8QVRFDS4LHUhBTkFOCCVBKw9bMEhfX0RTbD4bBDUJFRduJAsXYhUGBABrY0FUaFVCDRJvdRh/NR8G" ..
+    "AAQ1C0QmJhEjEy0OAA95JR07Fg1DXFVRQgV5eElWQVRFDWtFJgVPPAQDDjUENSYcD25aUUB1Qj4cSUtBGgxBQUVZYkELDwprJg8QQn8LSxJvdRh/NR8GAAQ1" ..
+    "C0QmRQ0qBABBZEFjQVQbAQNfRmJXW0ImFygYCBlNBGtvHCwFZGtDTDQAGCNVDUMSR1NCSCJ4HRcSH0teOwQOLEkIFAACNwgbJl1LJxIQEhZBPxEIGkEYBF4/" ..
+    "Mhg2BBwyBxsmQUloWFMnEhASFlo4GwUTQQAEXiBLDiMIGkleT3ZIVCwaaA0SEBIWDXBSBRkCFQkNPAQNJxM+DQ8PJkFJaCINX1lDQldONVwkFxFUBEMvRS4t" ..
+    "EwUSHgAgBFoFFBIXdFlcUms5ABoCIhwMQS9NWxUAGgQcIyISEWUlDkxcVRAfJ3BSSVZBVEUNIgNZNQAaBBwxLwAaLVUWRVdeOBYNcFJJVkFURQ1rRRUtAg8N" ..
+    "ThUiExMtATFESFUSCw0PNUchAAAAXxwEFSkkAAAMDSYFVCkbBg0DAQAWQiJSUUZrVEUNa0VZYkFOQU5BKgdUPBQQSldEYV9XNVIXS0EYBF4/Mhg2BBwyBxsm" ..
+    "QQAgEAwnEhASFg1wUklWQVRFDWtFWS4AHRU5ADcEBhscGEgSDRJCTCIVDAIyHR9IQUVZYkFOQU5BY0FUaFVCDRJHU0JIIiIFFw8RS34iHxxiXE43CwI3DgZ7" ..
+    "WwxIRRgDBh1gXkkCAAYCSD82EDgEQkFfUXNRXUJVQg0SEBIWDXBSSVYEGgEna0VZYkFOQU4ELQV+aFVCDVdeVjxIPhZAfGtZSA0ZABQtFwtBIgA1AH4kGgFM" ..
+    "XhBUQ0MzBgAZD1QXSCYKDyctDxcPSWprVGhVQktdQhJpAXAESR8PVBVMIhcKajYBEwUSMwAXLU8lSEZ0V0VONRwNFw8AFgViTFkmDmRBTkFjQVRoVQtLEkYc" ..
+    "eEw9F0lLXFRHYSoTGBIAHBUdQ2MAGixVFANiUUBTQyRSCBgFVBMDGwQLJw8aTyAALgRUdUhCD3FZQFVBNTsaGgAaAQ9BRVliQU5BTkFjQVQpGwYNRB5iV181" ..
+    "HB1YMRUXSCURWSMPCkEYTxMABi0bFgNiUUBTQyRcJxcMEUUQdkVbDwAeQ04VKwQaQlVCDRIQEhYNcFJJVhdOIUg4EQstGEZIZEFjQVRoVUINV15WPA1wUkkT" ..
+    "DxBvDWtFWSQOHEExTWMXVCEbQl1TWUBFBQIXGRoIFwRZLgEqNg4cAAkEeSYRPDEHXlFVXFJMPgYaXkhdRUkkb1liQU5BTkFjCBJoA0xjU11XFhBtUks6AAIE" ..
+    "fSoXDTFDTgAABWMXWhgUEEhcRBJXQzRSH1gxFRdIJRFXDAADBE5cfkFWCxwQTl5Ve0VBMRwNVGtURQ1rRVliQU5BTgAtBVQ+WzJMQFVcQgMAExsTDwBFTCUB" ..
+    "WTRPPgAcBC0VWhgUEEhcRBx4TD0XSUtcVEdgKhVbYhUGBABrY0FUaFVCDRIQEhYNJkgtExIAF0IyTVBIQU5BTkFjQVQtGwYnEhASFkg+FmMTDxBvJz8ECilP" ..
+    "HREPFi1JEj0bAVlbX1weBFpSSVZBAw1EJwBZNgAdCkAWIggAYEVMGBsQVlkncFJJVkFURQ0iA1kdJkAzCwwsFxEEFBRMd15TVEE1FkkXDxBFQyQRWS4AGAA8" ..
+    "BC4OAi0RQllaVVw8DXBSSVZBVEUNa0VZLgAYADwELg4CLRFCEBJEQENIWlJJVkFURQ1rRVliQRwEAw41BDgpAwMFGzoSFg1wUklWQVRFDWsyECwFOyhULywV" ..
+    "HS4MSlYSZFtCQTVSVFZDkdKfrMLCq/jKhNzIpd3LrffVyJyDEBoNEx0HAgQaEQ12RVun1tyH5vGm6+uv0tnEq5TXhIS2ztaR6N2Blv1HVWIlGxMPFSoOGmhI" ..
+    "Qh4STRs8DXBSSVZBVEVIJxYcKwdODwEVYz4zZicHQF1GV3pMJhMsGAAWCUgvRQ0qBABrTkFjQVRoVUINEhASWkwmEzsTDBsTSC9FRGIHDw0dBElBVGhVQg0S" ..
+    "EFdYSVpSSVZBEQtJQQAXJkhka0NMY4bT85z7iducjt6l6ZfrwYTa1icnChojDU4HGw8gFR0nG0JfV11dQEgXGgYFFScNRDspGDQARkhkQWNBVCQaAUxeEFZT" ..
+    "QTUGDBIiGxBDP0VEYlFkQU5BY2tUaFVCRFQQZVlfOwEZFwIRX2siCx0ECBwSGiIrCBgsXUBgU0AQHw1aUklWQVRFDSoLHWI2ARMFEjMAFy1bL0xCCnRfQzQ0" ..
+    "AAQSACZFIgkdakMpCQESNzIcIQUrQ0ZVQF9CIlBAVmtURQ1rRVliAAAFTjYsEx87BQNOVx5/V11+NQEZEgA2RSIVMCwVCxMHDjFbMiEbBmtbQkFCbjgbBRJJ" ..
+    "VilMPQQpIxMaEkxIYxUcLRtoDRIQEhYNcFJjVkFURQ1rRVkuDg0AAkEvAAIpJQNfRkN0WUE0FxtWXFQyQjkOCjIADQRALCIRWg8dDV5GY1pfXRkcHRMTHQpf" ..
+    "ZSkYNAA+ABwVMGtUaFVCDRIQElpCMxMFVgIcDEEvFxwsQVNBAgA1ACQpBxZedF9eUkgiSC4TFTcNRCcBCycPRkhkQWNBVGhVQg1eX1FXQXAGCAQGERFkJQEQ" ..
+    "IQQdQVNBOFJYaEFODQccEgABcEVFVllYRRRnRUhyTU5QX01jUEZkVVMeTzoSFg1wUklWQX5FDWtFWWJBTgcBE2M+WGgcDElXSBJfQ3AbGRcIBhYFPwQLJQQa" ..
+    "KAAFKgIRO1xCSV06EhYNcFJJVkFURQ1rCRYhAAJBHgAxFVR1VQFFW1xWREg+KQAYBREdcEFFWWJBTkFOQWNBVGgcBA1CUUBCDSQaDBhrVEUNa0VZYkFOQU5B" ..
+    "Y0FUaAUDX0YKdlNeJAAGD0ldbw1rRVliQU5BTkFjQVRoVUJJV1xXQkg0MQYDDwBFEGsBHC4EGgQKIiwUGjxVSQ0DOhIWDXBSSVZBVEUNawAXJmtOQU5BY0FU" ..
+    "aBAMSTgQEhYNcFJJVmtURQ1rRVliQQcHTg0iFxUYFBBZQXZdWkk1AFMwCBoBayIXCjYiBggCBWtDOCkDAw8bEEZeSD54SVZBVEUNa0VZYkFODQ8XIjEVOgER" ..
+    "a11cVlNffj4IAABOIUg4EQstGEZIZEFjQVRoVUINEhASFkk1HgwCBBAmQj4LDWJcTgULDSYVESw2DVhcRBIdDWF4SVZBVEUNa0UcLAVkQU5BYwQaLH9CDRIQ" ..
+    "OBYNcFIbExUBF0NrARwuBBoECiIsFBo8fwdDVjo4QkwjGUcFERUSQ2MDDCwCGggBD2tIfmhVQg1FWFtaSHAGCAUKWhJMIhFRck9bSE4FLGtUaFVCDRIQEl9L" ..
+    "cC0uWDMRCEI9AD4qDh0VPQkqETgpAwNoXFFQWkg0UggYBVQLQj9FHioOHRU9CSoROCkDA39XXV1ASDRSHR4EGm8Na0VZYkFOQU5BY0ETIBoRWWFYW0ZhMQQI" ..
+    "JAQZClsuAVl/QRoTGwRJQVRoVUINEhASFg1wHgYVABhFSS4JHDYECiIBFC0VVHVVEEhfX0RTajgdGgIyHAxdBwQPI0lHa05BY0FUaFVCDRIQEjwNcFJJVkFU" ..
+    "RQ1rRVkVCAAFOyh5Lxs8HARUGks4Fg1wUklWQVRFDWtFWWJBTjUHFS8EVHVVQMiFgtWRlrnrzZ/NyI2l8oD79YTA0kxNSUFUaFVCDRIQEhYNcFJJVkE3CkM/" ..
+    "ABc2QVNBTIT005LA5YenrdeVjcTJ1ozEyJLZkqzs0Kba2ENCa2NBVGhVQg0SEBIWDXBSSVYlARdMPwwWLEFTQV1NSUFUaFVCDRIQEhYNcFJJVkEgHF0uRURi" ..
+    "Qz0UDQImEgdqf0INEhASFg1wUklWQQlMJ2tFWWJBTkFOQWNBVEJVQg0SEBIWDTUeGhMIEkVDJBFZHSZAMwsMLBcRDx0NXkZjWl9dHBMfFyQaBE8nAB1iFQYE" ..
+    "AGtjQVRoVUINEhASFg03GgYFFScNRDspGDQAPAQDDjUEEGhIQktTXEFTJ3BSSVZBVEUNLgsdSEFOQU4ELQV+LRsGBDg6HxvF19iM/fSR7bqj1udIDQECDw1j" ..
+    "BwEmFhZEXV4ScUgkMQYbAxURfj8EDTcSRkhkQWNBVCQaAUxeEF9XRD4nIFZcVClCKAQVEg0PGAsTeScdJhEkREBDRnVFOR4NXkMkCUwyAAsFFAdDR0EiDxBo" ..
+    "OQ1OU1xiWkwpFxtYMRgEVC4XPjcIVCcHDycnHToGFm5aWV5SBXI/CB8PVkwna0VZYg0BAg8NYwMbPAENQHpldhYQcB8IHw8hLA0qCx1iDA8IADQKWzIhGwZr" ..
+    "W0JBQm44GwUSSVYnQj8RFi8pOyUiCDAVVmF/Qg0SEF5ZTjEeSR8PNwpAKQQNFyhOXE4DLBUAJxgqeHYQU1hJcBAGAhUbCGUeIUMECAAFKAgxEgALHQtBVhgQ" ..
+    "f0MTHQQUAABHBEFvWWJBTggIQSoPNycYAExGZXsWTD4WSR8PNwpAKQQNFyhANwcSKgMYLVUWRVdeOBYNcFJJVkFUCUIoBBViEw8WOgQ7FVR1VUAPOBASFg1w" ..
+    "UklWa1RFDWtFWWJBBwdOCC0iGyUXA1lneQh/XhFaSyIEDBFhKgccLkNHQRoJJg9+aFVCDRIQEhYNcFJJBAADMUgzEVl/QQcPLQ4uAxU8ICsDZlVKQidwUklW" ..
+    "QVRFDS4JCidrTkFOQWNBVGhVQg0SXF1VTDxSCh4IGAF5Lh0NYlxOCAAiLAwWKQE3ZAh2W1hJFhsbBRU3DUQnAS4qCA0JJxICSVYcEBpZflFQU0FyXkkCEwEA" ..
+    "BEFFWWJBTkFOQWNBVGgcBA1RWFtaSQQXEQJBAA1IJW9ZYkFOQU5BY0FUaFVCDRIQQFdaBBcRAkFJRU4jDBUmNQsZGk8XBAw8f0INEhASFg1wUklWQRELSUFF" ..
+    "WWJBTkFOQSYPEEJ/Qg0SEBIWDXAeBhUAGEVBJBIcMDULGRpBfkEHPAcLQ1UeXllaNQBBBAADMUgzEVBIQU5BTkFjQVQhE0JeRkJbWEp+FAAYBVwJQjwACxYE" ..
+    "FhVCQWEDGz0bFlQSUUYWXzkBAlRIVApfaxYNMAgABkAHKg8QYBkNWldCZlNVJF5JVAMbEEM/HFtrQQETThI3Ex0mEkxLW15WHkE/BQwENREdWWdFW6rS8Ijp" ..
+    "8GFIVDwdB0M4EBIWDXBSSVZBVEUNOQANNxMAQUwjLBQaPAwjWWBZQV0PWlJJVkFURQ1rABUxBGRBTkFjQVRoVUINEhBAU1klAAdWQz0LbiQIGyMVIA48CDAK" ..
+    "VkJVQg0SEBIWDTUcDXxBVEUNLgkKJ2tOQU5BY0FUaAcHWUdCXBYPHh0dPw83CkApBA1ga05BTkEmDxBCEAxJODpeWU4xHkkwNSRXcggKFCAAGiIPAisEVHVV" ..
+    "QGNdRHtYbj8fCxcVVm9BJAYYLkEoNT5THCIbJRcDWXFRUV5IBBsEE0FJRR1BbxUtAg8NTgc2Dxc8HA1DEnlBf0MTHQQUAAA2WSoRHGpIZEFOQWMNGysUDg1c" ..
+    "X0UWEHAdGlgCGApOIE1QSEFOQU4IJUEaJwJCABJ2ZmYfDzEGGwMVEW4qBhEnNQcMC0F9XFR4W1cNRlhXWCdwUklWQVRFDQ0xKXA+LQ4DAyIVNykWCkhmWV9T" ..
+    "DW1SBxkWfkUNa0VZYkFOJzoxcT43JxgATEZzU1VFNVJUViYREW4kCBsjFT0VDxU2Elxhf0INEhBXWElaUklWQQYAWT4XF2InOjFcPgAOGSoUFm5TU1pTDS5P" ..
+    "SVQvGxFkJSYWLwMPFUxrJg8QQn9PABLWva3LzP+M2OiR4IWtz9uk/suO0vum3vGh1erInLnXs4W0yv2R5dU1exuC8sKH6+qI6M6J9/WT7bbUrL88ZCMhCBAE" ..
+    "IAplJBU6KgQNCk5cYwcBJhYWRF1eGh8ncFJJVggSRUMkEVkODg0AAjEvAA0tB0JCQBBcWVlwPgYVABg1QSocHDBbJxIqBDACESYRA0NGf1QefTwTEBMTB0wN" ..
+    "Pw0cLGtOQU5BY0FUaAcHWUdCXBZLMR4aE2tURQ1rABcma2RBTkFjTFlok+qd25yX0pX9WoHF/53ivK7q7qfJ74nq5GqFzMWQ7YLUv6nQsd14SVZBVAxLayIc" ..
+    "NiIBDAwANzIAKQEXXhoZEgsQcFArGRQaEVQKESsrEgVDThUrBBpCVUINEhASFg0iFx0DExpFSyoJCidrTkFOQSYPEEJ/Qg0SEB8bDbXF25/3/4C41DUvEof3" ..
+    "44rZzoT755PtttSsvzwNcFJJHwdUJkUuBhISNz5JIg4gABgYGQNUV0IbFlk4Fwd8QVRFDWtFWWITCxUbEy1BEikZEUg4EBIWDTUcDXxrVEUNaxccNhQcD04V" ..
+    "MRQRQhAMSTg6XllOMR5JEBQaBlkiChdiIgYEDQoCDxAGGhZEVElxWUAyEx0lFRURWDhNUEhBTkFOCCVBKw9bJHliAm1+TCMmGx8GEwBfLgExLRFOFQYELUEG" ..
+    "LQEXX1wQV1hJWnhJVkFUCUIoBBViEhoAGhQwQUloMgdZcV9fVEwkIR0XFQEWBWJvWWJBTmtOQWNBHS5VEVlTREdFDW1PSVQvGxFkJSYWLwMPFUxBNwkRJn9C" ..
+    "DRIQEhYNcC0uWCcgNR8ULRgxNRwICQYmExEsPQ1dEg0SQl8lF2NWQVRFDWtFWTYAHQpAEjMAAyZdBFhcU0ZfQj5aQHxBVEUNa0VZYkFOQU4IJUEnPBQQWWFV" ..
+    "QEBIIjoGBkEADUglRSo2ABwVPQQxFxE6PQ1dGhkSU0M0eElWQVRFDWtFHCwFR2tOQWNBESQGB0RUEEFCTCQHGlZcSUUPAgs6LQwMABovLDMdOx5ADUZYV1gn" ..
+    "cFJJVkFURQ0UIlcENT5TMSkiEiA6HAVKV0JXUmU/AklLQQAXWC5vWWJBTkFOQWMVFTseTF5CUUVYBTYHBxUVHQpDY0xzYkFOQU5BY0FUaFVCRFQQYUJMIgY6" ..
+    "ExMCAF8DCgliFQYEAEEQFRU6ATFIQEZXRGU/AkFfQRELSUFFWWJBTkFOQSYPEGF/Qg0SEFdaXjUbD1YSAARZPhZZf1xOQywONg8AMTQWf1tDWRQNJBoMGGtU" ..
+    "RQ1rABcmawsPCmtJDRsrFA4NVEVcVVk5HQdWKAcsQxgEHyc7AQ8LSTMNBmF/Qg0SEFtQDT4dHVYRGBcNJBdZLA4aQR4NMU83IBQQTFFEV0QNJBoMGEEGAFk+" ..
+    "FxdiBw8NHQRjBBosf0INEhBeWU4xHkkeEwRFEGsVFTBPLQkPEyICAC0HWGtbXlZwRCIBHTUJHQlJY0cxNwwPDwEIJzMbJwEyTEBEEB8ncFJJVggSRUMkEVkq" ..
+    "Ex5BGgkmD1Q6EBZYQF4SUEw8AQxWBBoBJ0FFWWJBAg4NAC9BBCQUAUh7VBILDTcTBBNPJAlMKAAwJmtOQU5BLw4XKRlCV11eV0UNbVISC2t+RQ1rRRAkQRoA" ..
+    "DA0mTxIhGwYFSQIFAx5pQ1xDVU1JDXNQS3NQWVNXUHVZQ3lAHwESQF5XTjU7DV9BAA1IJW9ZYkFOQU5BYxsbJhARDQ8QbXEDFiY5RD4nBEsuPxYsBD4OHQg3" ..
+    "CBsmBkx6XUJeUhxaUklWQREJXi4MH2IVDwMCBG0HHSYRSlYGBAYEH2dAWE5SWEUaclVAc1ZeUlxXdldBfwhODUJcU1VIGRZAVhUcAENBRVliQU5BTkE5Dhot" ..
+    "BkIQEm91GGsEIlspMhUDSBEKFycxARIHFSoOGjtbNUJAXFYEJ3BSSVYEGBZIIgNZNgAMDQtPJQgaLF0ZGgYECwIfY0RaQ01UVB17VEh1Ul1QX1NwUUxxCE4N" ..
+    "QlxTVUgZFkBWFRwAQ0FFWWJBTkFOQTkOGi0GQhASb3UYawQiWykyFQNIEQoXJzEBEgcVKg4aO1s1QkBcVgUncFJJVgQaASdBRVliQQIODQAvQQQnBkIQElhA" ..
+    "RgMAHRofFR0KQ0FFWWJBCA4cQRxNVDIaDEgSWVwWRCATAAQSXB9CJQAKa0EKDmRBY0FUaFVCDVtWEh5dPwFJW0EOCkMuSwktEkdPIwAkDx08AAZIEgwPFlc/" ..
+    "HAxYExUBRD4WWTYJCw9kQWNBVGhVQg0SEBIWXzUGHAQPVBFfPgBzYkFOQU5BY0ERJhFoDRIQElNDNHhjVkFURV8uEQwwD04HDw0wBH4tGwYnOFxdVUw8Ug8D" ..
+    "DxcRRCQLWQUEGi0LFyYNXDgZEAQ4EBIWDTkUSRgOAEVdJxdZNgkLD04TJhUBOhtCQ1tcElNDNHhJVkFUCUIoBBViDgwLTlxjSQQkB1hrW15WcEQiAR01CR0J" ..
+    "SWNHPSMVD0NHQSIPEGgFDl8cdFNCTGo0ABgFMgxfOBE6KggCBUZDDwQCLRlABBs6EhYNcFJJVkFURQ1rRVktE05JHg0xWzIhGwZrW0JBQm44GwUSSVYJSCoB" ..
+    "HDASGgAaEmFIVCkbBg1CXEAYQTUTDRMTBxFMPxZDBAgABSgIMRIACx0LQVYYEHpIJhcFVEhdbw1rRVkwBBoUHA9jDhYiVQNDVhBdVEd+JAgaFBFFQjlFFysN" ..
+    "ZAQABUlrGCcWA0ESVkdYTiQbBhhBPRZ9JwQAJxMvDQIYaxEYKQwHXxs6EhYNcBsPVg8bEQ07CRg7BBxBGgkmD1Q6EBZYQF4SUEw8AQxWBBoBJ2tFWWINAQIP" ..
+    "DWMMFSEbQhASfF1VTDwiBRcYERcXDQwXJicHEx0VAAkdJBFKD2JcU09IIjUcH0NdRUwlAVkODg0AAjEvAA0tB0x9XlFLU18XBwBMJx0LSQ0MCzEVLQkHDSdJ" ..
+    "VgUUC0MQGTgWDXBSABBBGgpZawgYKw9OFQYELUEGLQEXX1wQVFdBIxdJEw8Qbw1rRVlIQU5BTg0sAhUkVQNBXllXRQ1tUgQXCBpfayILHQQIHBIaIisIGCxd" ..
+    "QGxeXFtTXnJbY1ZBVEVBJAYYLkENDgAVIggaLQdCEBJRXlpENQFJFw8QRUwnCRAnElQnBw8nJx06BhZuWlleUgVyMQYYFRUMQy4XW2trTkFOQS8OFykZQl5H" ..
+    "UnNaQTkXGlZcVAZCJREYKw8LE04ALQVUKxoMWVNZXFNfajQAGAUyDF84EToqCAIFRkMCDRghEBEPGzoSFg1wGw9WDxsRDTgQGwMNAggLEmMVHC0bQl9XREdE" ..
+    "Q3AUCBoSEUVIJQFzSEFOQU4NLAIVJFUEX1NdVxYQcAEcFCAYCUQuFkMECAAFKAgxEgALHQtBVhgQcF8xHwxUSFRvDWtFWWJBTkEBE2NJBz0XI0FeWVdFFxYb" ..
+    "BxInHRdePyYRKw0KSUwyIBMbJBkLQ1V2QFdANVBAVgAaAQ04EBsDDQIICxJtMhc6Gg5BW15VcF8xHwxMJx0LSQ0MCzEVLQkHDSdJVg4HA0BXEhsfJ1pSSVZB" ..
+    "HQMNJQoNYgccAAMEYxUcLRtCX1dER0RDcBQIGhIRRUglAXNiQU5BHAQ3FAYmVQRfU11XDGs5HA0wCAYWWQgNEC4FRhECADoEBmY7A0BXGRJIEHAcABprEQtJ" ..
+    "QW8VLQIPDU4HNg8XPBwNQxJ5QWBMPBsNIgAGAkg/TQkuE0drTkFjQR0uVQxCRhBCWl9wHRtWERgXDXZYWQ4ODQACMS8ADS0HQllaVVwWXzUGHAQPVANMJxYc" ..
+    "YgQABWRBY0FUIRNCcnUedGJ9Yi0rGgAXDkEiFg0ZEQITM0E3CREmVRBIRkVAWA02EwUFBFQAQy9vc2JBTkECDiAAGGgWCkxAEA8WXTwARzUJFRdMKBEcMGtO" ..
+    "QU5BKgdUJhoWDVFYU0QNJBoMGEEGAFk+FxdiBw8NHQRjBBosf2gNEhASWkIzEwVWCQYVDXZFGioAHFsoCC0FMiEHEVlxWFtaSXhQIQMMFQtCIgErLQ4aMQ8T" ..
+    "N0NdQlVCDRJcXVVMPFIBAwxUWA0oDRgwWygIAAUFCAY7ASFFW1xWeUsTHggFElxHZT4IGCwOBwVMSElBVGhVC0sSXl1CDTgAGVYOBkVDJBFZKhQDQQETYwkB" ..
+    "JVsqSFNcRl4NbE9JRkEADUglRXNiQU5BTkFjQQYtARdfXBBUV0EjF0l8QVRFDS4LHUhrTkFOQSoHVDgZEBd1VUZ3WSQAABQUAAAFaSwKLgAABTwAKgUdJhJA" ..
+    "BBINDxZZIgcMVhUcAENBRVliQU5BTkEcJloOITIfbXJeV047HgAFFS8VQTk4WX9BGhMbBElBVGhVQg0SEEBTWSUAB1YHFQleLm9ZYkFOBAAFSWtUaFVCRFQQ" ..
+    "UV5MIkgvHw8QI0Q5Fg0BCQcNCi4lIhgpBhEFEHZdRE41NAATDRBHBGsREScPZEFOQWNBVGhVPWocdmZmHw8wBRcCHwlEOBEiMg0cPE5cYxUGPRBoDRIQEhYN" ..
+    "cFIbExUBF0NrAxguEgtrTkFjQREmEWgnEhASFkE/EQgaQRcKQCkEDQ4ODQo6ADEGETxVXw0aQF5EDW1PSSkmWiN5G1cmARQcEwsPNzUVOhIHWRsQU1hJcDsa" ..
+    "Pw83CkApBA0RFQ8VC0lqa35oVUINW1YSWEIkUgoZDBYEWQcKGik1DxMJBDdBACAQDCcSEBIWDXBSSR8HVBVBOV8+JxUvFRoTKgMBPBBKD2FRVFN3PxwMVEhU" ..
+    "WBBrEQs3BE4OHEEzDQZyMgdZc0RGREQyBx0TSVYsQxgEHyc7AQ8LQ2pBSXVVFl9HVRJCRTUcY1ZBVEUNa0VZYkFOQTEmbScgGEc9b15RUV1BOQEdLREYF3Br" ..
+    "WFk2ExsEZEFjQVRoVUINEhASFl81BhwED1QDTCcWHEhBTkFOQWNBVC0bBic4EBIWDXBSSVYIEkVkOCwXEQAIBDQOLQRcOBkQBBJEWlNDWlJJVkFURQ1rRVli" ..
+    "QTEmQCcXMUYXNw5MUVteX14kKRkaEylFEGsRCzcEZEFOQWNBVGhVQg0SEEBTWSUAB1YHFQleLm9ZYkFOQU5BYwQaLH9CDRIQV1hJWnhJVkFUDEtrFRUwWykE" ..
+    "GiA3FQYhFxdZVxgQZlsgNgAFABYJSC9HUGJcU0EaEzYEVDwdB0M4EBIWDXBSSVY+M0trHzVLHSMCAA0KLwgHPC4SQUBtEgsNJAAcE2tURQ1rRVliQRwEGhQx" ..
+    "D1QuFA5eVzoSFg1wFwcSa35FDWtFFS0CDw1ODDo1ESkYQhASfF1VTDwiBRcYERcDHwAYL2tOQU5BLw4XKRlCWVVkV1dAcE9JBg0GS3kuBBRIQU5BTgglQRkx" ..
+    "IQdMXxBTWElwBg4iBBUIDSoLHWIMFzULAC5POikYBw0PDRIUYDEAABgEB0cNKgsdYhUJNQsALk86KRgHDQ8NEhRgMQAAGAQHRw0/DRwsa05BTkFjQVRoKiUD" ..
+    "dGRiBHISHggVChgMXj8+CS4TM0FTQTcTAS1/Qg0SEBIWDXAADAIUBgsNLQQVMQRkQU5BYwQaLH9oDRIQEl9LcDsaJg0VHEg5JBUuGEYRAhNqQQAgEAwnEhAS" ..
+    "Fg1wUkkpJlojeRtXJgANDwIFDSoSABMFDl9vEA8WWSIHDHxBVEUNa0VZYhMLFRsTLUESKRkRSDgQEhYNNRwNfGtURQ1rCRYhAAJBAxgPF1R1VSVIRnxXQEg8" ..
+    "WiUZAhUJfScEACcTR2tOQWNBGCcWA0ESRFV6W3BPSTEEAClIPQAVahECE0drY0FUaBwEDVxfRhZAKT4fVg4GRUMkEVk2BiIXTg4xQRkpAQoDU1JBHkApPh9W" ..
+    "TFQRSgcTUGJfTlRbUWMVHC0baA0SEBIWDXBSNjFPMjF9eTo7LgANCgIIMBUvOBkQcBINEkJfJRdjVkFURQ1rRVkwBBoUHA9jBxUkBgcnEhASFkg+FmN8QVRF" ..
+    "DScKGiMNTgwXKRExVHVVLkJRUV5mQTELDARPNw1MOQQaNgQcQQ8PJ0E4JxYDQWJcU09IIlwqHgAGBE4/AAt4JwcPCicqEwc8NgpEXlQaFGUlHwgYDh0BfyQK" ..
+    "DRIAHBVMSElBVGhVC0sSXUt+fwBSCBgFVE1AMi0rEk8+Dh0INwgbJlVPDVpCQhh9PwEAAggbCwRlKBglDwcVGwUmQUpoRlIdAgASQkU1HGNWQVRFDWtFWTAE" ..
+    "GhQcD2MHFSQGBycSEBIWSD4WY3xBVEUNOQANNxMAQRoTNgR+LRsGJzhcXVVMPFI/Fw0dAXkqFx4nFS0ADQkmQUloDh8nXl9RV0FwJAgaCBAxTDkCHDYiDwIG" ..
+    "BBcIGS1VXw0COl5ZTjEeSRAUGgZZIgoXYigdNw8NKgUgKQcFSEZ2U0VZeAIFBEh+RQ1rRRUtAg8NTg8sFlR1VQ1eHFNeWU47WkB8QVRFDSIDWSwOGUFDQRUA" ..
+    "GCERNkxAV1dCbjERARM1HQhIa1tZck9fVE4VKwQaQlVCDRIQEhYNBhMFHwUgBF8sAA0BAA0JCzUqDBFoSEJDXUc4Fg1wUklWQVQRTCkJHGwCAgQPE2s3FSQc" ..
+    "BnlTQlVTWRMTCh4EXW8Na0VZJw8Ka05BY0EdLlU0TF5ZVmJMIhUMAiIVBkUuPgkuEzNBEFxjDx0kVRZFV14SREgkBxsYQSIEQSIBLSMTCQQaIiICHC0uEkFA" ..
+    "bRJTQzR4SVZBVAlCKAQVYhdOXE4oMDcVJBwGeVNCVVNZeAIFBEh+RQ1rRS8jDQcFOgAxBhE8NgNOWlVpRkEiL0lLQQJvDWtFWTAEGhQcD2MXfi0bBic4XF1V" ..
+    "TDxSDwMPFxFEJAtZCxI6ABwGJhU4JwIqfRpAXkQEWlJJVkEdAw0lCg1iEQITThUrBBpoBwdZR0JcFksxHhoTQRELSUFFWWJBAg4NAC9BFyAUEA0PEEJaX34x" ..
+    "ARcTFQZZLhdzYkFOQQIOIAAYaB0XQBINElVFMQBJFw8QRU4jBAt4JwcPCicqEwc8NgpEXlR9UG48ExoFSVYtWCYEFy0ICkNHa2NBVGgcBA1cX0YWRSUfSRkT" ..
+    "VA1YJksxJwACFQZBf1xUeFUNXxJYR1sDHRMRPgQVCVkjRUV/QV5BGgkmD1Q6EBZYQF4SUEw8AQxWBBoBJ2tFWWINAQIPDWMREToWB0NGEA8WBTgHBFgpEQRB" ..
+    "Pw1ZbUEGFANPDgAMABADQUZYGxYHcENZRmtURQ1rFxw2FBwPThEmExctGxYNDhAaaWp+ND0mUyspQjwtCQ4ODQo+BDECESYBQkJAEAEGBFoXBxJrfglCKAQV" ..
+    "YgcbDw0VKg4aaDIHWXFFQERIPgY+GRMYAWglEQsjDw0EHUlqa1RoVUJBXVNTWg0gHQYaQUlFVjZvWWJBTg0BAiINVDgZA05XeVYWEHAVCBsEWjVBKgYcCwVk" ..
+    "a05BY0EdLlUWTFBcVxhLORwNXhpGUhh4XEh3VFpYQkF7VEZ5RFUfCwEEDhphRxRaQQQJTCgAMCZIThUGBC1rVGhVQg0SEBJGQj8eSUtBD28Na0VZYkFOQU5B" ..
+    "Y0EPaDQQShINEmBIMwYGBFJaC0g8TU9zUFhSQFl2TVR5REwbChwSBxVhS0dBWV1JDQ8ACjZBU0E4BCAVGzpGTENXRxoAHGFEXVpBQUkNel1LckhOHEJrY0FU" ..
+    "aFVCDRIQEhYNK1IoBAZUWA0dABo2DhxSQA8mFlx7TVQZHAYKGg1mXF5FTVRIHHJXT2xTX0hCQQcEBzxVXw1kVVFCQiJBRxgEA00ec1NMbkFbTU5MclhGflxC" ..
+    "UB46EhYNcFJJVkFURQ1rHlkDEwlBU0EVBBc8GhAeHF5XQQV9Rl9GVlpdH2dFQXVVQFJXTWNMRX5DVQMHBRsaDRQXGgJBSUV7LgYNLRNdTwAENElZfENSFR4Q" ..
+    "CgEefFJER1dCXQRrGFVIQU5BTkFjQVRoVUINSRBzREpwT0kgBBcRQjlWVywEGUlDVntYQGZDUwESBQcCGn5DXVpBWVYVe0tLe0hCQSoEMBVUdVU0SFFEXUQe" ..
+    "fhwMAUlZUhVyUFViVFtVWE1jTEdwRUsNTzoSFg1wUklWQQlvDWtFWScNHQQHB2MVFSoZBwNUWVxSBStGXUJTRlIfel1KbkFZWF5YclZEe0dUGAQFBUsBcAIF" ..
+    "FwIRLEliRQ0qBABrTkFjQVRoVUJdXV9eFhBwCWNWQVRFDWtFWWJBTkEVQQITE2hIQntXU0ZZX2NcBxMWXFcfc1BVYlBbTU5Ze1NdZFUmSEFEEgsNBhcKAg4G" ..
+    "VgMlAA5qU1xZW01jUEFkVVoVABkSSwFaUklWQVRFDWtFWWJBFUEvEyRBSWgjB05GX0AFAz4XHl5MR10dZ0VKd1FCQVhSc0hYaDEHXkYQDxZ7NREdGRNHS0Mu" ..
+    "ElFvUlZRQkFwVERkVVQeAhkSSwFaUklWQVRFDWtFWWJBFUEvEyRBSWgjB05GX0AFAz4XHl5YRlEBa1RLd01OUlxZe1NdZFUmSEFEEgsNBhcKAg4GVgMlAA5q" ..
+    "WFxVQkFyU0FkVVEfCggAHw0tXmNWQVRFDWtFWWJBTkEVQQITE2hIQntXU0ZZX2NcBxMWXEgbf1xIbkFfUFhNY0xFeEJLARJ0V0VZcE9JIAQXEUI5VlcsBBlJ" ..
+    "Q1d3WEVkVVMcBBwSGxxgRUBWHH5FDWtFWWJBThxkQWNBVC0ZEUhbVhJCTDIeDFgHHQtJYx5OdlVXVVxSdVJBZFVTHQIBAwEeY0NYRFJEXRQ2SVkyDQ8CCygn" ..
+    "SFQ8HQdDOBASFg1wUklWERsKQWtYWTlrTkFOQWNBVGhVQg0SSxJ3XzdSVFY3EQZZJBdKbA8LFkZUdVZMZFVTHQMDHhYAY0NbX01UIUg4EVl/QTgEDRUsE0dm" ..
+    "GwdaGgUEARV8UlhGUEdJDWZWSHBIThxCa2NBVGhVQg0SEBIWDStSKAQGVFgNHQAaNg4cUkAPJhZcZURQGAcBHhYeY0VFVkxDUB18TFViJQsSGkF+QSItFhZC" ..
+    "QAMcWEgnWkRHU0FQHGdFSnFWQkFDVnZRQ2FVHwE4EBIWDXBSSVZBVEUNMEU4MAZOXE43JgIAJwdRA1xVRR4AZUJaTk1UVhx+SVlvUl9SW0hvQTAtBhYNDxBk" ..
+    "U04kHRtFTxoAWmNITHJSVk1OUnJUWGhYURwBBRsWUHx4SVZBVEUNa0VZYkFOGk4gMQZUdVU0SFFEXUQefhwMAUlZUB1yXVViUl9WQkFuUkV/TEsBEnRXRVlw" ..
+    "T0kgBBcRQjlWVywEGUlDUHVZRXtZQhgKHBIFHWVbSQtNfkUNa0VZYkFOHGRBY0FULRsGJxIQEhZfNQYcBA9UFUIkCXMnDwprZA0sAhUkVQRYXFNGX0I+UjwG" ..
+    "BRURSBsKCisVBw4AKSoSACcHGwUbOhIWDXAeBhUAGEVDJBJZf0EBEkACLw4XI11LJxIQEhZBPxEIGkEVBlkiExwSDQ8YCxMwQUloDh8nOBASFg02HRtWPlhF" ..
+    "XScXWSsPTggeACoTB2AlDkxLVUBFFxcXHSYNFRxIORZRa0hOBQFrY0FUaFVCDRJZVBZdPABJCFxUKUIoBBUSDQ8YCxNjFRwtG2gNEhASFg1wUklWQVQETj8M" ..
+    "DycxAgAXBDESLzgZEHASDRJCXyUXY1ZBVEUNa0VZYkFOQQIOIAAYaBYKTEAQDxZdPABHNQkVF0woERwwa05BTkFjQVRoVUINElxdVUw8UgEEEVRYDSgNGDBB" ..
+    "Dw8KQSAJFTpPJERcVHRfXyMGKh4IGAEFaS0MLwAADgcFEQ4bPCUDX0YSGzwNcFJJVkFURQ1rRVkuDg0AAkErFBloSEJOWlFAFkw+FkkVCRUXFw0MFyYnBxMd" ..
+    "FQAJHSQRLUtxXFNFXnhQIQMMFQtCIgFba2tkQU5BY0FUaFVCDRIQW1ANOAAZVgAaAQ0jEBRiAAAFTgk2DFoAEANBRlgSCA1gUh0eBBpvDWtFWWJBTkFOQWNB" ..
+    "VGhVQkRUEFxZWXAtLlg1FRdKLhExKxIaDhwYGBEYOihCWVpVXDwNcFJJVkFURQ1rRVliQU5BTkFjQSsPWzZMQFdXQmU5AR0ZEw0+XScXJGJcThoTa2NBVGhV" ..
+    "Qg0SEBIWDXBSSVYEGgEna0VZYkFOQU5BY0FUaFVCDV5fUVdBcBoABRUbF1RrWFkdJkA1DxMkBAAAHBFZXUJLbV08ADR8a1RFDWtFWWJBTkFOQWNBVGgBA09e" ..
+    "VRxfQyMXGwJJHAxePwoLO01OGk4VKgwRaEhCQ11HHhZdPwFJS0EcF11lNRYxCBoIAQ9vQQItGUIQElhARgMRARoTDBYJVAcMFycAHDcLDSwCHTwMQlAbOjgW" ..
+    "DXBSSVZBVEUNa0VZYkFOFgYILwRUax0LXkZfQE8NblJZVgAaAQ1jCxY1QUNBBggwFRs6DDkcbx5GX0A1W0lIQSsiAw0xKXA+JggdFSwTDR8cDEldRxJSQlpS" ..
+    "SVZBVEUNa0VZYkFOQU5BY0FUaAEDT15VHERIPR0fE0kcDF4/Cgs7TU5QR2tjQVRoVUINEhASFg1wUklWBBoBJ2tFWWJBTkFOQWNBVC0bBicSEBIWDXBSSRMP" ..
+    "EG8Na0VZJw8Ka2RBY0FULhoQDUJcQBoNOBsaAg4GHA0iC1kyAAcTHUkcJlocFBBKV0R6X14kHRsPSFQBQkFFWWJBTkFOQSoHVCYaFg1TU0ZfWzUiBRcYERde" ..
+    "EBUVMDxODhxBLQ4AaAUOXwh5QXJIIxEMGAUVC1kEA1ESDQ8YCxMwSFQ8HQdDOBASFg1wUklWQVRFDRQiVxYAHAYLFQsIBzwaEFRpQF5EcHBPSRgIGG8Na0VZ" ..
+    "YkFOQQsNMAQdLlVBRVtDRllfKVJUS0FERVkjABdIQU5BTkFjQVRoVUINbXccYkwiFQwCKR0WWSQXABkRAhMzQX5BGiEZaA0SEBIWDXBSDBoSEW8Na0VZYkFO" ..
+    "QU5BY0EYJxYDQRJcU0VZAhcKGRMQRRBrDRAxFQETFzpgCR07AQ1fS204Fg1wUklWQVRFDWtFECRBRg8BFmNMVCQUEVlgVVFZXzRcHR8MEUwNdUUmBU8oNT5T" ..
+    "HCIYLRQQeVtdV1lYJFIdHgQabw1rRVliQU5BTkFjQVRoVUJydR5mV183Fx0+CAcRQjkcIjINHDxOXGMPHSR/Qg0SEBIWDXBSSVZBEQtJQUVZYkFOQU5BJg8Q" ..
+    "QlVCDRJVXFInNRwNfGsYCk4qCVkkFAACGggsD1QPEBZ9QFVWX04kFw0mDgcMWSIKF3BJHg0cSElBVGhVC0sSXl1CDSAeG1YOBkVDJBFZMg0cTy0JIhMVKwEH" ..
+    "XxJEWlNDcAAMAhQGCw0lDBViBAAFZGtjQVRoGQ1OU1wSXl8gUlRWERgXAwgNGDAADRULE3knHSYRJERAQ0Z1RTkeDV5DPBBAKgsWKwU8DgEVEwAGPFdLJxIQ" ..
+    "EhZENlIHGRVUDV87RQ0qBABBHAQ3FAYmVQxEXhBXWElaeElWQVQJQigEFWIJBxIaDjEYVHVVPWocZFNESjUGIR8SAApfMj4JLhMza05BY0EYJxYDQRJTR0Rf" ..
+    "NRwdJg4HRRBrDQsyTz4OHQg3CBsmf0INEhBeWU4xHkkVFAYXSCURLycNTlxOCTERWgkGEUhfUl5PYTkcDBcTIgBBJAYQNhhka05BY0EYJxYDQRJAW1hKcE9J" ..
+    "Rk9EUSdrRVliEQ0AAg1rBwEmFhZEXV4aHydwUklWQVRFDTsMFyVBU0E9FSIVB2Y7B1lFX0BdAwMXGwAEBjZZKhEKCxULDDVDBwAAKVUyRFxXEGsXFxcdIAAY" ..
+    "EEhjTFltQV9RXlFJQVRoVQdDVhk4PA1wUkkfB1QLQj9FESsSGg4cGGMOBmhWCkRBRF1EVHBOSUVBAA1IJW9ZYkFOQU5BYw0bKxQODUYQDxZAMQYBWAIYBEA7" ..
+    "TQkrDwlNTlFtUUdkVVIDAAUbPA1wUklWQVRFQSQGGC5BHg4dQX5BFz0HEEhcRGJZXnBZSV4CARdfLgsNFAQCQURBN0h+aFVCDRIQEhZENlIZGRJaPA13RREw" ..
+    "EUAxARIqFR0nG0x0EkRaU0NaUklWQVRFDWtFWWJBHg4dQX5BIi0WFkJAAxxYSCdaGRkSWj0Baw0LMk8+Dh0INwgbJls7ARJAXUUDCltjVkFURQ1rRVknDwpr" ..
+    "TkFjQVRoVUJfV0RHRENwAgYFa1RFDWsAFyZrZEFOQWMNGysUDg1RX0dYWXBPSVUJHRZZJBcASEFOQU4NLAIVJFUMQkUQDxZCI1wKGg4XDgVib3NiQU5BAg4g" ..
+    "ABhoAQ1ZU1xlU0Q3Gh1WXFRVJ2tFWWINAQIPDWMWESESCllXVGRTQXBPSSAEFxFCOVZXLAQZSV5NY1FYaEVLJzgQEhYNNh0bVghUWA15SVkhDhsPGkEnDn5o" ..
+    "VUINEhASFkE/EQgaQQQXSD1FRGIJBxIaDjEYLyFVTw0DbTgWDXBSSVZBVAlCKAQVYgIbExxBfkEcIQYWQkBJaV9wWlJJVkFURQ1rCRYhAAJBChVjXFQrABBf" ..
+    "HERbW0hwX0kGExETAz8MFCdrTkFOQWNBVGgcBA1WRBIIDWBcWUZQVBFFLgtzYkFOQU5BY0FUaFVCQV1TU1oNORwaAjcRCQ12RVEhFBwTQBEsElRlVRJfV0Yc" ..
+    "RkIjW0lZQRARJ2tFWWJBTkFOQWNBVCQaAUxeEEVTRDcaHVZcVAhMPw1XJxkeSUYCNhMGZgELQFcQHxZDPwVAVk5UVQN6THNiQU5BTkFjQVRoVUJaV1lVXlk1" ..
+    "Fj8TDVRYDTwAECUJGgQKNyYNVGNVSkRcQ0ZgSDxSQ1YWEQxKIxFQSEFOQU5BY0FUaFVCDUZfRldBBxcAEQkARRBrERY2AAI2CwgkCQBoXkJaV1lVXllaUklW" ..
+    "QVRFDWsAFyZrTkFOQSYPEEJ/Qg0SEF5ZTjEeSR4IBxFCORwvJw1OXE5JNw4AKRk1SFtXWkINblJZX0EVC0lrTQ4nCAkJGgQnNxEkVU0NRl9GV0EHFwARCQBM" ..
+    "DSQXWSEUHBMLDzc3ESR/Qg0SEF5ZTjEeSRAIGgRBHQAVYlxOCQcSNw4GMSMHQQh8V0RdeBEcBBMRC1kdABVuQV5PXUhJa1RoVUJEVBBUX0MxHj8TDVooTCwL" ..
+    "EDYUCgROX2NTTHhVFkVXXjgWDXBSSVZBVANEJQQVFAQCQVNBJQgaKRk0SF4eZ1hEJFJDVlNMVSdrRVliBAAFZGtjQVRoGQ1OU1wSWUE0FxoCQUlFRSIWDS0T" ..
+    "FzpfPElBVGhVDkJRUV4WQDkWSUtBHAxePwoLOzoDABoJbQcYJxoQBVFfR1hZcF1JREgpbw1rRVkuDg0AAkEtBAMtBhYNDxBaX14kHRsPOhcKWCURJEhrTkFO" ..
+    "QS8OFykZQklGARILDT0bDVgVHQhIa0hZLQ0KBB0VbRUdJRBoDRIQElpCMxMFVgUAVw12RRcnFgsSGk83CBktVU8NX1lWGFk5Hwx8QVRFDScKGiMNTgANAiYN" ..
+    "VHVVNEhRRF1EHn4cDAFJREkNe0lZckhka05BY0EdLlUGWQMQDBYdfkJZQ0EVC0lrAQ1wQVBBXk9zUUFoAQpIXDoSFg1wUklWQRgKTioJWTRQTlxOSS4IEGYF" ..
+    "DV4SHRJZQTQXGgJPBApeYkVWYgUaUGRBY0FUaFVCDV5fUVdBcARbVlxUTUMuEhwxFUARARJjTFQlHAYDQl9BHw1/Ug0CU35FDWtFWWJBTgANAiYNVHVVSlsA" ..
+    "EB8WW2FbSVlBXE1JP1RZaUEKFVxIY0tUeFtXBDgQEhYNNRwNfGtURQ1rDB9iAA0CCw1tLBUvGwtZR1RXFhNwQ1xGQQANSCVvWWJBTkFOQWMAFysQDg0PEFNV" ..
+    "TjUeRyMPHRENYUVId1FkQU5BYwQaLH9oDRIQElpCMxMFVg4YAWkiF1l/QUYMBwVtERs7VU8NXVxWU14kXBkZEl1vDWtFWS4ODQACQS0EAwwcEA0PEBpYSCcX" ..
+    "GgJPBApea0hZLwgKTx4OMEh+aFVCDVtWEllBNDYABE85BEolDA03BQtBUEFyQRUmEUJDV0d2X19+PwgRDx0RWC8AWXxBX0EaCSYPfmhVQg0SEBIWQT8RCBpB" ..
+    "EAxfDwoNYlxODA8VK08XJBQPXRpfXlJpOQBHIw8dERcPCg1qDwsWKggxTyEmHBYEHhACGg1hW2NWQVRFDWtFWSMCDQQCQX5BFSsWB0ESGhJSRCI2BgJrVEUN" ..
+    "awAXJmtkQU5BYw0bKxQODV9JcV5MIlJUVi0bBkwnNRUjGAsTQCIrAAYpFhZIQDoSFg1wHgYVABhFQDItKxJBU0EDGAAJFTpVA0NWEF9PbjgTG0wnHQtJDQwL" ..
+    "MRUtCQcNJ0lWAAAPTFxfW1J/Px0dJgAGEQ9ib1liQU4NAQIiDVQ4BwdJZllfUw1tUllYUEFvJ2tFWWIICEEDGAszJGgBCkhcOhIWDXBSSVZBGApOKglZJggd" ..
+    "FU5cY0kXPQcQSFxEYllecF9JGxg8N31lNRYxCBoIAQ9qTzkpEgxERkVWUydwUklWQVRFDScKGiMNTgcCCCQJABwcD0gSDRJSRCMGSVlBKyIDDTEpcD4oDRcy" ..
+    "MwQRLH9CDRIQEhYNcAIbEwUgDEAuRURiDA8VBk8gDRUlBUoFVFxbUUUkJgAbBFRPDXtLTHdITkpOESoPE2RVUgMCBB4WHX5GXF9rVEUNawAXJmtkQU5BYw0b" ..
+    "KxQODUJCV1JEMwYMEjEbFg12RRo3ExwEABUTDgdoXkIFVFlcV0EGFwVWS1QVXy4BLSsMC0hOSmNJRGZAQgcSUVFVSDxSQ1ZJBBdILzEQLwROP05Takh+QlVC" ..
+    "DRJcXVVMPFIBAwxUWA07CQtsIgYAHAAgFRE6TyREXFR0X18jBioeCBgBYi0mFSMSHUlMKTYMFSYaC0kQGTgWDXBSABBBHBBAaxERJw9kQU5BY0FUaFUOQlFR" ..
+    "XhZeJBMdE0FJRUU+CEMFBBoyGgA3BFxhf0INEhASFg1wGw9WEgAEWS5FRH9BKw8bDG0pASUUDEJbVGFCTCQXPQ8REUtrOQAcJAACDU4VKwQaQlVCDRIQEhYN" ..
+    "cFJJVg0bBkwnRR4wABgIGhhjXFQ/GhBGQUBTVUh+NRsXFx0RVEFFWWJBTkFOQWNBVGgFEEhWWVFCSDQiBgVBSUVdOQAdKwIaBAoxLBJUZVU0SFFEXUQefhwM" ..
+    "AUlESQ17S0xiS04GHAA1CAAxVUgNGkBAU0kEGwQTQSpFH2JJWXJIZEFOQWNBVGhVB0NWOhIWDXAXBxJrfkUNa0UQJEEeEwsFKgIALREyQkEeaxYRcBobBk8k" ..
+    "Cl4iERAtD0A4ThUrBBpCVUINEhASFg0gAAwSCBcRSC81FjFBU0E4BCAVGzpGTENXRxpGXzUWABUVEQF9JBZXGk1OCRwRbTEbOxwWRF1eHG8BcAIbEwUdBlku" ..
+    "ASktEkA7R2tjQVRoEAxJODoSFg1wAAwCFAYLDTsXHCYIDRULBRMOB0IQDEk4Ol5ZTjEeSRAUGgZZIgoXYiYLFSAEIhMROwEyQVNJV0QFeXhJVkFUCUIoBBVi" ..
+    "DwsAHAQwFSQkFBtIQBAPFkM5HmNWQVRFQSQGGC5BHQkBEzcEBzwxC15GUVxVSHBPSRsAAA0DIxAeJ2tOQU5BLw4XKRlCQEtzWldfcE9JOg4XBEEbCRg7BBxP" ..
+    "LQkiExUrAQdfOBASFg08HQoXDVQIVAM3KWJcTgwXIisABmgUDEkSXUt1RTEAUzAIGgFrIhcKNiIGCAIFa0M8PRgDQ11ZVmRCPwY5FxMARwRBb1liQU4ICEEt" ..
+    "DgBoGBtlYGASQkU1HEkEBAAQXyVFFysNTgQABUlrVGhVQktdQhJpAXACBQRBHQsNIhUYKxMdST4NIhgROgZYaldEYlpMKRcbBUldTA0vCnNiQU5BTkFjQR0u" ..
+    "VSteZFFeX0kEExsRBAAjTDgRUTINHEhOFSsEGkJVQg0SEBIWDXBSSVYNGwZMJ0UNJSk8MU5cYxEYOlshRVNCU1VZNQBJFw8QRV0nF1cBCQ8TDwI3BAZyMwtD" ..
+    "VnZbRF4kMQEfDRBNDwMQFCMPAQgKMywOABgUEFkQGTgWDXBSSVZBVEUNa0UQJEEaBiYzE0EAIBAMJxIQEhYNcFJJVkFURQ1rRVkuDg0AAkEnCAc8VV8NGkRV" ..
+    "fn8AXDkZEh0RRCQLWW9BAxgmMxNPJCcGC1lbX1wfAx0TDhgIABBJLm9ZYkFOQU5BY0FUaFVCDRIQW1ANNBsaAkFIRV4jCgs2BB0VKggwFRUmFgcNRlhXWCdw" ..
+    "UklWQVRFDWtFWWJBTkFOQWNBVDsdDV9GVUFCaTkBHRcPFwANdkUdKxIaa05BY0FUaFVCDRIQEhYNcFJJVkFUC0gqFxwxFT4NDxgmE1R1VRJBQDoSFg1wUklW" ..
+    "QVRFDWtFWWJBCw8Ka2NBVGhVQg0SEBIWDTUcDXxBVEUNa0VZYgQABWRBY0FULRsGJxIQEhZfNQYcBA9UC0gqFxwxFT4NDxgmE34tGwYnOFxdVUw8Ug8DDxcR" ..
+    "RCQLWQENCwAcJxcxRg4ZC0paRHFZQCAdBxMPABYFYm9ZYkFOCAhBHCZaDiEyH218W1hIMQA/Ew0bBkQ/HFk2CQsPTj4ETzIcJVByfllcU0wiJAwaDhcMWTJf" ..
+    "PScSGhMBGGtIVBcyTGtmYABpYTkcDBcTIgBBJAYQNhhOXE4PKg1ULRsGJxIQEhZENlI2MU8yMX15OjgsFQcmHAA1CAAxVRZFV14SaWp+ND0mUyskQz8MPjAA" ..
+    "GAgaGHklETsBEEJLGBsWchdcLyIxRjpsJREQBRMPFwcVOkFJaBsLQRJVXFIncFJJVggSRXIMSz8WMVw+LxU3ABcgGAdDRhBGXkg+UjYxTzIxfXk6ODYVDwIG" ..
+    "DCYPAHIxB15GQl1PBXlSNjFPMjF9eTo4NhUPAgYMJg8AaEhCQ1tcElNDNHgMGAV+b0EkBhguQQgUAAI3CBsmVTFIRkVCcHkAQC8aCBMNWQgKFDIOAAQAFTBJ" ..
+    "HDoFSycSEBIWbjwXCAQnIDUfDQkQJQkaIgEMMw4aLRsWXhoZODwNcFJJGg4XBEFrBA02QVNBJw8wFRUmFgcDXFVFHg8RBh0XAhwISCURW2trTkFOQSIVAGY7" ..
+    "A0BXEA8WDwgHIQMDKyNBIgIRNiAaFQ8CKwwRJgFQDzgQEhYNMQYdWDEVF0glEVl/QQYTHmtjQVRoKiUDdGRiBHIRBh0XAhwISCURWX9BDxUaa0lBVGhVDkJR" ..
+    "UV4WQSZSVFYoGhZZKgsaJ08ABBlJYS0dJhADX2RVXllOOQYQVEh+RQ1rRRU0TyAAAwRjXFRqLRdlR1JtcEE5FQECNxEJQigMDTtTTGtOQWNBGD5bL0xKdl1E" ..
+    "TjVSVFYMFRFFZQ0MJQRkQU5BYw0CZiMHQV1TW0JUEx0HBRUGBEQlETQtBQtBU0EGDwElWzRIXl9RX1kpMQYYEgAXTCILDQ8OCgRANyYCACcHaA0SEBJaW34k" ..
+    "DBUVGxd7LgkWIQgaGE5cYzcRKwENXwEeXFNaeEJFVlFYRR1ib1liQU4NGE8CFQApFgpAV15GBg1tUggCFX5FDWtFFTRPPgAcBC0VVHVVCl9COhIWDXAtLlgn" ..
+    "IDUfFCkQLAQPEzgELw4XIQEbDQ8QXkAnWlJJVkEYCk4qCVk2DhoAAiwiEgdoSEIdOBASFg08HQoXDVQGRSoXWX9BBhMeTxMABi0bFicSEBIWRDZSCh4ABkVZ" ..
+    "IwAXSEFOQU5BY0FULhoQDW0cEkZMIgZJHw9UDF0qDAsxSQ0JDxN5JhE8MQdeUVVcUkw+BhpeSF1FSSRvWWJBTkFOQWNBVGhVC0sSQFNEWWo7GjdJVidMOAAp" ..
+    "IxMaQ0dBIg8QaBsNWRJAU0RZfj8IBRIYAF44RQ0qBABrTkFjQVRoVUINEhASFg1wUh0ZFRUJYCoWCmJcThUBFSINOSkGEQ0ZEEJXXyRILhMVOQReOE1QSEFO" ..
+    "QU5BY0FUaFVCDVdeVjwNcFJJVkFURUglAXNiQU5BCw8na35oVUINXl9RV0FwBA9WXFQsQzgRGCwCC08ABDRJVh4QAVldQnRZXzMXS19rVEUNaxMfbC8PDAtB" ..
+    "fkFWEAAqWFBvc1hZOTUbFxcdEVR5R3NiQU5BGAdtIAQ4GRtsRnNXWFk1ACYQLBUWXmtYWTYTGwRkQWNBVD4TTGxGRFNVRT0XBwJRVFgNKhENSEFOQU4XJU8y" ..
+    "JwcBSBINEmBIMwYGBFJaC0g8TUluQRoOGgAvLBU7BkIHEkddREYjAggVBFoiXyoTEDYYQkFeSElBVGhVFEscYFNESD4GSUtBHBddQUVZYkExJkAnFzFGFzQM" ..
+    "WVt3QFdbOQYQVlxUE0tBABcma2QNAQIiDVQOITIfbX9AVEQkPQ8QEhERDXZFFysNZA0BAiINVA4hMh9tfldOWR8ACx8VIAxALkVEYlFkawIOIAAYaBMXQ1FE" ..
+    "W1lDcDQFDzUbMUw5Ahw2LQEGBwJxSQQkB0snEhASFkQ2UgcZFVQVQTlFFjBBAA4aQTMNBmY2CkxAUVFCSCJSHR4EGkVfLhEMMA9OBAAFSWtUaFVCQV1TU1oN" ..
+    "PQsqHgAGRRBrKRYhAAIxAgA6BAZmNgpMQFFRQkgieElWQVQJQigEFWIMFyk8MWNcVCUMIUVTQhJXQzRSBA8iHARfcSMQLAUoCBwSNyIcIRkGBRB4R1tMPh0A" ..
+    "EjMbClkbBAs2Q0drTkFjQRgnFgNBEkRVfn8AUlRWERgXAwgNGDAADRULE3knHSYRJERAQ0Z1RTkeDV5DPBBAKgsWKwU8DgEVEwAGPFdLJzgQEhYNORRJGA4A" ..
+    "RUAyLSsSQQETTg8sFVQ8Eip/YhBGXkg+UhsTFQEXQ2sAFyZrZEFOQWMIEmgaEQNRXF1VRnhbSUpBKyIDDTEpcD46BAIEMw4GPCUDWEFVZ1hZOR5JAgkRCydr" ..
+    "RVliQU5BTgglQSsPWyR5YgJtekQ+FwgENxEJQigMDTtBGgkLD2M+M2YzNn0Ab35fQzUTGyAEGApOIhEAbDcLAhoOMTcRJBoBREZJEgsNBhcKAg4GVgMlAA5q" ..
+    "UUJBXk1jUV1oEAxJOBASFg1wUklWDA0tfxtLODESCwwMDTotHSYQA19kVV5ZTjkGEFZcVDNIKBEWMFJADwsWa1FYaEVODQIZOBYNcFJJVkFUF0g/EAssa05B" ..
+    "TkEmDxBCf0INEhBeWU4xHkkEAAMxTDkCHDYxARJOXGMmETwlEEhWWVFCSDQiBgUIAAxCJVdRMg0cSE4OMUEALz0wfRxgXUVEJBsGGGt+RQ1rRRUtAg8NTg8s" ..
+    "FlR1VQ1eHFNeWU47WkB8QVRFDSIDWSwOGkEoNRNTKwcHAERGf1RQXjUGSRkTVAtCPEVHf0EoNT5THC8RMAEtX1BZRmJEPRdJAgkRCydrRVliQU5BTg0sAhUk" ..
+    "VQ9MSmJTUkQlAUlLQSsiAw0xKXA+IRMMCDczFSwcF14SX0AWGGB4SVZBVEUNa0UVLQIPDU4FKhIAKRsBSBINEltMJBpHBAAaAUImTUhuQQMAFjMiBR09Bksn" ..
+    "EhASFg1wUkkaDhcEQWsBEDBBU0E4BCAVGzpGTENXRxpbTCQaRwQAGgFCJk1QYktOU05MY1BYaBgDWVoeQFdDNB0EXkhUTw15RVRiUEJBAwA3CVo6FAxJXV0a" ..
+    "Hw16UltWTFRUBEFFWWJBTkFOQSoHVCwcEAN/UVVYRCQHDRNBSkUdaxERJw9OBQcTY1xULBwQA2deW0INNRwNfEFURQ1rRVliJzoxXD4MExYhAS1LVENXQg1t" ..
+    "Ug0fE1RPDS8MCjYAAAILa2NBVGhVQg0SdmZmHw88DA4VOxdPIhEtKwwLQVNBLQ4DaF5CBW13HHB5AEA2ORMWDFkCCw0nExgAAkEsE1R4W1IcBBk4Fg1wUgwY" ..
+    "BX5FDWtFFS0CDw1OFSITEy0BMkJBEA8WXzEFPRcTEwBZGwoKYkpOJzoxcT47OhcLWX1WVEVIJHhjVkFURUEkBhguQQoIHEF+QQApBwVIRmBdRQ19UgQPKSY1" ..
+    "AxsKCisVBw4Aa0lBVGhVDkJRUV4WSzwLOgYEEQENdkUmBU8oNT5THCcYMSYSSFdUODwNcFJJGg4XBEFrARAxFToOOgAxBhE8NgdDRlVAFhBwWhsXFiAEXywA" ..
+    "DRIOHUFDQS4YPBolTH1dQ1tCRD8cQFgsFQJDIhEMJgRkQU5BYw0bKxQODVZZQFNOJDQFHwYcEXkiCBxiXE4FBxI3NRscFBBKV0RxU0MkFxtWTlQ6amUjLRJT" ..
+    "MScCGBARES0RaA0SEBJaQjMTBVYDERZZDgsNMAAAAgtBfkEaIRloDRIQElpCMxMFVgMRFlkfCg0jDToIAwRjXFQsHBBIUUR0WkQ3Gh0iCBkADUFFWWJBAg4N" ..
+    "AC9BAC0ZB11dQkZmSD4TBQIYVFgNektMYmtOQU5BLw4XKRlCXV1fXhYQcDUMAiIBF18uCw0VDhwNCiQtFQYpGwFIQRgbPCdwUklWCBJFSSIWDRYOOgAcBiYV" ..
+    "Ny0bFkhAEA4WBQ81RzA1JFdyBQotJw0LEQETNzMVJhIHDV1CEgUdYFtJAgkRCydrRVliQU5BThEsDhhoSEJWTzoSFg1wFwcSa35FDWtFHy0TTj5CQSZBHSZV" ..
+    "C11TWUBFBSAdBhpIVAFCQUVZYkFOQU5BKgdUFzJMa2ZgAGlvPB0KHQQQIEM/FxgsAgsSNQRtIAYvKEJZWlVcFk4/HB0fDwEADS4LHUhrTkFOQWNBVGgZDU5T" ..
+    "XBJSSCMGLR8SADFCHwQLJQQaQVNBawRaDBARWRIdEkRMJyYIBAYREX0kFlBsLA8GAAg3FBAtf0INEhASFg1wHgYVABhFWSQRGC41BwwLNyoAJCcHFkxeEA8W" ..
+    "BTQXGgIlHRZZHwotIxMJBBpBbEErD1skeWICbXBBKSEZEwQQTA1gRQ0nDQsRARM3MREmFA5ZSzoSFg1wUklWQX5FDWtFWWJBTggIQTcOACkZNkRfVWRfTAAd" ..
+    "GwIAGEURawccMRU6DhoALzUdJRBCWVpVXDwNcFJJVkFURQ1rRVkrB05JCggwFSAnIQNfVVVGdUg+BgwEQVlFSS4WDQYIHRU6DhcABi8QFgQSDhIHGGBSHR4E" ..
+    "Gm8Na0VZYkFOQU5BY0FUaFVCT1dDRmJCJBMFIggZAA12RQ0tFQ8NOgguBCIhFDJCQERTWidwUklWQVRFDWtFWWJBTkFOAyYSAA0bFl9TXlFTDW1SDHxBVEUN" ..
+    "a0VZYkFOQU4ELQV+aFVCDRIQEhZIPhZjVkFURUglAXNIQU5BTgglQRYtBhZoXERAV0MzF0kCCRELJ2tFWWJBTkFODSwCFSRVDkxBRGZfQDVSVFY+M0trHzVL" ..
+    "HS0PEho1Jg0ROBoQWWZZUV1eCxAMBRUxC1k5BBchBEAgHAYeQRs6VVInEhASFg1wUkkfB1QKXmUGFS0CBUlHQW5BGCkGFnlbXVcWE3BGSQIJEQsna0VZYkFO" ..
+    "QU5BY0FUFzJMa2ZgAGlhMQEdIgQYAF0kFw0WCA0KHTohBAc8MAxZQFFcVUh+MxsRPFRYDSQWVyENAQIFSWprVGhVQg0SEBIWDXBSNjFPMjF9eTotJw0LEQET" ..
+    "NzEVPQYHeFxEW1oNbVIGBU8XCUIoDlFrQUVBX09xa35oVUINEhASFg1wUkkaDhcEQWsVCyclBxIaQX5BXCUMKn9iHmJZXjkGABkPVEgNKQAKNiQAFRwALQIR" ..
+    "ZjEHXkYZHHtMNxwAAhQQACdrRVliQU5BTkFjQVRCVUINEhASFg1wUklWCBJFcgxLPxYxXD4iCC0EFTojB0FdU1tCVHAGARMPVDpqZSMtElMxLQcPJgAGHhAO" ..
+    "QlFZRk8DBhcKAg4GM0gnChorFRdBU0EVBBc8GhAeHF5XQQVgXklGTVRVBGsAFyZrTkFOQWNBVGhVQg0SXUt+fwBcKAUSEQhPJxw1Kw8LABw3Jg0bKxwWVBIN" ..
+    "EmBIMwYGBFJaC0g8TUluQV5NTlFqa1RoVUINEhASFg1wUmNWQVRFDWtFWWJBTkEaADAKWjsFA1pcGFRDQzMGABkPXEwna0VZYkFOQU5BY0FUaFVCDUJTU1pB" ..
+    "eBQcGAIADEIlTVBIQU5BTkFjQVRoVUINEhASFg1wUkkaDhcEQWsGFi8MKEFTQREEBCQcAUxGVVZlWT8ACBEETjJMIhE/LRMtCQcNJ0lWGhAPQkZVQRQEaiUI" ..
+    "HxUyCl8IDRAuBUZDLQ4uDDIXV0snEhASFg1wUklWQVRFDWtFWWJBTkENDi4MMnI8DFtdW1dlSCIEDARJVhdIOhAcMRUrDxoTIg8XLVdODVBVQUJoPgYbFw8X" ..
+    "AAMKFx5ra05BTkFjQVRoVUINEhASFg01HA1fa1RFDWtFWWJBTkFOQSYPEGF/aA0SEBIWDXBSSVZBVBFMOA5XMREPFgBJJRQaKwELQlwYGzwNcFJJVkFURQ1r" ..
+    "RVliQU5BGgAwClo/FAtZGgEcAwRaUklWQVRFDWtFWWJBTkFOQS8OFykZQk5aUUAWEHA+BhUAGDVBKhwcME8tCQ8TIgIALQdoDRIQEhYNcFJJVkFURQ1rRRUt" ..
+    "Ag8NTgkxEVR1VQFFU0ISV0M0UgoeAAZfayILHQQIHBIaIisIGCxdQGVHXVNYQjkWOxkOADVMORFba2tOQU5BY0FUaFVCDRIQEhYNORRJHhMERVkjABdIQU5B" ..
+    "TkFjQVRoVUINEhASFg1wUkkaDhcEQWsVFjEVKggdFWNcVGAdEF0cYF1FRCQbBhhBWUVPLhYNBw8aEw8PIARaDBARWRsef1dKPhsdAwURbw1rRVliQU5BTkFj" ..
+    "QVRoVUINEhASX0twAgYFFTAMXj9FR2JQW1FOAC0FVDgaEVl2WUFCDW5PSQYTESFEOBFZaEFeT1tBNwkRJn9CDRIQEhYNcFJJVkFURQ1rRVliQU5BTkEvDhcp" ..
+    "GUJLU1leRQ1tUkEpJlojeRtXJhYEAgQeDjEVMikcDl5pUldFWRUcHQQAGgZIZSQLJTxODhxBc0hUY1VTJxIQEhYNcFJJVkFURQ1rRVliQU5BTkFjQSsPWyR5" ..
+    "YgJtYkg8FxkZEwAjTCIJChkDCxIaJC0VBikbAUgccUBRcHBPSRAAHQleQUVZYkFOQU5BY0FUaFVCDRIQEhYNcFJJVggSRUsqDBUxQVBcTlJjFRwtG2gNEhAS" ..
+    "Fg1wUklWQVRFDWtFWWJBTkFOQWNBVGhVPWocdmZmHw8wBRkCHwBJDgsNMAAAAgsSGAMROwEnQ0ZCU1hONVwoBAYpRRBrEQs3BGRBTkFjQVRoVUINEhASFg1w" ..
+    "UklWQVRFDWtFWWJBBwdONioPEB08QllaVVw8DXBSSVZBVEUNa0VZYkFOQU5BY0FUaFVCDRIQEhYNcFI+Hw8QMGRxKxY2CAgYRhpjNR08GQcNDxAQ3qr6l+Lj" ..
+    "hPzyxfj7W25BLQ4AFSYPAGhIQg/XsoHfrdGb0uhBR0XL58SexsCI0vuEy9GdyeGNkb7VhYTLxMuO4smR4Juv3u+n492I7uCq2upqWUJpR0JTQkQ/HElLQUdF" ..
+    "UGJvWWJBTkFOQWNBVGhVQg0SEBIWDXBSSVZBVEUNawAXJmtOQU5BY0FUaFVCDRIQEhYNcFJJVkFURQ0uCx1IQU5BTkFjQVRoVUINEhASFg1wUkkTDxBvDWtF" ..
+    "WWJBTkFOQWNBVGhVQkhcVDgWDXBSSVZBVEUNa0UcLAVHa05BY0FUaFVCDRIQEkRIJAcbGEF+RQ1rRVliQU4EAAVJQVRoVQdDVjo4Fg1wUgUZAhUJDSUAHCYy" ..
+    "CxUbEWNcVCYaFg1tdxxweQBANjoIGgBMOTMcLg4NCBoYYw4GaColA3RkYgRyHBsHEwAGM0gnChorFRdPPgAxBBo8VRwQEl1Lfn8AeElWQVQMS2sLHCcFPQQa" ..
+    "FDNBACAQDA1hVUZDXRYmOUQnGAxKIxE6LQweDgAELRUHYBgbZWBgGxZIPhZjfEFURQ0UIlcENT5TMS0qDxEpBzRIXl9RX1kpXD8TAgAKXx0AFS0CBxUXQX5B" ..
+    "ECEHTHhcWUYWB3AUBQ8yBABIL29zYkFOQQIOIAAYaBkNQllxRhYQcCQMFRUbFx5lCxw1SRwAGTUiExMtATJCQR5qGg09CyEkMVo1QjgMDSsOAE83TWMTFT8h" ..
+    "A19VVUZmQiNcM19rVEUNawwfYkkCDgEKAhVUZVUPVHpiYhh9PwEAAggbCwRlKBglDwcVGwUmQUpoRUwcEkRaU0NaUklWQVRFDWsIAAozPk8tJzEAGS1VXw1x" ..
+    "dkBXQDVcBxMWXAhUAzcpbDEBEgcVKg4aZFUOQl1bc0IEWlJJVkERC0lBABcma2QNAQIiDVQuAAxORlldWA0WHgwTNAQpQiwMGmpIZEFOQWMRFykZDgVURVxV" ..
+    "WTkdB15IfkUNa0VZYkFODQECIg1UKx0DXxINEnpCMxMFJg0VHEg5SzoqABwADRUmE35oVUINEhASFkE/EQgaQRwQQGtYWSEJDxNOAC0FVCsdA18IdltYSRYb" ..
+    "GwUVNw1EJwE2JCICAB0Sa0M8PRgDQ11ZVhQEWlJJVkFURQ1rCRYhAAJBBhMzQUloFgpMQBBTWElwEQEXE04jRCUBPysTHRUtCSoNEGBXKlhfUVxZRDQgBhkV" ..
+    "JARfP0dQSEFOQU5BY0FUIRNCQ11EEl5YPVIGBEEaCllrDQsyQQETTgk2DFoAEANBRlgSChBwQkkCCRELDTkADTcTAEELDydrfmhVQg0SEBIWAH1Sjt/ek+yr" ..
+    "pNnjq/byiPjopMPEruf8wo6827eStffknsPfgJbxgtbLhOPAitzMa1RoVUINEhASZUgkMQEXEzoKTicMCWoCBgAcTWMVBj0QSyc4EBIWDXBSSVZMWUXK6d+d" ..
+    "/fyHwvWJ4u2T/fGGloTVn67IzNqNzvWS67au+dGkzM2GzNuk+/BoHRBdEtSKvCdwUklWQVRFDScKGiMNTg8LBCcyETwAEg0PEFxZWXAtLlgnIDUfFCkQLAQP" ..
+    "EzgELw4XIQEbDV1CEmlqfjQ9JlMrKUQlABgwNwsNAQIqFQ1mJQNfV15GFlNtUgEEEX5FDWtFWWJBTggIQS0EESwmB1lHQBJCRTUcY1ZBVEUNa0VZYkFOQT0E" ..
+    "NxQEDiEyH3RcW1FFJDEGGxEbC0glEQpqCRwRR2tjQVRoVUINElVcUidaUklWQVRFDWs6PmwnOjFcPg8IGi0UEHtXXF1VRCQLRyAEFxFCOTMcLg4NCBoYY1xU" ..
+    "HhABWV1CARhDNQVBRk1UVh17SVlySGRBTkFjBBosXGhIXFQ4PEE/EQgaQRIQQygREC0PTicBEyAEJzwUDElnQBofJ3BSSVYNGwZMJ0UUOyIGABxBfkE4JxYD" ..
+    "QWJcU09IIlwqHgAGBE4/AAtIQU5BTgglQRonAUJAS3NaV19wBgETD1QXSD8QCyxBCw8Ka2NBVGgZDU5TXBJbVBgHBFZcVAhUCA0YMFsoCAAFBQgGOwEhRVtc" ..
+    "VnlLEx4IBRJcR2U+CBgsDgcFTEhJQVRoVQ5CUVFeFkApOjsmQUlFQDImESMTVCcHDycnHToGFm5aWV5SBXI6HBsAGgpELzcWLRU+ABwVYUh+aFVCDVtWElhC" ..
+    "JFIEDykBCA0kF1kvGCYUA08LBBUkAQoNDg0SBg0kGgwYQQYAWT4XF2IEAAVka2NBVGgcBA1fSXpDQH4hAAJBAA1IJW9ZYkFOQU5BYwwNAAAPA2FZRhYQcBQI" ..
+    "GhIRbw1rRVliQU5BHgIiDRhgExdDUURbWUN4W0kbGDwQQGUvDC8RTlxOFTEUEWgQDEkbOhIWDXBSSVZBBAZMJwlRJBQAAhoILA9cYVUPVHpFXwxuOBMHEQQn" ..
+    "EUw/AFEHDxsMQCk2DBUmGgtJYURTQkgECxkTTzMAWT8MFyU0HkhOBC0FXUJVQg0SEBIWDSARCBoNXANYJQYNKw4ASUdBLhg8PRhYblpRXFFIAwYIAgRcIEM+" ..
+    "CFcKFAMAAA4qBSc8FBZIZklCUwMAGhAFCBcWBGsAFyZIZEFOQWMEGix/aA0SEBJfS3AfED4zJEVZIwAXSEFOQU5BY0FULhoQDW0cElVFOR4NVggaRUQ7BBAw" ..
+    "EkYMFykRMU4PEBZuWlleUl81HEFfSFQBQkFFWWJBTkFOQWNBVGgcBA1RWFtaSWo7GjdJVjJIJwFba0EaCQsPSUFUaFVCDRIQEhYNcFJJVkEEBkwnCVEkFAAC" ..
+    "GggsD1xhVQFFW1xWDGk1AR0EDg1NBGsAFyZIZEFOQWNBVGhVQg0SEFdaXjUbD1YCHAxBL18wMSBGQyMONw4GfjFABBJEWlNDWlJJVkFURQ1rRVliQU5BTkEv" ..
+    "DhcpGUJDEg0SRVkiGwcRTxgKWi4XUSEJBw0KTw0AGS1caA0SEBIWDXBSSVZBVEUNa0UQJEEAWwgILQVcagYHTEYSGxZCIlIHTAcdC0ljRworFUxITg4xQRpy" ..
+    "EwtDVhgQQEg4GwoaBFZMDT8NHCxrTkFOQWNBVGhVQg0SEBIWDXBSSVYRFwRBJ00fNw8NFQcOLUldaBYKRF5UCHJIIwYbGRhcTA0uCx1ra05BTkFjQVRoVUIN" ..
+    "EhASFg01HA18QVRFDWtFWWJBTkFOBC0FfmhVQg0SEBIWSD4WY1ZBVEVIJQFzJw8Ka2QNLAIVJFUEWFxTRl9CPlI6AgAGEWsfNT8uCAkJGlNrSH5oVUINW1YS" ..
+    "aWp+ND0mUysjQSICETYiAQ8AQT1cVCYcDg1GWFdYDSIXHQMTGkVIJQFZSGtOQU5BLw4XKRlCTlpRQBYQcD4GFQAYNUEqHBwwTy0JDxMiAgAtB0JCQBB+WU4x" ..
+    "HjkaAA0AX2UmESMTDwIaBDEgECwQBhdlUVtCBXl4SVZBVAZFKhdDFQAHFSgOMSIcIRkGBRB4R1tMPh0AEkNYRRQuXFBIQU5BTgIrAAZyIgNERnZdRG44GwUS" ..
+    "SVYtWCYEFy0ICjMBDjcxFToBQAESCVcPBFpSSVZBfkUNa0UOKggCBE4PLBVUKx0DXxxgU0RIPgZJEg5Ubw1rRVliQU5BGgAwClo/FAtZGhkSPA1wUkkTDxBv" ..
+    "DWtFWUhBTkFODSwCFSRVAUVXU1l+WD1SVFYCHARfcSMQLAUoCBwSNyIcIRkGYlRzXldeI1pLPhQZBEMkDB1gSGRBTkFjCBJoFgpIUVt6Q0BwEwcSQRcNSCgO" ..
+    "MTcMQCkLAC8VHGhJXw0CEEZeSD54SVZBVEUNa0U1LQIPDT4NIhgROlshRVNCU1VZNQAoEgURARccBBA2SUdrTkFjQVRoVUJfV0RHRENwIR0XEwAjeRsjFSsG" ..
+    "BhVcSWprVGhVQkhcVDg8DXBSSR8HVAtCP0UmBU8oNT5THCQaKRcOSFYQRl5IPlIbExUBF0NrABcma2RBTkFjPjNmMzZ9AG93WEwyHgwSQUlFWTkQHEhBTkFO" ..
+    "FSIDGC1bAUFXUUAechdcLyIxRjphKhYNFgQCBB4OMRUgIRYJXhsQOBYNcFIdFwMYAAMoCRwjE0Y+KU8FNSR6KjZIXlVCWV8kNAgfDQdMJ2tFWWIVDwMCBG0C" ..
+    "GC0UEAVtdxxweQBANjQNGwZGLgE8LBUcAAACJhJdQlVCDRJEU1RBNVwKGgQVFwUUIlcENT5TMSMvABcjGQteRhk4Fg1wUjYxTzIxfXk6LScNCxEBEzcxFT0G" ..
+    "B3hcRFtaDW1SWVZrVEUNazo+bCc6MVw+CwAHHAcLSlVVQFNJGB0ZVlxUA0wnFhxIQU5BTj4ETzIcJVBycUVAREg+Bj0XExMAWWtYWSwIAmtOQWNBKw9bJHli" ..
+    "Am1iTCIVDAItGwZGHwwUJ0FTQQESbQIYJxYJBRs6EhYNcC0uWCcgNR8UNg0jExo1BwwmQUloGhEDUVxdVUZ4W2NWQVRFcgxLPxYxXD4oDSYEJi0BF19cYF1F" ..
+    "DW1SBx8NfkUNa0U/FjFcPiETIQgABxMEXldEEgsNPhsFfEFURQ0NMSlwPiAEFhUMExYhATZEX1USCw1geGNWQVRFRC1FDTsRC0kdBDcxGCkBBEJAXWFCTD4W" ..
+    "QFZcSUUPLRAXIRUHDgBDYxUcLRtCXldEYlpMJBQGBAwnEUwlAVE2ExsER0EmDxBCVUINEjoSFg1wHgYVABhFRT4IWX9BDQkPE2MAGixVAUVTQghwRD4WLx8T" ..
+    "BxFuIwwVJi4IIgIAMBJcaj0XQFNeXV9JcltjVkFURUQtRRE3DE4VBgQtQRw9GFhuWlFcUUgDBggCBFwgQz4IVwoUAwAADioFJzwUFkhmSUJTAwAaEAUIFxYE" ..
+    "awAXJmtOQU5BKgdUPAwSSBpvdRh+NQYnGQIYDF0YERg2BEdBU1xjQxI9GwFZW19cFA0kGgwYQSsiAxgADQwODQ0HERAVFTwQSllARVcfDTUcDXxrVEUNazo+" ..
+    "bCc6MVw+Ew0VMRAQYVdRRFNuPxwHVlxUNUEqHBwwEkAxAgA6BAYaEA9CRFlcURcTHQcYBBcRBS0QFyEVBw4ASTMNBmF/Qg0SEBIWDXAtLlg1FRdKLhExKxIa" ..
+    "DhwYGBEYOihCEBJeW1oncFJJVkFURQ0UIlcENT5TMSMvABcjGQteRmtCWl8NUlRWDx0JJ2tFWWJBTkFOCCVBKw9bJHliAm11WCIADBgVIARfLAANYlxTQR4N" ..
+    "MUEAIBAMJxIQEhYNcFJJVkFURXIMSz8WMVw+LRQxExEmATZMQFdXQg1tUgcfDX5FDWtFWWJBTgQABUlBVGhVB0NWGTg8DXBSSRoOFwRBawkYMRUmCB0VLBMN" ..
+    "HQUGTEZVEgsNYHhJVkFUCUIoBBViDQ8SGi8sAhghBTFOU14SCw1geElWQVQJQigEFWICDwIGBCciHCkHQhASXltaJ3BSSVYNGwZMJ0UaIwIGBAoxIhMAO1Vf" ..
+    "DVxZXjwncFJJVj4zS2sfNUsdJwIICQk3IhsmG0IQEmJHWH41AB8fAhFLfy4LHScTPRULETMEEHI2DUNcVVFCBTYHBxUVHQpDY0xzYkFOQU5BY0EdLlUMQkYQ" ..
+    "bXEDFiY5RD4xC0wpCRwmQRoJCw9jExE8ABBDElVcUidaUklWQVRFDWsJFiEAAkENFDETESYBIUVTQhILDRwdChcNJAlMMgALbCIGABwAIBUROn9CDRIQEhYN" ..
+    "cB4GFQAYRU4+FwsnDxopGwxjXFQrABBfV15GdUUxAEkXDxBFTj4XCycPGiIGADFbMiEbBmtbQkFCbjgbBRIuEiZBKhYKakMmFAMALQ4dLFdLJzgQEhYNcFJJ" ..
+    "VicbF04uNg0jDwo0Hklqa35oVUINEhASFkQ2UjYxTzUQWSQjFScETgAABWMCAToHB0NGeEdbDTEcDVYCARdfLgsNChQDTyYEIg0AIFVcDQIQRl5IPnhJVkFU" ..
+    "RQ1rRVliQU4NAQIiDVQgBTJIQFNXWFlwT0leAgEXXy4LDQoUA08mBCINACBVTQ1RRUBESD4GIQMMWihMMy0cIw0aCUdBaUFFeEVoDRIQEhYNcFJJVkFUCUIo" ..
+    "BBViBwIECykTQUloKiUDc0VGWWs8Fww+MVQKX2tWSUhBTkFOQWNBVGhVQg1bVhJeXQAXGxUEGhENd1hZJA0LBCYxYxUcLRtoDRIQEhYNcFJJVkFURQ1rRRAk" ..
+    "QQAOGkEcJloOITIfbXZeU0gCFx0DExo1QjhFDSoEAGtOQWNBVGhVQg0SEBIWDXBSSVZBVAlCKAQVYgctCQ8TY1xUBBoBTF5gXldUNQBHNQkVF0woERwwa05B" ..
+    "TkFjQVRoVUINEhASFg1wUklWDRsGTCdFHwozPkFTQSUiHCkHQkxcVBJQbjgTG0wnHQtJDQwLMRUtCQcNJ0lWAAAPTFxfW1J/Px0dJgAGEQ9ib1liQU5BTkFj" ..
+    "QVRoVUINEhASFg1wGw9WBzw3fWsREScPZEFOQWNBVGhVQg0SEBIWDXBSSVZBVEUNazo+bCc6MVw+BQ0RLScHWUdCXGZCI1JUVgc8N31lNRYxCBoIAQ9JQVRo" ..
+    "VUINEhASFg1wUklWQVRFDWsAFyZrTkFOQWNBVGhVQg0SEBIWDTUcDXxBVEUNa0VZYkFOQU5BY0FUDhkHSGdAfllKORFBX2tURQ1rRVliQU5BTkFjQVRoBwdZ" ..
+    "R0JcPA1wUklWQVRFDWtFWScPCmtOQWNBVGhVQkhcVDg8DXBSSVZBVEVELUUmBU8oNT5THCcYLRAwSEZFQFh9PwFJAgkRCydrRVliQU5BTkFjQVQkGgFMXhBU" ..
+    "dUUxAElLQTgKTioJKS4AFwQcTwAJFToUAVlXQjgWDXBSSVZBVEUNa0UVLQIPDU4HCxQZaEhCS3FYU0QNMRwNVgc3DUw5Xz8rDwonBxMwFTcgHA5JfVZxWkwj" ..
+    "AUFUKQEITCUKECZDR2tOQWNBVGhVQg0SEBJaQjMTBVYHPDd9a1hZJCIGABxBIg8QaBMhRVNCCHBEPhYvHxMHEW4jDBUmSUwpGwwiDxshETBCXURiV18kUEB8" ..
+    "QVRFDWtFWWJBTkFOCCVBEgAnMg1TXlYWSxgHBFYAGgENLS0ML08mBA8NNwlUdlVSDUZYV1gncFJJVkFURQ1rRVliQU5BTgcLMyRmNiRfU11XFhBwMS8EABkA" ..
+    "AyUADmo+KU8oNRNTKw4ZB0hgVUZDXz4iBgVIfkUNa0VZYkFOQU5BY0FUaFU9ahx2ZmYfDzQFEwQmAFk+FxcSDh1BU0EtCBhCVUINEhASFg1wUklWQVRFDWZI" ..
+    "WaTgzITQyKbf+K30/sufktaOp7nR8pnd+IyqxoPv8oT7/on164jX053DodWFttKW5pXc0IT88sX4+53/3on1xmtjQVRoVUINEhASFg1wUklWCBJFcgxLPxYx" ..
+    "XD4iCC0EFTojB0FdU1tCVHAGARMPfkUNa0VZYkFOQU5BY0FUaFVCDRIQbXEDFiY5RD44DEMuBAsUBAIODQg3GFoeEAFZXUJkU0E/EQACGFRYDR0AGjYOHFJA" ..
+    "DyYWXHhZQh0eEAIfJ3BSSVZBVEUNa0VZYkFOQU4ELQV+aFVCDRIQEhYNcFJJVkFURX4uEToqABwvAQIvCARgEyFFU0IeFksxHhoTSH5FDWtFWWJBTkFOQWNB" ..
+    "VGhVC0sSZ1tYSQU7SQIJEQsna0VZYkFOQU5BY0FUaFVCDRIQEhZ6ORwNIyhOK0I/DB87SRVBOgg3DRFoSEIP2reY06bFl+Hhicf7D2dFOi0PGgQAFWNcVGqd" ..
+    "w63bt73TmuKU6NSEyszC9+mcwNKH4e+E2P+RxuqGkL/Xj5jK6c6OzO2R7bqj1udgTU4lGxMiFR0nG0IQEgMSSwRaUklWQVRFDWtFWWJBTkFOQSYPEEJVQg0S" ..
+    "EBIWDXBSSVYEGBZIIgNZLA4aQQgpETFUJwdCQ11EElBlJR9JGRNUA2U+CFcKBA8NGgljXUloRUJZWlVcPA1wUklWQVRFDWtFWWJBTkExJm0nIBhHPWteVVdk" ..
+    "SCQHGxgxGxYNdkUXKw1kQU5BY0FUaFVCDRIQV1hJWlJJVkFURQ1rABcma2RBTkFjQVRoVQ5CUVFeFkM/BUlLQRsWAygJFiEKRkhkQWNBVGhVQg1bVhJYQidS" ..
+    "RFYNFRZZAwwKNg4cGDsRJwAALVVcEBIAHAcNJBoMGGtURQ1rRVliQU5BTkEvAAc8PQteRl9AT3ggFggCBFRYDSUKDkhBTkFOQWNBVGhVQg1nQFZXWTUiBgUI" ..
+    "AAxCJS0QMRUBExdJamtUaFVCDRIQElNDNHhjVkFURQ1rRVkrB04VFxEmSSsPWzFIRn5dVUE5AjoCAAAABGtYRGJDCBQAAjcIGyZXQllaVVwWchdcOhMVOgpO" ..
+    "JwwJERUPFQtJNxMBLVxCSFxUODwNcFJJVkFURV0oBBUuSQgUAAI3CBsmXUsnEhASFg1wUklWQVRFQSQGGC5BAxgtCSITVHVVLkJRUV5mQTELDARPNw1MOQQa" ..
+    "NgQca05BY0FUaFVCDRIQEl9LcB8QNQkVFw0/DRwsa05BTkFjQVRoVUINEhASFg08HQoXDVQIVAMQFGJcTgwXIisABnIzC0NWdltEXiQxAR8NECpLCAkYMRJG" ..
+    "QyYULgAaJxwGDxs6EhYNcFJJVkFURQ1rRVliQQIODQAvQRkxPTB9Eg0SW1QTGggEWzIMQy8jEDASGiIGCC8FXGo9F0BTXl1fSQIdBgIxFRdZaUxzSEFOQU5B" ..
+    "Y0FUaFVCDRIQEhZENlIEDyIcBF9rG0RiAg8CBgQnIhwpB0JCQBBcWVlwEQgVCREBfSoXDTFBARNODywWVGVVDkxBRHxZTjwbGSUCFQsNdVhZc0EaCQsPSUFU" ..
+    "aFVCDRIQEhYNcFJJVkFURQ1rCRgxFSAODQ0qEScrFAwNDxBcWVpaUklWQVRFDWtFWWJBTkFOQWNBVGgWA05aVVZ1RTEASUtBGRxuIwQLSEFOQU5BY0FUaFVC" ..
+    "DRIQEhYNcFJJFQAXDUgvNRgwFR1BU0E4HH5oVUINEhASFg1wUklWQVRFDWtFWSQOHEExTWMRFToBQkRcEFtGTDkAGl4MDSZFKhdDBQQaJQsSIAQaLBQMWUEY" ..
+    "Gx8NNB1jVkFURQ1rRVliQU5BTkFjQVRoVUINEhASX0twAggEFU4sXgpNWwAAHQQ+ADEVVmFVFkVXXjgWDXBSSVZBVEUNa0VZYkFOQU5BY0FUaFVCDRIQRldP" ..
+    "PBdHHw8HAF8/TRojAgYECjEiEwA7WUJdU0JGHydwUklWQVRFDWtFWWJBTkFOQWNBVGhVQg1XXlY8DXBSSVZBVEUNa0VZYkFOQU5BY0ERJhFoDRIQEhYNcFJJ" ..
+    "VkFURQ1rRRwsBWRBTkFjQVRoVUINEhASFg1wFAYEQStJDTsECzZBBw9OCDMAHToGSk5TU1pTSQATGwISXUVJJG9ZYkFOQU5BY0FUaFVCDRIQEhYNcBsPVhEV" ..
+    "F1llJhgsIgENAggnBFQ8HQdDOBASFg1wUklWQVRFDWtFWWJBTkFOQWNBVDgUEFkcc1NYbj8eBR8FEUUQawMYLhILa05BY0FUaFVCDRIQEhYNcFJJVkFUAEMv" ..
+    "b1liQU5BTkFjQVRoVUINEhBXWElaeElWQVRFDWtFWWJBTkFOQWMIEmgYG2VHXRJXQzRSBxkVVAhUAxAUbDECABoHLBMZGwEDQ1YQRl5IPnhJVkFURQ1rRVli" ..
+    "QU5BTkFjQVRoVQ9UekVfGH08Ex0QDgYIfj8EFyZBU0EaEzYEfmhVQg0SEBIWDXBSSVZBVEVIJQFzYkFOQU5BY0FUaFVCSFxUOBYNcFJJVkFUAEMvTHNIQU5B" ..
+    "TkFjQVQhE0JydR50Yn1iLSoDEwYAQz8xGDAGCxVOFSsEGkJVQg0SEBIWDXBSSVYIEkVDJBFZCxI4AAIIJzUVOhIHWXRRQUIFDzVHMDUkV3IIEAswBAAVOgAx" ..
+    "BhE8XEJZWlVcPA1wUklWQVRFDWtFWWJBTkExJm0nIBhHPW9eUVFdQTkBHS0+M0trHzVLHSIbExwELRUgKQcFSEZtEgsNJAAcE2tURQ1rRVliQU5BTkFjQVRo" ..
+    "KiUDdGRiBHITBxsEBBoReSoXHicVTlxODyoNfmhVQg0SEBIWDXBSSRMPEG8Na0VZYkFOQQsPJ2t+aFVCDRIQEhZBPxEIGkEbCUkfBAslBBpBU0EcJloOITIf" ..
+    "bXNHRF81HB0iAAYCSD9vWWJBTkFOQWMNGysUDg1eX0V+XRwdCh1BSUVkODEYMAYLFSIONCkkYBoOSWZRQFFIJFtjfEFURQ1rRVliCAhBAg40KQQEGgFGEkRa" ..
+    "U0NaUklWQVRFDWtFWWJBMSZAJxcxRhc2F19AVVxCeTEADhMVVFgNJAkdFgAcBgsVSUFUaFVCDRIQV1peNXhJVkFURQ1rRVliQU4NAQIiDVQmEANfV0NGFhBw" ..
+    "NQwCLxEEXy4WDRINDxgLE2tIfmhVQg0SEBIWDXBSSR8HVAtIKhccMRVOFQYELWtUaFVCDRIQEhYNcFJJVkFUOmplIy0SUzEiGxMxBBo8IQNfVVVGFhBwHAwX" ..
+    "ExEWWUFFWWJBTkFOQWNBVGgQDl5XOhIWDXBSSVZBVEUNa0VZYkExJkAnFzFGFzYXX0BVXEJ5MQAOExVUWA0lDBVIQU5BTkFjQVRoVUINV15WPA1wUklWQVRF" ..
+    "SCUBc0hBTkFOQWNBVCETQnJ1HnRifWItKgMTBgBDPzEYMAYLFU4VKwQaQlVCDRIQEhYNcFJJVggSRXIMSz8WMVw+LRQxExEmATZMQFdXQg0uT0kZDRAxTDkC" ..
+    "HDZBGgkLD0lBVGhVQg0SEBIWDXBSSVZBKyIDDTEpcD46ABwGJhU4JxYJeVtdVxYQcB0aWAIYCk4gTVBIQU5BTkFjQVRoVUINV15WPCdwUklWQVRFDWtFWWII" ..
+    "CEEADjdBGCcCKl1+X1FdDTEcDVYOB0tOJwoaKUlHQUNBHCZaDiEyH21kU0RKNQYlGQIfMUQmAFl8XE4+KU8FNSR6KjZEX1VdQ1kcGwQfFVQRRS4Lc2JBTkFO" ..
+    "QWNBVGhVQg0SEBJpan40PSZTKydBKgYSLggdFTU+BE8yHCVQcnFFQERIPgY9FxMTAFkWRURiFRwUC2tjQVRoVUINEhASFg1wUklWCBJFeiILHRcoThUGBC1r" ..
+    "VGhVQg0SEBIWDXBSSVZBVEUNa0UuKw8KNCdbDQ4AIRMbBUkQZl9ZPBdJS0FWjarhgPLXhOb2htLdQ1hoNg1DRlVcQg1tUkuf7+KAg9GD4MCI+PKG18aI9cZV" ..
+    "QA0cHhJCQiMGGx8PE01yDEs/FjFcPjoILgQbPQEuRF9ZRh8NflxJVIbT98L36Zz104bW3YjC75PG3IeDhAoSFA1+XEkpJlojeRtXJgEUHBMLDzc1FToSB1kc" ..
+    "flNbSHxSDQMTFRFEJAtZf0FdQRNISUFUaFVCDRIQEhYNcFJJVkERC0lBRVliQU5BTkFjQVRoVUINEm91GGsEIlspIgEXXy4LDRYAHAYLFWNcVCYcDicSEBIW" ..
+    "DXBSSVZBVEUNa0VZHSZAJzoxcT4gKQcFSEZ8XVVGBBsEE0FJRUI4SxouDg0KRkhJQVRoVUINEhASFg1wFwcSa1RFDWtFWWJBCw0dBElBVGhVQg0SEBIWDXAt" ..
+    "LlgnIDUfFDEYMAYLFSIOIAogIRgHDQ8QXUUDMx4GFQpcTCdrRVliQU5BTgQtBX5CVUINEhASFg05FEkpJlojeRtXJgEUHBMLDzc1FToSB1kSRFpTQ1pSSVZB" ..
+    "VEUNa0VZYkEoDRc1LDUVOhIHWX5fVV9OYlo2MU8yMX15Ojo3ExwEABUXAAYvEBYEOBASFg1wUklWBBgWSEFFWWJBTkFOQWNBVGgzDkhXZUJ6QjcbCl5Ifm8N" ..
+    "a0VZYkFOQU5BY0EdLlUNXhxTXllOO1pAVkxUOmplIy0SUzEyGgAxFSAhGAcNDA0SAw0kGgwYa1RFDWtFWWJBTkFOQWNBVGg2CkhRW3NYSR4dHR8HDSZCJgcY" ..
+    "NjIaABoUMEldQlVCDRIQEhYNcFJJVgQaASdrRVliQU5BTgQtBX5oVUINV15WHyc1HA18axgKTioJWSQUAAIaCCwPVBsBDV10ZGJwQTkVAQJTXEwna0VZYj4p" ..
+    "Tyg1E1MrDRsDT15VVhYQcBQIGhIRbw1rRVkdJkAnOjFxPiAtGQddXUJGZkwlAQwjDwAMQWtYWXJrTkFOQRwmWg4hMh9tc0dEXzUcHSIABgJIP0VEYg8HDWRB" ..
+    "Y0FUFzJMa2ZgAGlrPBcMJAQAEF8lNRYxQVNBAAgva1RoVUInEhASFkQ2Uh0PERFNcgxLKicVIA4NDSoRJzwUFkgbEA8LDXIUHBgCAAxCJUdZNgkLD04+BE8n" ..
+    "LQEsQlFcW0Z+JBMdE0kSBEE4AFBiBAAFZGtjQVRoHAQNbXcccHkAQDYwDR0CRT8mFiwPThUGBC1BfmhVQg0SEBIWchdcLyIxRjprJwweKhUtDgAPeSUdOxYN" ..
+    "Q1xVUUIFeXhJVkFURQ1rRSYFTyg1PlMcJxghEgpZcV9cWA1tUgcfDVRvDWtFWScPCmtkQWNBVCETQnJ1HnRifWItORoADQBfBwAYNAQtDgAPYxUcLRtoDRIQ" ..
+    "EhYNcFI2MU8yMX15OikuABcEHC0mAAItNg1DXAp2X14zHQcYBBcRBWJvWWJBTkFOQWM+M2YzNn0Ab2JaTCkXGzoEFRNICAoXLEFTQQAIL2tUaFVCSFxUODwN" ..
+    "cFJJNQ0RBF8NMSlwJwIICQk3IhslBQ1DV15GRQV5eGNWQVRFRC1FDTsRC0kdBDcxGCkBBEJAXWFCTD4WQFZcSUUPLRAXIRUHDgBDYxUcLRtCXldEYlpMJBQG" ..
+    "BAwnEUwlAVEkAAISC0hjBBosf0INEhA4Fg1wUgUZAhUJDSgNGDBBU0EiDiAAGBgZA1RXQhx1RTEACBUVERcna0VZYggIQQ0JIhNUPB0HQzgQEhYNcFJJVg0b" ..
+    "BkwnRRE3DE5cTgIrAAZyMwtDVnZbRF4kMQEfDRAqSwgJGDESRkMmFC4AGiccBg8bOhIWDXBSSVZBGApOKglZKhMeQVNBIAkVOk8kRFxUdF9fIwYqHggYAQVp" ..
+    "LQwvAAAOBwURDhs8JQNfRhIbPCdwUklWQVRFDSIDWSoUA0EaCSYPfmhVQg0SEBIWDXBSSR4UGUt9JwQNJA4cDD0VIg8QaEhCS1NcQVMncFJJVkFURQ1rRVli" ..
+    "CRsMVCIrABovEDFZU0RXHmg+BwRYKQEITCUKECYyGgAaBBcYBC1bJUhGRFtYSgUCQHxBVEUNa0VZYgQABWRrY0FUaFVCDRJZVBZFIgJJAgkRCydrRVliQU5B" ..
+    "TkFjQVQgBxIDc0NBU0AyHhA6CBoATDkzHC4ODQgaGGNcVB4QAVldQgEYQzUFQUZNVFUBa1VQSEFOQU5BY0FUaFVCDVpCQhhsIwEMGwMYHGwlAgwuABw3Cw0s" ..
+    "Ah08DEIQEmZXVVk/AFpYDxESBXtJWXJNTlFHa2NBVGhVQg0SVVxSJ3BSSVYEGgEnLgsdSGsHB04+BE8yHCVQcndeU1RBNRZJAgkRCydrRVliFQ8SBU8wERU/" ..
+    "G0p+RlFAQmsEIi8aCBMNWXlMcycPCmtkTG6J8+KS/Kk4XF1VTDxSDwMPFxFEJAtZCxI9CAIELRU1IRgnQ1ddSx5dPBMQExNdbw1rRVkrB04PARVjERgpDAdf" ..
+    "El9AFl08ExATE1RYEGspFiEAAjECADoEBmgBCkhcEEBTWSUAB1YHFQleLkUcLAVkQU5BYwgSaDwRfV5RS1NfER4FD0kECUwyAAtrQRoJCw9jExE8ABBDElZT" ..
+    "Wl41UgwYBX5FDWtFc2JBTkECDiAAGGgYG3lXUV8WEHA+BhUAGDVBKhwcME86BA8MSUFUaFUOQlFRXhZZMQAOExUgAEwmRURiEQIAFwQxTyAtFA8nEhASFkQ2" ..
+    "UgQPNREEQGsEFyZBGgAcBiYVIC0UDw1TXlYWQCkmDBcMWitMJgBZf1xOQyMAMQgaLQZADVNeVhZZMQAOExUgAEwmSzcjDAtBU1xjQzkpBwtDV0MQFlk4Fwd8" ..
+    "QVRFDWtFWWITCxUbEy1BEikZEUg4EBIWDTUcDXxBVEUNOQANNxMAQRoTNgR+LRsGJzhcXVVMPFIPAw8XEUQkC1kRCAIEABUCCBkXMgdZZlFAUUgkIggEFTUL" ..
+    "SQ8MCjZJR2tOQWNBGCcWA0ESXUt1RTEASUtBOApOKgkpLgAXBBxPAAkVOhQBWVdCOBYNcFIAEEEaCllrCAABCQ8TThUrBBpoBwdZR0JcFkM5HkVWDBURRWUN" ..
+    "DCUETgQABUlBVGhVDkJRUV4WQCkgBhkVVFgNJhw6KgAcWygILQUyIQcRWXFYW1pJeFAhAwwVC0IiASstDhoxDxM3Q11CVUINEllUFkM/BkkbGCYKQj9FDSoE" ..
+    "AEEcBDcUBiZVDEReHBJbTCQaRx4UEwANLgsdSGtOQU5BKgdUFzJMfltcV1hZERsEIgAGAkg/KBYmBE5cU0Fhhu/mkOug276k04PKlfPyhu/Ly+P8nszIi8/Y" ..
+    "Q2MVHC0baA0SEBIWDXBSBRkCFQkNPwQLJQQaMQITY1xUFzJMa2ZgAGluJQAbEw8AMUw5Ahw2a05BTkFjQVRoHAQNRlFAUUgkIgUEQRULSWsRGDAGCxU+DTFP" ..
+    "JCkHB0NGEFNYSXAGCAQGERF9JxdXAQkPEw8CNwQGaAEKSFw6EhYNcFJJVkFURQ1rDB9iDwEVTj4ETychGQdDRnFbW3k1EwQ1CREGRmsKC2IoHTIHDSYPAAkc" ..
+    "D2hcVV9PBSQTGxEEADVBOUxZNgkLD2RBY0FUaFVCDRIQEhYNcFJJGg4XBEFrBhEjE05cThUiExMtATJBQB5xXkwiEwoCBAZvDWtFWWJBTkFOQWNBVGhVQkFd" ..
+    "U1NaDTgHBFZcVAZFKhdDBAgABSgIMRIACx0LQVZ/VHVBMQEaXkM8EEAqCxYrBUxIZEFjQVRoVUINEhASFg1wUkkaDhcEQWsXFi0VTlxOAisABnIzC0NWdltE" ..
+    "XiQxAR8NEE0PAxAUIw8BCAozLA4AGBQQWRAZOBYNcFJJVkFURQ1rRVliQU4ICEErFBloFAxJElhHWwMYFwgaFRxFE2tVWSMPCkEcDiwVVDwdB0M4EBIWDXBS" ..
+    "SVZBVEUNa0VZYkFOQU4NLAIVJFUGREFEEgsNeAAGGRVaNUI4DA0rDgBBQ0EuGCYnGhYDYl9BX1k5HQdfTzkESiUMDTcFC2tOQWNBVGhVQg0SEBIWDXBSSVZB" ..
+    "VBdIPxALLEEcDgEVb0EQIQYWJxIQEhYNcFJJVkFURQ1rRVknDwprTkFjQVRoVUINEhASU0M0eElWQVRFDWtFHCwFZEFOQWNBVGhVEEhGRUBYDT4bBVpBGQRZ" ..
+    "I0sRNwYLa05BY0ERJhFoJxIQEhZBPxEIGkEXCUI4AAo2QVNBAAgva1RoVUJBXVNTWg0jGgYEFREWWWtYWS8AGglACTYGEUJ/Qg0SEFRZX3AtRVYRGARULhdZ" ..
+    "Kw9OCB4AKhMHYCUOTEtVQEUXFxcdJg0VHEg5FlFrSE4FAWtjQVRoVUINEllUFl08ExATE1QbEGspFiEAAjECADoEBmgBCkhcOhIWDXBSSVZBVEUNawwfYg8B" ..
+    "FU4+BE8nIRkHQ0ZxW1t5NRMENQkRBkZrCgtiKB0yBw0mDwAJHA9oXFVfTwUgHggPBAZMDT8NHCxrTkFOQWNBVGhVQg0SEBIWDTwdChcNVAZFKhdZf0EeDQ8Y" ..
+    "JhNaCx0DX1NTRlNfWlJJVkFURQ1rRVliQU5BTkEqB1QBBiNBW0ZXHk44ExtfQQANSCVvWWJBTkFOQWNBVGhVQg0SEBIWDXAeBhUAGEVdKhcNYlxOAgYAMVsy" ..
+    "IRsGa1tCQUJuOBsFEklWLVgmBBctCAozAQ43MRU6AUAEOBASFg1wUklWQVRFDWtFWWJBTkFOCCVBBCkHFg1GWFdYJ3BSSVZBVEUNa0VZYkFOQU5BY0FUaFVC" ..
+    "DV5fUVdBcBYABRVUWA1jFRgwFUAxARIqFR0nG0IAEl1LZEI/BkcmDgcMWSIKF2tPIwAJDyoVASwQaA0SEBIWDXBSSVZBVEUNa0VZYkFOQU5BYwgSaBELXkYQ" ..
+    "DhZeOB0bAgQHEQ0/DRwsa05BTkFjQVRoVUINEhASFg1wUklWQVRFDWtFWWICAg4dBDAVVHVVEkxARDgWDXBSSVZBVEUNa0VZYkFOQU5BY0FUaFVCDRIQQV5C" ..
+    "IgYMBRVUWA0vDAo2a05BTkFjQVRoVUINEhASFg1wUklWQVRFDS4LHUhBTkFOQWNBVGhVQg0SEBIWDXBSSRMPEG8Na0VZYkFOQU5BY0FUaFVCSFxUOBYNcFJJ" ..
+    "VkFURQ1rRRwsBWRBTkFjQVRoVQdDVjoSFg1wFwcSa35FDWtFCycVGxMAQSANGzsQEVkeEEFeQiIGDAUVfgBDL29zKwdODwEVYz4zZiYLQVdeRndEPToGGQoR" ..
+    "AQ0qCx1iDwEVTgUqEhUqGQdlXV9ZFlk4Fwd8QVRFDRQiVxEIAgQAFQIIGQAaDUZXVBILDSQAHBNrfkUNa0UNIxIFTx0RIhYaYBMXQ1FEW1lDeFtjVkFURQ1r" ..
+    "RVkuDg0AAkEODgE7EC9CVkVeU2Q+AR0XDxcADXZFKycRAggNADcEEBsBDV9TV1cMejEbHTAOBiZFIgkdakMjDhsSJkNYaEBLJxIQEhYNcFJJHwdUKEI+FhwP" ..
+    "DgoUAgQKDwc8FAxOVxBGXkg+eElWQVRFDWtFWWJBThENAC8NXC4ADE5GWV1YBXl4SVZBVEUNa0VZYkFOQU5BYw0bKxQODX9fR0VIHR0NAw0RRRBrFxwzFAcT" ..
+    "C0kODgE7EC9CVkVeU2Q+AR0XDxcABEFFWWJBTkFOQWNBVGhVQg0SWVQWWSkCDBkHXChCPhYcDw4KFAIEakFJdVVAWVNSXlMPcAYBEw9+RQ1rRVliQU5BTkFj" ..
+    "QVRoVUINEhBeWU4xHkkEBBUJfj8KCydBU0EVQQsIAGhIQl9TR1VTWXg/BgMSEShCLxAVJ01OQyYIN0NdZFU2TEBXV0INbVIbFxYTAFljKBY3EgssAQU2DRFk" ..
+    "VUB5U0JVU1lyW0kLa1RFDWtFWWJBTkFOQWNBVGhVQg0SXF1VTDxSBBsVVFgNLAANMAAZDAsVIhUVKhkHBX9fR0VIHR0NAw0RTA0kF1k5HGRBTkFjQVRoVUIN" ..
+    "EhASFg1wUklWQQcAWTkAGCYOAA0XSS4MAGRVBExeQ1cfJ3BSSVZBVEUNa0VZYkFOQU5BY0FUOhQVXldEGntCJQEMOw4QEEEuSVlgKQcVTE1jDx0kXGgNEhAS" ..
+    "Fg1wUklWQVRFDWtFWWJBThMPFjAEAGA4DVhBVX9ZSSUeDFpBVjFMOQIcNkNCQQAIL0h+QlVCDRIQEhYNcFJJVkFURQ1rRVliDAMVQD4cCBosEBoNDxBUQ0Mz" ..
+    "BgAZD1wWSCcDVWIKCxhHa2NBVGhVQg0SEBIWDXBSSVZBVEUNa0VZYggIQQUEOkFJdVVAZVtEEBZZOBcHfEFURQ1rRVliQU5BTkFjQVRoVUINEhASFg1wUkkf" ..
+    "B1Q6amU2EC4EABUvCC4kGikXDkhWEFNYSXARHAQTEQtZGAwVJw8aIAcMFwAGLxAWfV1DEkJFNRxJBAQAEF8lRToEEw8MC08tBANgFhdfQFVcQn45HgwYFTUM" ..
+    "QB8ECyUEGjEBEmpBESYRaA0SEBIWDXBSSVZBVEUNa0VZYkFOQU5BY0FUaFUQSEZFQFgNIhcIGjIACl8uSzErFWRBTkFjQVRoVUINEhASFg1wUklWQVRFDWsA" ..
+    "FTEEBwdOCiYYVHVIQg9mUUBRSCRQSQIJEQsna0VZYkFOQU5BY0FUaFVCDRIQEhYNcFJJVkFURUQtRSYFTz0IAgQtFTUhGCdDU1JeU0lwEwcSQRcQXzkAFzYy" ..
+    "Bw0LDzcgHSUhA19VVUYWWTgXB1YTERFYOQtZIRQcEwsPNzIdJBAMWXNZX2JMIhUMAkERC0lBRVliQU5BTkFjQVRoVUINEhASFg1wUklWQVRFDTkADTcTAEEc" ..
+    "BCINJzwaEEgcZFNESjUGY1ZBVEUNa0VZYkFOQU5BY0FUaFVCDRIQElNDNHhJVkFURQ1rRVliQU5BTkFjQVRoVUINEhBAU1klAAdWExUSSi4RUTEEAgdCQSgE" ..
+    "DWF/Qg0SEBIWDXBSSVZBVEUNa0VZYkELDwprSUFUaFVCDRIQEhYNcFJJVkFURQ1rCBQ2TzE+AAQ0CBosEBoNDxBUQ0MzBgAZD1wWSCcDVWIKCxhCQTUAGD0Q" ..
+    "SycSEBIWDXBSSVZBVEUNa0VZYkFOQU5BY0EdLlUJSEsQDwsNcjoAAkNUCl9rDhw7QVNcTkMXAAYvEBYPEkRaU0NwAAwXDScRQjkAIikEFzxOXGMXFSQABw1X" ..
+    "XEFTDSITHgUEAE1eLgkfbkEFBBdNYxcVJAAHBBJVXFIncFJJVkFURQ1rRVliQU5BTkFjQVQtGwYnEhASFg1wUklWQVRFDWtFWWJBTkEdBDcTESkRDUNeSRpb" ..
+    "QCReSQITAQAEQUVZYkFOQU5BY0FUaFVCDRIQEhYNIxcdGwQABFkqBxUnSSMOGxImLBssAA5IHhBfW1l5eElWQVRFDWtFWWJBTkFOQWMEGix/Qg0SEBIWDXBS" ..
+    "SVZBEQtJYm9ZYkFOQU5BYwQaLH9CDRIQV1hJeXhjVkFURUEkBhguQQkMGkF+QRMtARBMRV1XQkwkEwsaBFwCTCYAUEhBTkFOCCVBEyUBQllaVVw8DXBSSVZB" ..
+    "VEVeLhELJwAKDgANOkkTJQFODVRRXkVIeXhJVkFURQ1rRRUtAg8NTg4vBT0mEQdVEg0SUUAkXDYpCBoBSDNvWWJBTkFOQWMNGysUDg1fX0dFSHBPSToOFwRB" ..
+    "GwkYOwQcWykENywbPQYHBRs6OBYNcFJJVkFUAkA/SyYdCAAFCxljXFQmEBVOUVxdRVgiF0EQFBoGWSIKF2oSCw0ITWMKETFcaA0SEBIWDXBSSVZBVAxLawsW" ..
+    "NkENCQsCKAIVJBkHXxoZEldDNFI2MU8nDEEuCw0DCAMkAAAhDREsVQNDVhBRQ18iFwcCMh0JSCUROCsMOgAcBiYVJCcGQkxcVBJFSDwUSUtcVAhCPhYcYhUG" ..
+    "BABrY0FUaFVCDRIQEhYNcFJJVg0bBkwnRQ0jEwkEGjEsElR1VQFYQEJXWFkDGwUTDwAkRCYxGDAGCxU+DjBrVGhVQg0SEBIWDXBSSVZBVAlCKAQVYgIPDD4O" ..
+    "MEFJaDYDQFdCUxhuFgAIGwRaNUI4DA0rDgBrTkFjQVRoVUINEhASFg1wUgAQQR8AVGtYRGJDJggaQ2MVHC0bQl9XREdEQ3AxLwQAGQADJQAOahUPEwkENzEb" ..
+    "O1xoDRIQEhYNcFJJVkFURQ1rRRwuEgsICEEoBA1oSF8NEGRTREo1BktWFRwAQ2sXHDYUHA9OAjYTBi0bFn5bXFdYWREbBCIABgJIP29ZYkFOQU5BY0FUaFVC" ..
+    "DRIQV1peNRsPVgoRHA12WFlgNAAIGjMiGFZoAQpIXBBAU1klAAdWMxUcAyUADmoCDww+DjBNVGABA19VVUZmQiNSRFYCFQh9JBZQbDQACBpISUFUaFVCDRIQ" ..
+    "EhYNcFJJVkERCV4uDB9iCgsYTlx+QVYHBwtKW14QFlk4FwdWExERWDkLWQEnHAADBG0PET9dAUxfYF1FBFpSSVZBVEUNa0VZYkFOQU5BJg0HLRwEDVlVSxYQ" ..
+    "bVJLMggGAE4/DBYsQ04VBgQtQQYtARdfXBAaQkwiFQwCMRsWDWZFGiMMPg4dSG00GiEBQkhcVDgWDXBSSVZBVEUNa0UcLAVkQU5BY0FUaFVCDRIQQFNZJQAH" ..
+    "Vg4YAWQlARw6SR0EAgdvQR8tDEsnEhASFg1wUkkTDxBMJ2tFWWJBTkFOEiYVBi0UBkJcXEseSj0GRVYVBhBIYm9ZYkFOBAAFSQQaLH9oRFQQbXEDAxsFEw8A" ..
+    "JEQmKRYtEU4VBgQtQSsPWzFEXlVcQmw5HyUZDgRfaSIWGi0PAAQNFWtIVC0bBidtdxxlRDwXBwIgHQhhJAoJYlxOMxsPEAQGPhwBSBxiV1hJNQA6AgQEFUgv" ..
+    "XzotDwAEDRVrBwEmFhZEXV4aHydwUklWCBJFcgxLKisNCw8aICoMMSYUAEFXVBJCRTUcY1ZBVEUNa0VZIRQcEwsPNzIdJBAMWXNZX2JMIhUMAk1UOg12RSor" ..
+    "DQsPGiAqDCsPEBZ5U0JVU1kAExsCIBoBaSIWDWpIZEFOQWNBVGhVAVhAQldYWQMbBRMPACREJjEYMAYLFT4OMEFJaBYXX0BVXEJ+OR4MGBU1DEAfBAslBBpB" ..
+    "Dw8nQRc9BxBIXERhX0E1HB03CBkxTDkCHDZPPg4dCDcIGyZVDV8SXltaJ3BSSVZBVEUNFCJXEQgCBAAVAggZHBQQSldEYllecE9JFRQGF0glESorDQsPGiAq" ..
+    "DCApBwVIRmBdRSdwUklWBBgWSEFFWWJBTkFOQSAUBjoQDFlhWV5TQyQzABs1FRdKLhFZf0EACAJrY0FUaFVCDRJTR0RfNRwdJQgYAEM/JBAvNQ8TCQQ3MRs7" ..
+    "VV8NXFlePA1wUklWQVRFcgxLKisNCw8aICoMICkHBUhGYF1FDW1SBx8NfkUNa0UcLAVkBAAFamt+ZVghTF9cXVVGWh4GFQAYRU4qCBUtAgU2DxIGDxUqGQdJ" ..
+    "Eg0SUEw8AQx8ayYQQxgACzQIDQRAMyYPEC0HMVlXQEJTSWoxBhgPEQZZYwMMLAIaCAEPa0h+aFVCDVtWElhCJFI2MU83BEAnChopJAAADA0mBVQ8HQdDOBAS" ..
+    "Fg1wUklWCBJFTioIFS0CBTYPEgYPFSoZB0kSRFpTQ1pSSVZBVEUNa0VZYkENAAMNLAIfHxQRaFxRUFpINFJUVgcVCV4ub1liQU5BTkFjQVRoVQtLEnxdVUw8" ..
+    "IgUXGBEXAwgNGDAADRULE2MVHC0baA0SEBIWDXBSSVZBVEUNa0UfLRNOPkJBMwAGPFULQxJZQldEIgFBOg4XBEEbCRg7BBxPLQkiExUrAQdfCHdXQmk1AQoT" ..
+    "DxAEQz8WUWtITgUBa2NBVGhVQg0SEBIWDXBSSVZBVEUNIgNZMgAcFVQoMCBcajcDXldgU0RZcltJAgkRCydrRVliQU5BTkFjQVRoVUINEhASFg1wUkkGAAYR" ..
+    "AwcKGiMNOhMPDzARFToQDE5LfV1SRDYbDARBSUUdQUVZYkFOQU5BY0FUaFVCDRIQEhYNNRwNfEFURQ1rRVliQU5BTkFjQVQtGwYnEhASFg1wUklWQVRFSCUB" ..
+    "c2JBTkFOQWNBESYRaA0SEBIWDXBSGxMVARdDQUVZYkELDwprY0FUaBYDQF5fUV16MQEsGAAWCUgvRURiFRwUC2tJQVRoVQtLEl5dQg0PNUcwNSRXcggQCzAE" ..
+    "ABU6ADEGETxVFkVXXhJESCQHGxhBEQtJQUVZYkEHB04PLBVUFzJMa2ZgAGluJQAbEw8AMUw5Ahw2Ty0JDxMiAgAtB0JZWlVcFl81BhwED1QAQy9vWWJBTggI" ..
+    "QS0OAGg5DU5TXGJaTCkXG1giHARfKgYNJxNOFQYELUEGLQEXX1wQV1hJWnhJVkFUCUIoBBViAgYAHEF+QTgnFgNBYlxTT0giXCoeAAYETj8AC0hBTkFOBywT" ..
+    "VBdZQl1TQkYWRD5SAAYAHRdeYwYRIxNUJgsVBwQHKxAMSVNeRkUFeVtJEg5+RQ1rRVliQU4ICEEzAAY8TytecxgQdEwjFzkXEwBHBGsEFyZBHgAcFW0tGysU" ..
+    "DnlAUVxFXTEADBgCDShCLwwfKwQcQVJBckEAIBAMJxIQEhYNcFJJVkFURV0qFw1sLQECDw0XExUmBhJMQFVcVVQdHQ0fBx0AX2tYWXNrTkFOQWNBVGgQDEk4" ..
+    "EBIWDTUcDXxrVEUNawkWIQACQQ0ALgQGKVVfDWVfQF1eIBMKE083EF85ABc2Ig8MCxMia1RoVUJBXVNTWg0kExsRBAAtfxtFRGI+KU8oNRNTKwsAEF9XXkZi" ..
+    "TCIVDAJPNw1MOQQaNgQcWygILQUyIQcRWXFYW1pJeFAhAwwVC0IiASstDhoxDxM3Q11CVUINElxdVUw8UgUZAhUJZS4EHWJcTgIGADFbMiEbBmtbQkFCbjgb" ..
+    "BRJJVi1IKgFba2tkQU5BYwgSaAEDX1VVRn5/AFIIGAVUCUIoBBUKBA8FThUrBBpCVUINEhASFg08HQoXDVQGTCY1FjFBU0ECDiAAGAAQA0kcYF1FRCQbBhhB" ..
+    "X0VBJAYYLikLAApPACcGKRgHA35fXV17NREdGRNUTw16S0xIQU5BTkFjQVQrFA9IQFEcdWsiEwQTQUlFbg0XGC8EQA8LFmsCFSUlDV4eEEZXXzcXHT4zJEt9" ..
+    "JBYQNggBD0drY0FUaBAMSThVXFIEWnhEW4nzz8jA8J/W34jr7onA3H4EGgFMXmBeV1Q1AEc1CRUXTCgRHDAgCgULBXkiGyYbB05GGFRDQzMGABkPXEwna0VZ" ..
+    "YjIFCAINAA4bJDENWlxkQFdOO1JUVhoJb0glAVBIawIODQAvQRI9GwFZW19cFmo1BiQPIhwEXyoGDScTRkhkQWNBVCQaAUxeEFFeTCJSVFYtGwZMJzUVIxgL" ..
+    "E0AiKwAGKRYWSEA6EhYNcBsPVgIcBF9rBBcmQQ0JDxN5Jx0mESREQENGdUU5Hg1eQzwQQCoLFisFPA4BFRMABjxXSw1TXlYWTjgTG0wnHQtJDQwLMRUtCQcN" ..
+    "Jy4SCxkDXkEYEH5YPRMHGQgQRwRrEREnD2RBTkFjQVRoVQ5CUVFeFkUlH0lLQRcNTDlfPysPCicHEzAVNyAcDkl9VnFaTCMBQVQpAQhMJQoQJkNHa05BY0FU" ..
+    "aFVCRFQQWkNAfjoMFw0ADQ11RUliFQYEAGtjQVRoVUINEhASFg0iFx0DExpFTiMEC0hBTkFOQWNBVC0bBicSEBIWSD4WY1ZBVEVfLhEMMA9ODwcNSQQaLH9o" ..
+    "QV1TU1oNNgcHFRUdCkNrAhw2NQEOAjU6ERFgAQ1CXhk4Fg1wUgAQQRoKWWsRFi0NTg4cQS0OAGgBDUJeCntFbHhQPRkOGEcEaxERJw9OEwsVNhMaaBsLQRJV" ..
+    "XFIncFJJVg0bBkwnRQ0WGB4ETlxjFRsnGVhqV0RzQlkiGwsDFRFNDx8cCSdDR0EBE2MVGycZTHldX15iRCB4SVZBVAxLaxEtOxELQVNcY0MyOgALWRAQRl5I" ..
+    "PlIdIhgEAA12RVsADQEZTicxFB08V0JIXFQ4Fg1wUhsTFQEXQ2sRLTsRC2sLDydrfiQaAUxeEFRDQzMGABkPVDZGIgkVBxAbCB4jOjUNOBBKWV1fXmJUIBdA" ..
+    "fEFURQ0nChojDU4CBgAxQUloMgdZf0lxXkwiEwoCBAZNBEFFWWJBBwdODywVVCsdA18SRFpTQ3AADAIUBgsNJQwVYgQABWRBY0FUJBoBTF4QWkNAcE9JFQkV" ..
+    "FxcNDBcmJwcTHRUACR0kES1LcVxTRV54UCEDDBULQiIBW2trTkFOQSoHVCYaFg1aRV8WWTgXB1YTERFYOQtZLAgCQQsPJ2t+aFVCDVRfQBZyfFIdGQ4YRUQl" ..
+    "RRAyAAcTHUkgCRU6TyVIRnNaX0E0AAwYSV1MDS8Kc2JBTkFOQWNBHS5VFkJdXAh/XhFaSyIOGwkPYkUYLAVOBgsVFw4bJCEbXVcYRllCPFtJS1xUEUIkCS07" ..
+    "EQtBGgkmD35oVUINEhASFg1wUkkEBAAQXyVFDS0OAmtOQWNBVGhVQkhcVDgWDXBSDBgFfm8Na0VZLg4NAAJBNwAGLxAWeV1fXhYQcBwAGmtURQ1rCRYhAAJB" ..
+    "DAAgCgQpFgkNDxB+WU4xHjkaAA0AX3EjECwFKAgcEjciHCEZBmJUc15XXiNaSzQAFw5dKgYSYEhkQU5BYwgSaBcDTllAU1VGcAYBEw9+RQ1rRVliQU4HARNj" ..
+    "PlhoAQ1CXhBbWA05AggfEwdNTyoGEjIADQpUJiYVNyAcDklAVVweBHlSDRlrVEUNa0VZYkFOQU5BKgdUPBoNQQh5QXcFciYGGQ1WTA0qCx1iBgsVOg4sDSAx" ..
+    "BQcFRl9dWgRwT1RWFRsKQR8cCSdBGgkLD0lBVGhVQg0SEBIWDXBSSVZBAARfLAANFg4BDU5cYxUbJxloDRIQEhYNcFJJVkFURQ1rRRswBA8KZEFjQVRoVUIN" ..
+    "EhASFkg+FmNWQVRFDWtFWScPCmtOQWNBESYRaCcSEBIWRDZSBxkVVBFMOQIcNjUBDgJBNwkRJn9CDRIQEhYNcBQGBEErSQ0/ChYuQQcPTggzAB06BkpOWlFA" ..
+    "DGo1BioeCBgBXy4LUWtITgUBa2NBVGhVQg0SEBIWDTkUSQIOGwkXAhY4akM6DgENYUhUKRsGDVVVRmJCPx49DxERTVkkChVrQVNcThUsDhgcDBJIEkRaU0Na" ..
+    "UklWQVRFDWtFWWJBTkFOQTcABi8QFnldX14WEHAGBhkNfkUNa0VZYkFOQU5BY0FUaFUAX1dRWTwNcFJJVkFURQ1rRVknDwprTkFjQVRoVUJIXFQ4Fg1wUgwY" ..
+    "BX5vDWtFWSsHThUPEyQEABwaDUESRFpTQ1pSSVZBVEUNaw0ML1srEBsIMzUbJxlKWVNCVVNZBB0GGkh+RQ1rRVliQU4VDxIoTwMpHBYFAh4DAwRaUklWQREL" ..
+    "SUFFWWJBHAQaFDEPVDwUEEpXRGZZQjx4DBgFfm9BJAYYLkEIFAACNwgbJlUxRltcXmZfNQEaPQQNTUYuHFViCQENCjUqDBFhf0INEhBbUA0+HR1WChEcDT8N" ..
+    "HCxBHAQaFDEPVC0bBicSEBIWezkAHQMAGCxDOxANDwAAAAkEMVsnLRsGZldJd0BIPgZBAhMBAAFrDhw7TU4HDw0wBFhoEgNAVxk4Fg1wUh0XEh9LWioMDWoJ" ..
+    "AQ0KNSoMEWgaEA0CHgIDBFpSSVZBIgxfPxAYLigAERsVDgAaKRIHXwhjV1hJGxcQMxcRC1ljAxguEgtNTgomGFhoEwNBQVUeFkoxHwxfaxELSUFvFS0CDw1O" ..
+    "BzYPFzwcDUMSd1dCbCYTABoAFglIGA4QLg0dSUdrY0FUaBkNTlNcEldbMRsFFwMYAA12RQI/a05BTkEvDhcpGUJOR0JAU0MkJgAbBFRYDSQWVyENAQIFSWpr" ..
+    "VGhVQkFdU1NaDT0LKh4ABkUQayIcNiwXIgYAMQAXPBAQBRs6EhYNcBsPVg8bEQ0mHDoqABxBGgkmD1Q6EBZYQF4SV1sxGwUXAxgADS4LHUhrTkFOQS8OFykZ" ..
+    "Qn1eUUtTXxcHAFZcVClCKAQVEg0PGAsTeScdJhEkREBDRnVFOR4NXkMkCUwyAAsFFAdDR2tjQVRoGQ1OU1wSZUY5HgUFJxsJSS4XWX9BPg0PGCYTMz0cQkxc" ..
+    "VBJmQTELDAQmAQwXDQwXJicHEx0VAAkdJBFKD39RW1gPeVIIGAVUNUEqHBwwJhsIQCwiCBpyMwtDVnZbRF4kMQEfDRBNDxgOEC4NHUNHa0lBVGhVBEJAEEVT" ..
+    "TCAdBzgAGQABaxIcIxEBDyoANwBUIRtCXVNZQEUFDzVHNxQACn4gDBUuNgsAHg4tEl1oEQ0nEhASFg1wUkkfB1QSSCoVFiwlDxUPTwYPFSoZBw1GWFdYJ3BS" ..
+    "SVZBVEUNa0VZYg0BAg8NYxUbJxkrQ0FEU1hONVJUVg8dCSdrRVliQU5BTkFjQVQuGhANbRwSX1k1H0kfD1QMXSoMCzFJAxgtCSITTg8QFm5aWV5SXzUcQV9I" ..
+    "VAFCQUVZYkFOQU5BY0FUaFVCDRJZVBZEJBcETCgHJAVpMRYtDUxITgAtBVQvEBZ5XV9eYlQgF0EfFREIBGtYRGIWCwAeDi0vFSUQQllaVVw8DXBSSVZBVEUN" ..
+    "a0VZYkFOQU5BY0EAJxoOZFxDRldDMxdJS0EdEUgmb1liQU5BTkFjQVRoVUINEhASFg1wEBsTAB9vDWtFWWJBTkFOQWNBVGhVQkhcVDgWDXBSSVZBVEUNa0Uc" ..
+    "LAVkQU5BY0FUaFVCDRIQW1ANPh0dVhUbCkECCwo2AAACC0E3CREmf0INEhASFg1wUklWQVRFDWsJFiEAAkEMACAKBCkWCQ0PEH5ZTjEeORoADQBfcSMQLAUo" ..
+    "CBwSNyIcIRkGYlRzXldeI1pLNAAXDl0qBhJgSGRBTkFjQVRoVUINEhASFg1wGw9WAxUGRjsEGilBGgkLD0lBVGhVQg0SEBIWDXBSSVZBVEUNawMWMEExTU4I" ..
+    "NwQZaBwMDVtAU19fI1oLFwIfFUwoDkMFBBoiBggvBQYtG0oEGxBWWSdwUklWQVRFDWtFWWJBTkFOQWNBVGhVQg1bVhJfWTUfUz8SNU0PHwoWLkNHQQ8PJ0ET" ..
+    "LQE2Ql1cZk9dNVoAAgQZTA12WFk1BA8RAQ8NABktVRZFV144Fg1wUklWQVRFDWtFWWJBTkFOQWNBVGhVQg0SEEZZQjw7BwUVFQtOLkVEYggaBANrY0FUaFVC" ..
+    "DRIQEhYNcFJJVkFURQ1rRVliQU5BTgMxBBUjf0INEhASFg1wUklWQVRFDWtFWWJBTkFOQSYPEEJVQg0SEBIWDXBSSVZBVEUNa0VZYgQABWRBY0FUaFVCDRIQ" ..
+    "EhYNcFJJEw8Qbw1rRVliQU5BTkFjQREmEWgnEhASFg1wUklWQVRFRC1FDS0OAigAEjcAGisQQllaVVw8DXBSSVZBVEUNa0VZYkFOQQIOIAAYaAALa11cVlNf" ..
+    "cE9JJQodCUE4IxYuBQsTTgAtBVQbHgtBXkN0WUE0FxtMJx0LSQ0MCzEVLQkHDSdJACcaDmRcQ0ZXQzMXRzgAGQAEQUVZYkFOQU5BY0FUaFVCDRJWXUQNIxkA" ..
+    "Gg06BEAuSVkxCgcNAiUiFRVoHAwNQlFbRF54BQwXERsLaSoRGGwyBQgCDTBIVCwaaA0SEBIWDXBSSVZBVEUNa0VZYkFOCAhBMAodJBkmTEZRHHNDMRAFE0EA" ..
+    "DUglb1liQU5BTkFjQVRoVUINEhASFg1wUklWQRgKTioJWSEFJQQXQX5BAy0UEkJcflNbSHBcR1ZDK0cNZUtZMQoHDQIvIgwRQlVCDRIQEhYNcFJJVkFURQ1r" ..
+    "RVliQU5BTg0sAhUkVQteYFVTUlRwT0kQABgWSEFvWWJBTkFOQWNBVGhVQg0SEBIWDXBSSVZBHQMNPgw/LQ0KBBxBIg8QaAALa11cVlNfajQAGAUyDF84EToq" ..
+    "CAIFRhIoCBgkOwNAVxkSQkU1HGNWQVRFDWtFWWJBTkFOQWNBVGhVQg0SEBIWDXBSBRkCFQkNOA4QLg0pFAdBfkEBITMNQVZVQG1eOxsFGi8VCEgWb1liQU5B" ..
+    "TkFjQVRoVUINEhASFg1wUklWQVRFDWsJFiEAAkENBQUTFSUQQhASQ1lfQTw1HB9bMgxDLyMQMBIaIgYILwVcajYNQl5UXUFDcl5JAhMBAARBRVliQU5BTkFj" ..
+    "QVRoVUINEhASFg1wUklWQVRFDScKGiMNTg0YDQUTFSUQQhASQ1lfQTw1HB9bMgxDLyMQMBIaIgYILwVcajkHW1dcEB8nWlJJVkFURQ1rRVliQU5BTkFjQVRo" ..
+    "VUINEhASFg08HQoXDVQXSDopHDQEAkFTQS8XGA4HA0BXEFNYSXAGBhgUGQdIOU0VNA0oEw8MJk8gLQ0WF19RRlVFeFBMEkpWTARrCgtiUWRBTkFjQVRoVUIN" ..
+    "EhASFg1wUklWQVRFDWtFWWJBAg4NAC9BFz0HEEhcRH5TWzUeSUtBAApCJywXMRUPDw0EeScdJhEkREBDRnVFOR4NXkM4AFsuCVtrQQ8PCkE3DhskPAxeRlFc" ..
+    "VUh+PgwABBhLeyoJDCdBARNOUUlrVGhVQg0SEBIWDXBSSVZBVEUNa0VZYkFOQU5BYwgSaBYGa0BRX1MNMRwNVgIQI18qCBxsMgcbC08bTycrFA5IEg0PFh1w" ..
+    "EwcSQQYAXAcADycNTl1TQSAUBjoQDFl+VURTQXAGARMPfkUNa0VZYkFOQU5BY0FUaFVCDRIQEhYNcFJJVkFURQ1rDB9iAhsTHAQtFSAhGAcNDA0SHn47GwUa" ..
+    "IhsKQQ8KDiw1HAANChgCEAMQG3ASX0AWHXlSHR4EGm8Na0VZYkFOQU5BY0FUaFVCDRIQEhYNcFJJVkFURQ1rRVliQU4IHTMmABAxVV8NRkJHUydwUklWQVRF" ..
+    "DWtFWWJBTkFOQWNBVGhVQg0SEBIWDXBSSRMPEG8Na0VZYkFOQU5BY0FUaFVCDRIQEhYNcFJJVkFUAEMvb1liQU5BTkFjQVRoVUINEhASFg1wUklWQREJXi5v" ..
+    "WWJBTkFOQWNBVGhVQg0SEBIWDXBSSVZBVEUNawwfYgIbExwELRUgIRgHDQwNEh5+OxsFGiIbCkEPCg4sNRwADQoYAhADEBtwEl9AFh15Uh0eBBpvDWtFWWJB" ..
+    "TkFOQWNBVGhVQg0SEBIWDXBSSVZBVEUNa0UQMTMLAAoYY1xUPAcXSDgQEhYNcFJJVkFURQ1rRVliQU5BTkFjQVRoVUINV15WPA1wUklWQVRFDWtFWWJBTkFO" ..
+    "QWNBVGhVQkhcVDg8DXBSSVZBVEUNa0VZYkFOQU5BY0FUaFVCRFQQW0V/NRMND0EADUglb1liQU5BTkFjQVRoVUINEhASFg1wUklWQVRFDWsRGCANC08HDzAE" ..
+    "BjxdA1tTWV5XTzwXRVYafkUNa0VZYkFOQU5BY0FUaFVCDRIQEhYNcFJJVkFURQ1rMhwjEQEPTlxjFhEpBQ1DfFFfUwFaUklWQVRFDWtFWWJBTkFOQWNBVGhV" ..
+    "Qg0SEBIWDXBSSVYyHwxBJ0VEYhIFCAINDQAZLVloDRIQEhYNcFJJVkFURQ1rRVliQU5BTkFjQVRoVUINEhB6WUE0JgAbBFRYDTgOEC4NKgAaAG0pGyQRNkRf" ..
+    "VR48DXBSSVZBVEUNa0VZYkFOQU5BY0FUaFVCDRIQEhYNcFIqGQ4YAUI8C1l/QV9PXk1JQVRoVUINEhASFg1wUklWQVRFDWtFWWJBTkFOQWNBVGghDUJeEA8W" ..
+    "WT8dBT8PBxFMJQYcSEFOQU5BY0FUaFVCDRIQEhYNcFJJVkFURQ1rRVk/SGRBTkFjQVRoVUINEhASFg1wUklWQVRFDWsAFyZrTkFOQWNBVGhVQg0SEBIWDXBS" ..
+    "SVYEGgEna0VZYkFOQU5BY0FUaFVCDVdeVjwNcFJJVkFURQ1rRVknDwprTkFjQVRoVUJIXFQ4Fg1wUgwYBX5FDWtFCycVGxMAQSIXFSEZA09eVThTQzR4YwIA" ..
+    "Bw4DOBUYNQ9GBxsPIBUdJxtKBDgQEhYNJxoAGgRUEV8+AFkmDmRBTkFjQVRoVRZMQVscQUw5BkFGT0VMJ2tFWWJBTkFOCCVBGicBQnJ1HnNDWT8hAh8NGChM" ..
+    "Igs8LAAMDQtBNwkRJlUBQlxEW1hYNVIMGAV+bw1rRVliQU5BAg4gABhoAQNfVVVGZkwiBklLQRcQXzkAFzYyBw0LDzcgHSUhA19VVUY8DXBSSVZBVEVELUUX" ..
+    "LRVOFQ8TJAQAGBQQWRJRXFINDzVHMDUkV3IIEAswBAAVOgAxBhE8VQNDVhBtcQMWJjlEPjcQXzkAFzY1DxMJBDdPNyAUEExRRFdEDSQaDBhrVEUNa0VZYkFO" ..
+    "QU5BNwAGLxAWfVNCRhYQcC0uWCcgNR8UJgwwEwsPGjUiExMtAUxuWlFAV04kFxtMJx0LSQ0MCzEVLQkHDSdJVgAAD0xcX1tSfz8dHSYABhEPYm9ZYkFOQU5B" ..
+    "YwQaLH9oDRIQEhYNcFIFGQIVCQ0vDAo2QVNBGgAxBhE8JQNfRhBTWElwPgYVABg1QSocHDBPLQkPEyICAC0HQkxcVBJ6QjMTBSYNFRxIOUs6KgAcAA0VJhNO" ..
+    "DhwMSXRZQEVZExoAGgVcR2U+CBgsDgcFPA4sFSQpBxYPGzoSFg1wUklWQVRFDWsEFyZBRhUPEyQEABgUEFkcYF1FRCQbBhhBWUVhJAYYLjECABcEMU83IBQQ" ..
+    "TFFEV0QDGAcEFw8bDEkZChY2MQ8TGk8TDgchAQtCXBkce0w3HAACFBAADSQXWS8AGglACTYGEUJ/Qg0SEBIWDXAbD1YVFRdKLhEpIxMaQQ8PJ0EQIQYWDQ4N" ..
+    "Eg4dcAYBEw9+RQ1rRVliQU5BTkFjDRsrFA4NU0ZTX0ExEAUTQUlFai4RODQABw0PAy8EJyMcDkFBGBs8DXBSSVZBVEUNa0VZKwdOQg8XIggYKRcOSBIOEgYN" ..
+    "JBoMGGtURQ1rRVliQU5BTkFjQVRoGQ1OU1wSVUU/AQwYQUlFTD0EEC4ADA0LOi4AACBbEExcVF1bBWFeSVUAAgREJwQbLgRHPGRBY0FUaFVCDRIQEhYNcFJJ" ..
+    "Gg4XBEFrCAABCQ8TTlxjJhE8OBtuWlFAV04kFxteSH5FDWtFWWJBTkFOQWNBVGhVC0sSXUt1RTEASQIJEQsna0VZYkFOQU5BY0FUaFVCDRIQEhZBPxEIGkER" ..
+    "FFgiFQknBU5cTjIoCBgkMBNYW0BwT3kpAgxeAhwKXi4LVxUEDxEBD2prVGhVQg0SEBIWDXBSSVZBVEUNa0UQJEELEBsIMxERLFUWRVdeOBYNcFJJVkFURQ1r" ..
+    "RVliQU5BTkFjQVRoVQ5CUVFeFk40OQwPQUlFTiMKCicPQDYLADMOGmhbTA0QbxAWA35SCh4OBwBDZTYSKw0Ca05BY0FUaFVCDRIQEhYNcFJJVkFURQ1rRSop" ..
+    "CAINLQ4sDTAnAgx5QFFRXXYzFiITGClFEGsKCmwCAg4NCmtIVGNVAUVdQ1dYAxMdBhoFGxJDa05ZIQkBEgsPbSkbJBE2RF9VODwNcFJJVkFURQ1rRVliQU5B" ..
+    "TkFjQVRoVUJBXVNTWg07FxAzDwEIDXZFKikIAg0lBDosFTguAUVdQ1dYAwMZABoNKW8Na0VZYkFOQU5BY0FUaFVCDRIQEhYNcFIAEEEfAFQOCwwvQRoJCw9J" ..
+    "QVRoVUINEhASFg1wUklWQVRFDWtFWWJBTkFOQRAKHSQZMl9XQ0F9SClaAhMYMQtYJklZIQkBEgsPbSkbJBE2RF9VGzwNcFJJVkFURQ1rRVliQU5BTkFjQVRo" ..
+    "VUJIXFQ4Fg1wUklWQVRFDWtFWWJBTkFOQWNBVGhVFkxBWxxBTDkGQUZPRkwna0VZYkFOQU5BY0FUaFVCDRIQEhZIPhZjVkFURQ1rRVliQU5BTkFjQREmEWgN" ..
+    "EhASFg1wUklWQVQAQTgAc2JBTkFOQWNBVGhVQg0SEBJCTCMZRwEAHREFe0tIa2tOQU5BY0FUaFVCDRJVXFIncFJJVkFURQ0uCx1IQU5BTgQtBX4tGwYEODpe" ..
+    "WU4xHkkQFBoGWSIKF2IpDw8KDSYyHyEZDmlAX0JSQiccQQEEFRVCJTEAMgRCQR0ELwQXPBAGe1NcR1NeeXhJVkFUA0I5RRInGEJBCgA3AFQhG0JdU1lARQUP" ..
+    "NUc3FAAKfiAMFS42CwAeDi0SLz8QA11dXmZPXTUvRyUKHQlBOExZJg5kQU5BY0FUaFUGTEZRHHNDMRAFE0FJRUsqCQona05BTkEmDxBCVUINElZdRA07XkkA" ..
+    "ABhFRCVFCSMIHBJGEiYNESsBB0lkUV5DSCNbSRIOfkUNa0VZYkFODQECIg1UOx4LQV57V08NbVIdDxERTUZiRUR/QUwPGwwhBAZqVQNDVhBEV0FwHRtWCn5F" ..
+    "DWtFWWJBTg0BAiINVCEGJ0NTUl5TSXBPSQIYBAAFIExZf1xOQwAULgMROldCTFxUEkJfJRdJGRNUE0wnb1liQU5BTkFjCBJoHBFoXFFQWkg0UggYBVQ6amUk" ..
+    "DDYOPQoHDS82ESkFDUNBa0VTTCAdByIYBABwZTYSKw0CEjUSKAgYJD4HVG8QRl5IPnhJVkFURQ1rRVliQU4+KU8CFAAnJglEXlxlU0wgHQcFOgMATDsKFxYY" ..
+    "HgQzTxAKHSQZEXZBW1taQRsXECtPMQtMKQkcYlxOFRwUJmtUaFVCDRIQElNDNHhJVkFUAEMvbxwsBWRrQ0yn3Pqh8O/LmpHXiqJaLS5YMhERYSQSLysSGwAC" ..
+    "MjcAAC1VXw1URVxVWTkdB14SAARZLkxzYkFOQTEmbS0bPyMLXkdRXntCNBdJS0EHEUw/AHNiQU5BZEFjQVQhE0JydR5+WVoGGxoDABgoQi8AWTYJCw9kQWNB" ..
+    "VGhVQg1lWVxSeBlIJxkVHQNUYx5ZSEFOQU5BY0FUaFVCDWZZRlpIcE9JVITwz8jH857x2onU30NvQX5oVUINEhASFg1wUkk1DhoRSCURWX9BTIXT76rk+a7d" ..
+    "w8iOv9eBn7Xn9pPq4YqRx4PU4YTyyYjZxobkzpD+ndespNKV9pft3IT488ve7ZHB3EBPQENvQX5oVUINEhASFg1wUkkyFAYEWSIKF2JcTlRkQWNBVGhVQg1P" ..
+    "GTgWDXBSSVZBVG8Na0VZYkFOQSIIJAkAIRsFA3VcXVRMPCEBFwUbEl5rWFkkAAISC2tjQVRoVUINEnxbUUUkGwcRTzIKSg4LHWJcTlgLWElBVGhVQg0SEH5f" ..
+    "SjgGABgGWidfIgIRNg8LEh1BfkFFQlVCDRIQEhYNWlJJVkFURQ1rAxYwQTFNTg4hC1QhG0JEQlFbRF54FQgbBE4iSD8hHDECCw8KAC0VB2BcSw1WXzgWDXBS" ..
+    "SVZBVEUNa0UQJEEBAwRbChI1YFcgTEFVYldfJFBAVhUcAENBRVliQU5BTkFjQVRoVUINEl9QXAMdEx0TEx0EQWtYWQcPGwxALCIVETocA0EcY19ZQiQaORoA" ..
+    "BxFEKG9ZYkFOQU5BY0FUaFVCDRIQXVRHfiAMEA0RBlkqCxonQVNBXmtjQVRoVUINEhASFg01HhoTCBJFQikPQwsSL0lMJSYCFSRXSw1dQhJZTzpIIAUgXEd5" ..
+    "Lh0NNxMLQ0dBNwkRJn9CDRIQEhYNcFJJVkFURQ1rChsoWyoEHRUxDg1gXGgNEhASFg1wUklWQVQAQTgAECRBAQMEWwoSNWBXMkxARFtVQTU3BB8VAABfaUxZ" ..
+    "LRNODgwLeSgHCV1AeUBRW1oPeVIGBEEbB0dxLAoDSUwyAw4oBFZhVQ1fEl9QXBcZASheQzIMXy5HUGIOHEEBAylbPTs0Sg9hQFNERjwXGlRIVBFFLgtzYkFO" ..
+    "QU5BY0FUaFVCDRIQEllPOlwsGAAWCUgvRURiBw8NHQRJQVRoVUINEhASFg1wFwUFBB0DDSQHE3goHSBGQxMOBzwwBEtXU0YUBHAdG1YOFg8XAhY4akMsDQEO" ..
+    "LiQSLhABWRAZEllfcB0LHFs9FmxjRzsuFBwkCAcmAgBqXEJCQBBdVEdqOxo3SVYhSDsREQ0HKAgLDSckEi4QAVkQGRJZX3AdCxxbPRZsY0cqNw88ABcSBgcS" ..
+    "LRYWDxsQRl5IPnhJVkFURQ1rRVliQU5BTkFjDhYiWydDU1JeU0lwT0kQABgWSEFFWWJBTkFOQWNBVGgQDEk4EBIWDXBSSVYEGgEna0VZYkFOQU5rY0FUaFVC" ..
+    "DRJZVBZDPwZJKSZaKUI8MxAxFA8NLQ4tDxErAQtCXBBGXkg+eElWQVRFDWtFWWJBTj4pTw8OAx4cEVhTXHFZQz4XCgIIGwsNdkUuLRMFEh4AIARaDBARTlde" ..
+    "VldDJDMNEgQQX24kCxcnAhpJCBQtAgAhGgwFXVJYHydwUklWQVRFDWtFWWJBTkFOCCVBGyofWGRBcRoUbzEBDCYABhEPYkUNKgQAa05BY0FUaFVCDRIQEhYN" ..
+    "cFJJVkFUCk8hSzQjFQsTBwAvQUloMAxYXx5/V1k1AAAXDVo2QCQKDSoxAgAdFSoCfmhVQg0SEBIWDXBSSVZBVEUNa0VZLQMETzwEJQ0RKwEDQ1FVEgsNYHhJ" ..
+    "VkFURQ1rRVliQU5BTkFjBBg7EAtLEl9QXBcZASheQzAATioJW2tBARNODiELTgEGIwUQZFdOWSUADFRIVBFFLgtzYkFOQU5BY0FUaFVCDRIQEhYNcFIGFAtO" ..
+    "IUg4EQstGEZIZEFjQVRoVUINEhASFg1wUkkTDQcARC1FFiALVCgdIGtDJCkHFkRRXFdzQDkGHRMTVkwNJBdZLQMEWycSAklWHAcDRF4SGxZCIlIGFAtOLF4K" ..
+    "TVsRDAEKC0NqQRs6VQ1PWAp7RWx4UC8fExFHBGsKC2IODAtUKDAgXGomEkxAW15TXnJbSQIJEQsna0VZYkFOQU5BY0FUaFVCDRIQEhZCMhhHMw8VB0EuAVl/" ..
+    "QQgAAhIma1RoVUINEhASFg1wUklWQVQAQy9vWWJBTkFOQWNBVGhVB0NWGTgWDXBSSVZBVABDL29ZYkFOBAISJmtUaFVCDRIQEl9LcC0uWC0bEnsiFgwjDS0O" ..
+    "AA8mAgAhGgwNRlhXWCdwUklWQVRFDWtFWWI+KU8iDjQ3HTsAA0FxX1xYSDMGABkPTiFEOAYWLA8LAhpJamtUaFVCDRIQEhYNcFI2MU84ClodDAo3AAIiAQ8t" ..
+    "BBc8HA1DEg0SWEQ8eElWQVRFDWtFHCwFZEFOQWMEGix/B0NWOjgbALfV0p/40I2S/Izl5WsxJkAgMxEYMScHQF1GV3BCN1JUVgcBC04/DBYsSUdrTkFjQRgn" ..
+    "FgNBElxbUUUkGwcRMhEXWyIGHGJcTgYPDCZbMy0BMUhARltVSHhQJR8GHBFEJQJba2tOQU5BSUFUaFUOQlFRXhZBMQsMBBJUWA0nDB4qFQcPCTImEwIhFgcX" ..
+    "dFlcUms5ABoCIhwMQS9NWw4ICQkaCC0GOCkMB19BEhs8DXBSSR8HVAlMMgALMUEaCQsPYw0VMRAQXgh0V0VZIh0QXkhUAEMvb1liQU5rTkFjQRgnFgNBEkNZ" ..
+    "Tw1tUgUfBhwRRCUCKicTGAgNBHknHSYRJERAQ0Z1RTkeDTkHNwlMOBZRYDIFGExISUFUaFULSxJDWU8NJBoMGEEHDlRxIRwxFRwOF0lqQREmEWgNEhASPA1w" ..
+    "UkkaCBMNWSILHhEEHBcHAiZPMicSJ0NWEA8WFDVLYxMPEG8nZkhZAw8aCE4gBSp+JBoBTF4QVENDMwYAGQ9UIEMqBxUnIAAVByAFKlxhf0INEhBbUA0PNUc3" ..
+    "DwAMbA0uJgEOAA8LAjcIGyZVFkVXXjgWDXBSSVZBVDpqZSQXNggvJyU+AA4aJhABWVtfXAxpOQEKGQ8aAE4/TVBIQU5BTkFjQVQXMkxsXERbd2sbLSoZDxoA" ..
+    "Tj8MFixBU0EACC9rVGhVQkhcVDg8DXBSSSkmWiRDPww4BCoxIgEPLQQXPBwNQxINEnpCMxMFJg0VHEg5SzAmDQsFVCIsDxotFhYFVEVcVVk5HQdeSH5FDWtF" ..
+    "WWJBTjcHEzcUFSQgEUhACnBDWSQdB0QlGxJDYzMcIRUBE1xPLQQDYEVODQIZHhZaPwACBREVBkhlJgwwEwsPGiIiDBE6FExudEJTW0h5eElWQVRFDWtFDSMS" ..
+    "BU8ZACoVXHlcaA0SEBIWDXBSPx8TABBMJzAKJxNUIxsVNw4aeiASBWRVUUJCIkBHGAQDTR1nRUlrTU4WARMoEgQpFgcDcUVAREg+BioXDBEXTGUmPzAAAwRH" ..
+    "a2NBVGgQDEkbOjgWDXBSABBBEwBZKAoXLAQNFQcOLRJUPB0HQzgQEhYNcFJJVgcbFw0USVkhDgAPCwI3CBsmVQtDEkBTX18jWg4TFRcKQyUAGjYIAQ8dSQ8O" ..
+    "FykZMkFTSVdEAxkWBRMFXUwNLwpzYkFOQU5BY0FUaFVCRFQQUVlDPhcKAggbCwMPDAojAwIEThUrBBpof0INEhASFg1wUklWQVRFDWsGFiwPCwIaCCwPTgwc" ..
+    "EUxQXFceBFpSSVZBVEUNa0VZYkELDR0EKgdUKxoMQ1dTRl9CPlwtHxIXCkMlABo2QRoJCw9ja1RoVUINEhASFg1wUklWQVQGQiULHCEVBw4AWwcIBysaDENX" ..
+    "U0YeBHB4SVZBVEUNa0VZYkFOBAAFSUFUaFVCDRIQV1hJWlJJVkERC0lBABcma2QNAQIiDVQuAAxORlldWA0UGxoXAxgAbCUREAMnJUlHa2NBVGgcBA1tdxx3" ..
+    "QyQbKDAqKyZCJQscIRUHDgBBNwkRJlVoDRIQEhYNcFI2MU81C1kiJD8JPi0OAA8mAgAhGgwXdllBVUI+HAwVFVxMJ2tFWWJBTkFOPgRPNSYBC2x0e211Qj4c" ..
+    "DBUVHQpDa1hZLAgCQWRBY0FULRsGJ1deVjwnfV8oGBUdRWYiBhJIBg8MC1sEBAAbEBBbW1NXHg8XBwAlBAYTRCgAW2tPKxMcDjEsETsGA0pXc1pXQzcXDUwi" ..
+    "GwtDLgYNagcbDw0VKg4aYFxoDRIQEl9LcBwGAkErIgMKEA0tMwsLAQgtJBopFw5IVhBGXkg+UhsTFQEXQ2sAFyZrTkFOQUlBVGhVDkJRUV4WWSNSVFYGFQhI" ..
+    "cSIcNjILExgIIARcaiEHQVdAXURZAxcbAAgXAA9ib1liQU4VHVsXBBgtBQ1fRhhVV0A1XDkaABcAZC9JWSUAAwRUJiYVJy0HFERRVRoUfTwTEBMTB0cEZSkW" ..
+    "IQACMQIAOgQGYX8HQ1YZODwAfZru3IT/8MTR1JHV7jsoZA0sAhUkVQRYXFNGX0I+UhoCAAYRbD4RFgoICgQ6CC4EBmBcaA0SEBJCTCMZRxIEGARUY1ZVYgcb" ..
+    "Dw0VKg4aYFxoDRIQEhYNcFIAEEErIgMKEA0tKQcFCyQtABYkEAYNRlhXWCdwUklWQVRFDWtFWWI2Bw8KDjRbICcSBUFXGFRXQSMXQHxrVEUNa0VZYkELDwpr" ..
+    "Y0FUaBAMSRs6V1hJWngAEEErIgMKEA0tKQcFCyQtABYkEAYNRlhXWCdwUklWEgAEXz8kDDYOJggKBBcIGS0HSgQ4VVxSJ1pfRFtMWUgAZkhUb0xDTENMbkxZ" ..
+    "ZVhPAB8dHxsAfV9EW0xZSABmSFRva0NMToTL553o9GgAHx0fGwB9X0RbTFlIAGZIVG9MQ0xDTG5MWWVYTwAfHR8bAH1fRFtMfglCKAQVYjUPAx1BfkEPQlVC" ..
+    "DRJzXVhLORVJVkFJRXoiCx0tFlQ1DwNrGlQcHBZBVxAPFg+59+SR3NpHAWtFMCEOAEFTQWEWBi0bAUUQTRsaJ3BSSVYyHwxBJxZZYkFTQTkILQUbP082TFAY" ..
+    "SRZ5OQYFE0FJRQ+u7e6q0vBHiOvDiff1V04Ne1NdWA1tUksMAARHUGJJc2JBTkE9BDcVHSYSEQ0PEGVfQzQdHkw1FQcFMEUtKxUCBE5cY0OT3d6KnpgW2p6A" ..
+    "tdzzVE1ULE4kC1l/QUwSCxU3CBovBkBQGxw4Fg1wUjoDEQQKXz9FWX9BOQgABSwWThwUAAVJEGZfWTwXSUtBVo2s5ILM44f6zoju90NYaDwBQlwQDxYPPRca" ..
+    "BQATAAAoDAshDQtDE0hvawlCf08AHx0fGwB9X0RbTFlIAGZIVG9MQ0xDTG5MWWVYTwAfHR8bAH1fRFtrWUgNruD6ptrYa0NMbkxZZVhPAB8dHxsAfV9EW0xZ" ..
+    "SABmSFRvTENMQ0xuTFllWE8AHx04YkwyAUclFAQVQjkRQxEEDRUHDi1JD2ghC1leVRILDXI2AAUCGxdJa4347YbbwIj17If7/FdCUBs6OGJMMgFHJRQEFUI5" ..
+    "EUMSABwACRMiERxgDmgNEhASYkQkHgxWXFRHbyoLGCwATiIPFWMpASpVhLmd1r2CyejfjMniVkkna0VZYiULEg1BfkFWrdPgy6ys1ouNue7pnsf1gKDfgPPr" ..
+    "jtLthsrIhP7okOeIEnRbRU4/AA1WifXKyv7En9bOiO7agsPjVkIISyc4ZFNUXn4hHAYRGxdZcScMNhUBD0YaSUFUaFU2REZcVxYQcFCB986T0Iyt8dak7tpD" ..
+    "QmtjQVRoPAFCXBAPFg89FxoFABMAACgMCyENC0NCa2NBVGgxB15REA8WD7nJ95Dy/oCTx43dxYnN3E4lKhIXJwcGDduyst6G25vp1YbB9Q9nb1liQU4iDw0v" ..
+    "AxUrHkIQElZHWE4kGwYYSV1vDWtFWWJBTkECDiAAGGgxC15RX0BSfiUCGRkTADBfJ0VEYkMGFRoRMFtbZxELXlFfQFIDNxVGEgYcUlwBUQ4DQ2RBTkFjQVRo" ..
+    "VQtLEkNXQk48GxkUDhUXSWsREScPZEFOQWNBVGhVQg0SEEFTWTMeAAYDGwRfL009KxINDhwFEBQEOBoQWWdCXh8ncFJJVkFURQ1rRVliNgcPCjQKWzonAQtL" ..
+    "SxhJPA1wUklWQVRFDWtFWWJBTkE6CDcNEWhIQg/asZ3RmPGU/dmH+9EPZ29ZYkFOQU5BY0FUaFVCDRIQcVlDJBcHAkFJRQ8PDAohDhwFTojDwpP95YeagNiW" ..
+    "scXzz4bK7ZzOpqPXxafp3obu7qvHya3sysSku9ejsnJeY1ZBVEUNa0VZYkFOQU5BY0EwPQcDWVtfXBYQcEZjVkFURQ1rRVliQU5BE0hJQVRoVUINEhBXWl41" ..
+    "eElWQVRFDWtFWWJBTjYHDyc0PXI7DVlbVkseVlpSSVZBVEUNa0VZYkFOQU5BFwgAJBBCEBIS2reCt8fIkPXbg6L/R1VIQU5BTkFjQVRoVUINEhASFm4/HB0T" ..
+    "DwBFEGshEDECARMKMjYRBCcHFnhAXB48DXBSSVZBVEUNa0VZYkFOQSoUMQAAIRoMDQ8QBDwNcFJJVkFURQ1rRVk/SGRBTkFjQVRoVQdDVjoSFg1wFwcSawlM" ..
+    "J0ExGCASQCIBDyUIE3ImB05GWV1YBStSPR8VGAANdkVbqubEhOX0pe7vrunvDxJNGzwnFhsFAgQGNUw5BB4wAB4JTlxjNRUqBkxuXV5UX0pqIggEABMXTDsN" ..
+    "UTlrTkFOQRcIACQQQhASEtWjm7X75JHO3Yys80dVSEFOQU4lJhIXaEhCb0dZXlJrOR4dExMgAFU/TVBuaxNIZGsXABY7WyFCXFZbURcUAAYGBRsSQ2Mec2JB" ..
+    "TkE6CDcNEWhIQg/bsYrQvteX9caE+eUPZ29ZYkFONw8NNgQHaEhCf1dXW1lDBhMFAwQHSSdrRVliNw8NGwRjXFQXMkx+V0JEU18CFw4fDhpJJ2tFWWIiDw0C" ..
+    "AyICH2hIQktHXlFCRD8cQQBIfkUNa0VZYkFOPilPEAQGPhAQf1dXW1lDcE9JAGtURQ1rRVliQTwECBMmEhwOHA5ZV0JiV18xFRsXERxNBEFFWWJBTkFOQQ4A" ..
+    "BiM2DUNUWVVyRCIGEF5IfkUNa0UcLAVCaxNISWsgKRcRA3FfXFBEN0grAxUACkNjHnNiQU5BOgg3DRFoSEIP26a504rbmt7Fh+joD2dvWWJBTigNDi1BSWhX" ..
+    "A19AX0UbXzkVAQJMGABLP0dVSEFOQU4iIg0YKhQBRhINElBYPhEdHw4aTVtib1liQU5BTkFjMgApBxZ+V0JEU18YHRleSH5FDWtFHCwFQmsTSElrICkXEQNx" ..
+    "X1xQRDdIKwMVAApDYx5zYkFOQToINw0RaEhCD9exrtCA8prexYfo6A9nb1liQU4oDQ4tQUloVwFEQFNeUwAjBgYGQ1hvDWtFWQEAAg0MACAKVHVVBFhcU0Zf" ..
+    "Qj5aH19rVEUNa0VZYkE9FQEREAQGPhAQZV1AGh8ncFJJVgQaAQFBGFBIazoADBJtIhsmEwtKCGNXVVk5HQdeGlQxRD8JHGJcTkMoADAVVAkBFkxRWxAWUHl4" ..
+    "YyIAFhYDCAoXJAgJWyoTLBEQJwIMBUk6EhYNcCYAAg0RRRBrR5DD2Yjy6YfX2pLb/4SFk9WOuQ98eElWQVQzTCcQHDFBU0EVQWGH3OmQ3qIDEh4WD7bayJPd" ..
+    "+1cFoubRp+nohNbSq/jrrdHTy6e417mCtM/WkfXcTA9rGFVIQU5BTjciDQEtVV8NbXcccEwjBigCFRUGRgYKHSdNZEFOQWMiFSQZAExRWxILDTYHBxUVHQpD" ..
+    "YxNQSEFOQU5BY0FUFzJMa1NDRndZJBMKHSwbAUhrWFk0a05BTkFjQVRoOANfWXNdWEs5FS0fEwAcBWJvWWJBTgQABUkcXUJ/NkxQQxx1Qj4UABFbIApKLAkc" ..
+    "ahpkQU5BYzUdPBkHDQ8QEN6q+pfi44fg3svY71tua05BTkEVABg9EEIQEm91GGsxAR03FQAETiBJc2JBTkEtAC8NFikWCQ0PEFRDQzMGABkPXBMEQUVZYkFO" ..
+    "QU5BHCZaDhQRWXNERldOO1JUVhd+RQ1rRVliQU4ICEEcJloOFBFZc0RGV047Uh0eBBpvDWtFWWJBTkFOQWNBBzwaEmBTXkdXQXhbY1ZBVEUNa0VZJw0dBGRB" ..
+    "Y0FUaFVCDRIQEhZeJBMbAiwVC1gqCVFra05BTkFjQVRoEAxJOBASFg1wUklWLBUXRggKFyQICSUHEzcYXGF/Qg0SEFdYSVoPQHxrIARPOEs6LQ8ICAlbEA0d" ..
+    "LBAQBUk6EhYNcCYAAg0RRRBrR5/W2ojy5In0/J3T10ABOBASFg0UFxoVQUlFD6PN1KfP9If62qXy/qDC/8SpkhrTmuKXzceH4e0EaUlzYkFOQTgALxQRaEhC" ..
+    "VjgQEhYNcFJJViwdCw12RUhyTWRBTkFjQVRoVS9MShAPFh5gQllaa1RFDWtFWWJBKgQIADYNAGhIQnJ1HnNCWTERAjIIBxFMJQYcSEFOQU4cb2tUaFVCblNc" ..
+    "XlRMMxlJS0ESEEMoERAtD0YXR2tjQVRoVUINEm91GGwkBggVCjAMXj8EFyEETlxOF0lBVGhVQg0SEH9XXzsxBhgHHQJpIhcNO0lHa05BY0ERJhFoUBs6OGJM" ..
+    "MgFHNQ4aA0QsXyouCAoEHEk4a1RoVUJ5W0ReUw1tUkuQ9c+DvsGM+d2E1MdMTUlBVGhVJkhBUxILDXKaw8mH4dHL396f0euH9/2I2fVUYJLFvxsSHjwNcFJJ" ..
+    "JRURFQ12RUlsUVtNZEFjQVQeFA5YVxAPFlZaUklWQVRFDWsoECxBU0FeT3NUWEJVQg0SEBIWDR0TEVZcVFcBQUVZYkFOQU5BBwQSKQAOWRINEmlqfjQIBRU1" ..
+    "EVkqBhIREQsECmtjQVRoCE4nEhASFm4xHgUUABcODXZFHzcPDRUHDi1JAmF/Qg0SEBIWDXAtLlgnFRZZChENIwIFMh4EJgVUdVUUJxIQEhYNcFJJOwAGDm4k" ..
+    "Cx8rBioIHBU6SV1CVUINElVcUictW2N8NRUHXmUmFiwHBwZUMiYCACEaDAVJEGZfWTwXSUtBViNfPgwNYixfQ04camt+HBQAXhxzXVhLORVTIg4TAkEuTQJI" ..
+    "QU5BTjUqFRgtVV8NENi1nMjb54/o/ZHKi2soSGBNZEFOQWM3FSQABw0PEG1xAxYAHB8VBygcDgsYIA0LTWRBY0FUCxQOQVBRUV0NbVIPAw8XEUQkC1E0SGRB" ..
+    "TkFjQVRoVT1qHHZAQ0QkASRHJBoETycAWX9BGGtOQWNBVGhVQmBTQll1Qj4UABElHRdZMk1QSEFOQU4ELQV+NVxoJ2ZRUEUDEx0HEAgTX34nDB0nE0YaZEFj" ..
+    "QVQcHBZBVxAPFg+27PWTztJFYHpFnPnXh+DcQ29rVGhVQn5GVUIWEHBCR0ZQWG8Na0VZFAACFAtBfkEPQlVCDRIQEhYNHRsHVlxUVQN7VFVIQU5BTkFjQVQF" ..
+    "FBoNDxACGBh8eElWQVRFDWtFPScHDxQCFWNcVBcyTGtARVtCXh1DLRMNFRx7KgkMJ2tOQU5BPk1+aFVCDXFRXlpPMRECVlxUA1glBg0rDgBJGEhJQVRoVUIN" ..
+    "EhBtcQMWABwfFQcoHA8AFSMYOAACFCZBSWgDaA0SEBIWDXBSJBcTHyZCJQMQJSUHExoYa0h+aFVCDVdeVjxQeXhjIgAWFgMIChckCAlbPQQgFR0nG0pWEmRb" ..
+    "QkE1UlRWQzUQWSRFPCwADA0LBWMiGyYTC0oQEE8fJ1omCBQSWiZCJQMQJVs6DgkGLwRcM39CDRIQZk9dNVJUVkM3DUgoDhstGUxNZEFjQVQcHBZBVxAPFg8V" ..
+    "ITlWMRgEVC4XCmBNZEFOQWM3FSQABw0PEG1xAxUhOSksFRZZLhdVSEFOQU4iIg0YKhQBRhINElBYPhEdHw4aTV4/BA0nSGRBTkFjQVRoVT1qHHVhZnIdExoC" ..
+    "BAZFDWtFWWJBTlxOEjcAAC1/Qg0SEBIWDXAtLlgkJzVyGA0WNS8PDAtBY0FUaFVfDUFEU0JIWlJJVkFURQ1rOj5sJD0xMTIrDgMEEBRIXhASFg1wT0kFFRUR" ..
+    "SEFFWWJBTkFOQRwmWg0mMnJhWF1BfQYiOgIAABBea1hZMRUPFQtrY0FUaFVCDRJvdRhoAyI2JQkbEmUuBBU2CU5BTkF+QQc8FBZIOBASFg1wUklWPjNLaBg1" ..
+    "JhEJARYqCDAVFSYWBw0SDRJFWTEGDHxBVEUNa0VZYj4pTysyEz4gLRQPbl1cXUQNcFJJVlxUFlkqERxIQU5BTkFjQVRCVUINEhASFg02HRtWPlhFXWsMF2II" ..
+    "HgAHEzBJJCQUG0hAQwhxSCQiBRcYERdeY0xQYgUBa05BY0FUaFVCDRIQEl9LcAEdFxURRVkjABdia05BTkFjQVRoVUINEhASFg0zAAwXFREgfhtNCWtBZEFO" ..
+    "QWNBVGhVQg0SEFdaXjVSY1ZBVEUNa0VZYkFOQU5BY0EGLRgNW1d1YWYFIFtJfEFURQ1rRVliQU5BTgQtBX5oVUINEhASFkg+FmNWQVRFDWtFWQ8AHAotDi0H" ..
+    "HS8xC19GSRofJ3BSSVYEGgEnNkxzSDUPAx1PAA4aLhwFF2ZfVVFBNVoSfEFURQ0fDA0uBE5cTkOqwNuv0djKvJnXmJu1wu2R1u5HAUFFWWJBOAACFCZBSWgq" ..
+    "JQN3Y2JpfjgdHiITFQZIORZVSEFOQU4iIg0YKhQBRhINElBYPhEdHw4aTV4/BA0nSGRBTkFjQVRoVT1qHHVhZnIDGgYBNQYETi4XCmJcThIaADcEfmhVQg0S" ..
+    "EBIWRDZSBxkVVBZZKhEcYhUGBABBSUFUaFVCDRIQEhYNcBQGBEErSQ07RRAsQQcRDwgxElwYGQNUV0JBDGo1BjkaAA0AXzhNUGtBCg5Oa2NBVGhVQg0SEBIW" ..
+    "DXBSSVYTEQhCPQAtMAANBBxJM0hUQlVCDRIQEhYNcFJJVgQaAQ1BRVliQU5BTkEmDxBCVUINEhASFg0dExsdIhsLSyICPSsTGhhGSElBVGhVB0NWOk8fJ1om" ..
+    "CBQSWiZCJQMQJVs9DQcFJhNcM39CDRIQZl9ZPBdJS0FWIH4bgNTViMX1i8XkhMTHV04nEhASFmk1AQpWXFRHxeHan9fVi8z5iOj1kezSh529Eh48DXBSSSAA" ..
+    "GBBIa1hZOWtOQU5BY0FUaDgLQxINEgcdfHhJVkFURQ1rRTQjGU5cTlJxTX5oVUINEhASFmk1FAgDDQBFEGs6PmwkPTExJywPABscGEg4EBIWDS1eY1ZBVEVu" ..
+    "KgkVIAANCk5cYwcBJhYWRF1eGkBMPAcMX2tURQ1rRVliQTEmQCQQMSsOGgxZYVlIUw1tUh8XDQEAJ2tFWWJBTkFOLCITHwsaDEtbV3ZfXyQLQV9rVEUNawAX" ..
+    "JmsTSGRrFwAWO1shQlxWW1EXBB0OEQ0RTVZBRVliQToIGg0mQUloVyNYRl8Sc0MxEAUTBVQ1extHVUhBTkFOJSYSF2hIQg/at5jTpsWb//2E4fp9HTVbbmtO" ..
+    "QU5BFQAYPRBCEBJvdRhsJQYGMw8VB0EuNS8STWRBTkFjIhUkGQBMUVsSCw02BwcVFR0KQ2MWDSMVC0hkQWNBVGhVQg1tdxx3WCQdLBgAFglIGzMpYlxOEhoA" ..
+    "NwR+aFVCDRIQEhZgMQACNQ4aA0QsIRAwFRdJR2tjQVRoEAxJOE0bPCcEEwsFTzcKQy0MHng1AQYJDSZJD0JVQg0SZFtCQTVSVFZDNRBZJEU7NxIBQ0JrY0FU" ..
+    "aDEHXlEQDxYPuPXDk+rhjLvAgOzdh8PHhsLeif36V04nEhASFnsxHhwTQUlFcgxLODcVASMbEiwkGikXDkhWHDgWDXBSKhcNGAdMKA5Zf0EIFAACNwgbJl0U" ..
+    "BDgQEhYNcFJJVj4zS2w+ERYAFB0OKw8iAxgtEUIQEkY4Fg1wUklWQVQoTDkOOi0PCAgJJSoTADFdSycSEBIWSD4WYwtIfm95KgcKbCIBDwgIJFsgJxIFQVcY" ..
+    "STwNcFJJIggACUhrWFlgIBsVAUEVUlZkf0INEhB2U14zUlRWQ5zih67u7Kv35YT7/hVSVmR/Qg0SEGRXQSUXSUtBKyIDChANLTddPisPIgMYLRFOJxIQEhZu" ..
+    "MR4FFAAXDg12RR83Dw0VBw4tSQJhf0INEhASFg1wLS5YIAERQh1WJgcPDwMCBCdBSWgDaA0SEBIWDXBSJBcTHyZCJQMQJSUHExoYa0h+aFVCDVdeVjxQeXhj" ..
+    "IgAWFgMIChckCAlbOg4kBhgtXRknEhASFnk5BgUTQUlFDwoQDS1BOFVMTUlBVGhVJkhBUxILDXKa7tyE//DE3e6c1/44VUxNSUFUaFU0TF5FVxYQcC0uWCAB" ..
+    "EUIdUSYHDw8DAgQnTX5oVUINcVFeWk8xEQJWXFQDWCUGDSsOAEkYSElBVGhVQg0SEG1xAxEHHRk3QDpoJQQbLgQKQVNBNWtUaFVCDRIQEntMIhkqGQ8SDEoP" ..
+    "DAs2GEZIZEFjQVQtGwYnTxk4PHkxEBpYIhsLSyICQxYOCQYCBGsafmhVQg1mWUZaSHBPSVQgARFCay4cLENCa05BY0EwLQYBDQ8QEN6q+pfi44ji7sje+pHk" ..
+    "6obg8InK01Zkf0INEhBkV0ElF0lLQSsiAwoQDS0qCw8rDyIDGC0RTicSEBIWbjEeBRQAFw4NdkUfNw8NFQcOLUkCYX9CDRIQEhYNcC0uWCABEUIAABcHDw8D" ..
+    "AgQnQUloA2gNEhASFg1wUiQXEx8mQiUDECUlBxMaGGtIfmhVQg1XXlY8UHl4YyIAFhYDCAoXJAgJWzoOJAYYLV0ZJxIQEhZ5OQYFE0FJRQ+j4tOn6vuIzuel" ..
+    "zNFgnNyg1Ke9Hw98eElWQVQhSDgGWX9BTInpy6bq4aHV5Mufldqxnrbu6Z7e5YKj4oDX9ENCa05BY0EiKRkXSBINEmlqfjMcAg4nCl8+SXNiQU5BLQAvDRYp" ..
+    "FgkNDxBUQ0MzBgAZD1wWWSoRHGtrTkFOQWNBVGgqJQNzRUZZfj8AHFZcVBZZKhEcSEFOQU5BY0FUIRNCXkZRRlMNJBoMGGtURQ1rRVliQU5BTkEQFRU6ASNY" ..
+    "Rl9hWV8lWkB8QVRFDWtFWWIEAhILa2NBVGhVQg0SEBIWDQMGBgYgARFCGAoLN0lHa05BY0FUaFVCSFxUOBYNcFJJVkFUKEw5DjotDwgICSUqEwAxXUsnEhAS" ..
+    "Fkg+FmMLSH5veSoHCmwiAQ8ICCRbICcSBUFXGEk8DXBSSSIIAAlIa1hZYIj46ov03IbW+JPws9WegxQBWlJJVkEiBEE+AFl/QTEmQCkqFRYnDT1oXFFQWkg0" ..
+    "XmNWQVRFbioJFSAADQpOXGMHASYWFkRdXhpABFpSSVZBVEUNazo+bCkHFQwOOz4xJhQAQVdUEgsNJnhJVkFURQ1rRRgyEQIYJgg3AxswNA5BGhk4Fg1wUklW" ..
+    "QVQoTDkOOi0PCAgJJSoTADFdSycSEBIWSD4WYwtIfm95KgcKbCIBDwgIJFsnJBwGSEAYSTwNcFJJIggACUhrWFlghszRiPPdhtr5kMaK14C9FAFaUklWQTAA" ..
+    "XihFRGJDhsvRh9bVk+rFhL+s15yHyPTVjMbuVkkna0VZYjcPDRsEY1xUM1UvRFwQDxYcfFIkFxlUWA1+VUluQSoECAA2DQBoSEJydR56X1kyHREpMh0fSGsY" ..
+    "VUhBTkFOIiINGCoUAUYSDRJQWD4RHR8OGk1bYm9ZYkFOQU5BYz4zZj0LWVBfSml+OQgMVlxUEydrRVliQU5BTgglQSsPWypERlJdTnIVHAgUDREBDT8NHCxr" ..
+    "TkFOQWNBVGhVQg0SUUJGQSk6AAIDGx1sJwlRa2tOQU5BY0FUaBAMSTgQEhYNcFJJViwVF0YIChckCAklBxM3GFxhf0INEhBXWElaD0B8ayAETzhLOi0PCAgJ" ..
+    "WxcOEy8ZBwVJOhIWDXAmAAINEUUQa0eRxcuL6vuIw+Kc/+RAATgQEhYNBhMFAwRUWA0UIlcDFBoOKA0mBFhCVUINEnNTWkEyEwodQUlFSz4LGjYIAQ9GF2pr" ..
+    "VGhVQg0SEBJpan4zHAIOMglILkVEYhdkQU5BY0FUaFULSxJGEkJFNRxJfEFURQ1rRVliQU5BTjI3AAY8NBdZXXZeU0h4W0l8QVRFDWtFWWIEAhILQUlBVGhV" ..
+    "Qg0SEBIWDXAhHRkRNRBZJCMVJwRGSE5rY0FUaFVCDRJVXFIncFJJVkFURQ0GBAspIgEPCAgkJR06ARsFGzoSFg1wFwcSawlMJ0ExGCASQCIBDyUIE3ImDkRW" ..
+    "VUAeVlpSSVZBIAxZJwBZf0FMiO7iq9bloNTixLW/17aRcFpMX0NYbw1rRVkGBB0CTlxjQ5zp9YuqvdSPuMvGzoHezJHLt67lxarmxITl9Kbf9KzN6MSRq9ut" ..
+    "j3JeY1ZBVEV7KgkMJ0FTQRVrY0FUaFVCDRJ9W1gNbVJYWmtURQ1rRVliQSMAFkF+QUV4RU4nEhASFg1wUkkyBBIEWCcRWX9BMSZAIDYVGw4ZB0h6YDgWDXBS" ..
+    "FFprVEUNayYYLg0MAA0KY1xULgAMTkZZXVgFJltjVkFURQ1rRVkdJkAgGxUsJxgtECp9Eg0SQCdwUklWQVRFDQYECykiAQ8ICCQlHToBGwUbOhIWDXAXBxJr" ..
+    "CUwnQTEYIBJAIgEPJQgTciENSlVcVx5WWlJJVkEgDFknAFl/QUyGydqq+NCv+8vInIbXvbi0z/VUTX5FDWtFLyMNGwROXGM+M2YnB0BdRld3QzkfRXxBVEUN" ..
+    "CAQVLgMPAgVBfkESPRsBWVtfXB5beXhJVkFURQ1rRSYFTzwEAw41BDUmHA8NDxBEPA1wUklWQVRFRC1FD2IVBgQAQUlBVGhVQg0SEBIWDXAhHRcTADdIJgoP" ..
+    "JyAACANJakF+aFVCDRIQEhZIPAEMVmtURQ1rRVliQU5BTkEQFRs4JwdAXUZXd0M5H0FfQX5FDWtFWWJBTgQABUlBVGhVQg0SEH9XXzsxBhgHHQJpIhcNO0lH" ..
+    "a05BY0ERJhFoUBs6OGJMMgFHNQ4aA0QsXy0tBgkNC0k4a1RoVUJ5W0ReUw1tUkuQ0cCBlcGN2M6J29FMTUlBVGhVNExeRVcWEHAtLlg2FRFIOTIYLgorDw8D" ..
+    "LwQQZH9CDRIQcVdBPBAIFQpUWA0tEBchFQcOAEk1SH5oVUINEhASFnIXXD4XFREXeioJEgcPDwMCBCdBSWgDaA0SEBIWDXBSJBcTHyZCJQMQJSUHExoYa0h+" ..
+    "aFVCDVdeVjxQeXhjIgAWFgMIChckCAlbOg4kBhgtXRknEhASFnk5BgUTQUlFD6zCwqv4yoTcyKXdy2pZaA0SEBJgTDwHDFZcVDpqZTccLw4YBCIANQAxJhQA" ..
+    "QVdUHjwNcFJJNQAYCU8qBhJiXE4HGw8gFR0nG0pbGzoSFg1wUklWQSsiAxkAFC0XCy0PFyIkGikXDkhWEA8WW1pSSVZBVEUNaygYMAotDgAHKgYwIQcWVBoZ" ..
+    "OBYNcFIMGAV+GARBby0jAx1PLQ4tBx0vTzZCVVdeUwUreElWQVQxRD8JHGJcTkOJxviI7eyczpHauIvTr+eXx8VDWG8Na0VZFAACFAtBfkErD1swSF9fRFNq" ..
+    "OB0aAjIcDF0HBA8jJAAADA0mBVhCVUINEnNTWkEyEwodQUlFSz4LGjYIAQ9GF2prVGhVQg0SEBJpan4gDBsOAgBqIwoKNjIGCB4tIhcVDRsDT15VVhYQcARj" ..
+    "VkFURQ1rRVkPABwKLQ4tBx0vMQtfRkkaHydwUklWBBoBJzZMc0g1DwMdTxAKHSQZERdhVVFCRD8cQQ1BIAxZJwBZf0FMienLpurhrf31xYGuEBZQeXg9FwMH" ..
+    "S34gDBUuElQlHA4zBRs/G0pWOBASFg0EGx0aBFRYDWmM+PqH/eaH+OCG89dXTicSEBIWezEeHBMSVFgNMEVbpNTZid3rYU1UapPXmtqLvxQNLV5jVkFURXsq" ..
+    "CQwnQVNBMSZtMhEkEAFZZlVTWw1tT0lUMR0XTD8ACmBBDw8KQWGHwf+d0acQEF1EDXKU3MGJz+gPZ29ZYkFOIg8NLwMVKx5CEBJWR1hOJBsGGEkCTCdrRVli" ..
+    "QU5BTj4ETyctGQdORmRXV0BwT0kAQUlYDWmDzPWJ3etMQSIPEGhXMkRAUUZTXnJSBgRBVihMOQwXJxJMa05BY0FUaFVCfldcV1VZBBcIG0ldbw1rRVliQU5B" ..
+    "IwAxCjcnGwREVXRbRFkpWkB8QVRFDS4LHW5rE0hkNSIDB2YmCUReXEEMeT8VDhoEXB4NQUVZYkE6CBoNJkFJaFeKqpjVuaPI2OWBxf9WSQ1BRVliQTgAAhQm" ..
+    "QUloKiUDdGRiBHIVHAgUDREBAUFFWWJBLQACDSEAFyNVXw1URVxVWTkdB14XXW8Na0VZYkFOQTEmbScgGEc9aFxRUFpINFJUVhd+RQ1rRVliQU4ICEE1QQAg" ..
+    "EAwnEhASFg1wUklWQVRFRC1FJgVPKDU+PgYPFSoZB0kSUVxSDSQLGRNJJxFCOyMtEicCCAkJN0hUdUhCD1RFXFVZOR0HVEEADUglRXNiQU5BTkFjQVRoVUIN" ..
+    "EhASZVk/Ai8iMTIJRCwNDWpIZEFOQWNBVGhVQg0SEFdYSVpSSVZBVEUNa0VZYkE9FQ8TNycgGDMORFVYRgQFeXhJVkFURQ1rRVliQU4ICEEUCBosICsNRlhX" ..
+    "WA1aUklWQVRFDWtFWWJBTkFOQRQIGiwgKxd8X0ZfSylaElY1HRFBLkVEYkOG5sSEyPSRwOKKnqwSHhZuPxwdEw8ARRBrR5z104f35YTW/lZkVQZYQFFGX0I+" ..
+    "UlRWUlQYBGtvWWJBTkFOQWNBVGhVB0NWOhIWDXBSSVZBEQleLm9ZYkFOQU5BY0FUaFUxWV1AdGJ9Fh4AEQkAVwVib1liQU5BTkFjQVRoVQtLEmdbWEkFO0kC" ..
+    "CRELDUFFWWJBTkFOQWNBVGhVQg0SZ1tYSQU7UzgOAAxLMk0CYjUHFQIEY1xUap3lh9e7p9Olx5ra6ENYRW4kCw0nDxpBU0FhhMP6nPWx26a7FAFwFhwEAAAM" ..
+    "QiVFRGJSThxHQUlBVGhVQg0SEBIWDXAXBxJrVEUNa0VZYkELDwprY0FUaFVCDRJ9U0RGEx0HEAgTIUQ5EQBqSGRBTkFjBBosfx8EODpmV08jXDodCBgJXnE2" ..
+    "FSsFCxNGGklBVGhVNkRGXFcWEHBQgPj3kcu3rOvQp8/YiPfxpfj2ruzgxKSjEBoncFJJVjcVCVguRURiGmRBTkFjQVRoVS9EXBAPFhtgXmNWQVRFDWtFWQ8A" ..
+    "FkFTQXBRRGR/Qg0SEBIWDXA2DBAAAQlZa1hZHSZAJzoxcT4gIRgHQkdEfl9AOQZjVkFURVBnb1liQU4iDw0vAxUrHkIQElZHWE4kGwYYSQJMJ2tFWWJBTkFO" ..
+    "PgRPMhwlUHJmWV9TQiUGJR8MHRENdkUPSEFOQU5BY0FUBRQQRnFfXFBENzYABBUNTQRBRVliQQsPCms+SH5CIQNPQR5hXUQ8HhpMIwERWSQLUTlrTkFOQRcI" ..
+    "ACQQQhASEtqBnrnz55H0woCkxoLi7IfG+Inv6oTa/ldOJxIQEhZuMR4FFAAXDg12RR83Dw0VBw4tSV1CVUINEhASFg05FEkpJlojeRtXJgEUHBMLDzc1FToS" ..
+    "B1kSRFpTQ1pSSVZBVEUNa0VZYkECDg0AL0EHIxwSXVdUfFdANVJUVj4zS2sfNUsdIhsTHAQtFSApBwVIRh58V0A1eElWQVRFDWtFWWJBTj4pTwU1JHoqIEFT" ..
+    "U1laRCMGMikmWiN5G1cmARQcEwsPNzUVOhIHWW8QDxZZIgcMfEFURQ1rRVliQU5BTj4ETzIcJVBycUVAREg+Bj0XExMAWWtYWSwIAmtOQWNBVGhVQg0SEBJp" ..
+    "an40PSZTKzFMOQIcNi0BAgU1KgwRaEhCQkEeUVpCMxlBX2tURQ1rRVliQU5BTkEqB1QfHAxJZ3kSQkU1HGNWQVRFDWtFWWJBTkFOQWNBIyEbBnh7CnxZWTkU" ..
+    "EF4aVDFEPwkcYlxOQ4joyIT/3Z3VntuxvBQBcDEGGBURC1lrWFlghNnThtbwiPXGncuf16C/0bb+lMHvhvrMyOXTW25BChQcADcIGyZVXw0BEE8fJ3BSSVZB" ..
+    "VEUNa0VZYgQABWRBY0FUaFVCDVdcQVMncFJJVkFURQ1rRVliCAhBOQgtBSEBVRZFV144Fg1wUklWQVRFDWtFWWJBTjYHDyc0PXI7DVlbVkseVnAmAAINEUUQ" ..
+    "a0efy+qL6vuJ9NKdyftAARJzXVhZNRwdVlxUR8rQy5zL7IjT/Iff6J3G44eDqNeossrL3I/e+JPrhK7Lz2BNTgUbEyIVHScbQhASAxJLBFpSSVZBVEUNa0VZ" ..
+    "YkELDwprY0FUaFVCDRJVXFIncFJJVgQaASc2THNINQ8DHU8QCh0kGREXYVVRQkQ/HEENQSAMWScAWX9BTInpy6T/8GpVHwQ4OmZXTyNcOh0IGAlecTEWJQYC" ..
+    "BEYaSUFUaFU2REZcVxYQcFCA4OqR8LKj4tOl/+pBRofJ4ZzLyEILEn0DHw98eElWQVQzTCcQHGJcTj4pTxAIGC0bFmxbXXdYTDIeDBJNfkUNa0U1LQIFBApB" ..
+    "fkEQIQYDT15VellCO15jVkFURWEkBhInBToIGg0mQUloEQteU1JeU2U/HQJWABoBDWNHntnPi+jjhfvsktzahKKGEBAWA35SHRkSABdEJQJRJxkLAhsVLBM6" ..
+    "KRgHBBIeHBYPcJf2wYnV6cjSzVtrQQETTg8qDVhCVUINEnNTWkEyEwodQUlFSz4LGjYIAQ9GF2prVGhVQg0SEBJfS3AWAAUAFglIAwoWKUEaCQsPYxMRPAAQ" ..
+    "QxJVXFIncFJJVkFURQ0UIlcRCAIEABUCCBkNGwNPXlVWFhBwBGNWQVRFDWtFWQ8AHAotDi0HHS8xC19GSRofJ3BSSVYEGgEnNkxzSDUPAx1PEAodJBkRF2Zf" ..
+    "VVFBNVoSfEFURQ0fDA0uBE5cTkOk9N+h6MDEvKbXmLdyXmNWQVRFaS4WGmJcTkOK39iG8OmT0bjWjY3Rufia7tyG6uHK0eGc1/6L6vuE2slWZH9CDRIQZFdB" ..
+    "JRdJS0ErIgMIBBQuDg0KKw8iAxgtEU4nEhASFm4xHgUUABcODXZFHzcPDRUHDi1JAmF/Qg0SEBIWDXAtLlgiFQhBJAYSBw8PAwIEJ0FJaANoDRIQEhYNcFIk" ..
+    "FxMfJkIlAxAlJQcTGhhrSH5oVUINV15WPFB5eGMiABYWAxgOEC4NHVs6DiQGGC1dGScSEBIWeTkGBRNBSUUPov/zpt3jh8TDpdnYYJHaoNWutt+32pfm/UhW" ..
+    "SSdrRVliNw8NGwRjXFQXMkx+W1xXWFkRGwQiBBUIbiMAGilNZEFOQWMiFSQZAExRWxILDTYHBxUVHQpDYxNQSEFOQU5BY0FUFzJMfltcV1hZERsEIgQVCG4j" ..
+    "ABopQVNBGGtjQVRoVUINEn1TREYTHQcQCBMhRDkRAGpIZEFOQWMEGix/HwQ4OmZXTyNcOh0IGAlecTYcIRUHDgBJOEEgIQEOSBINEhTJ7c2O4smS762j5sRg" ..
+    "QRNIZGsvDhcpGUJLR15RQkQ/HEkxBAAgQyoHFScFOQQPESwPOCEGFgUbOhIWDXAeBhUAGEVBIhYNYlxOGhNrY0FUaBMNXxJHV1ddPxwnFwwRSQ0vBA0jQQcP" ..
+    "ThEiCAY7XT1qHHFHQkIDGQAaDSMATDsKFzFITgUBa2NBVGhVQg0SWVQWSTEGCFgkGgRPJwBZNgkLD2RBY0FUaFVCDRIQEhZZMRAFE08dC14uFw1qDQcSGk1j" ..
+    "FhEpBQ1DfFFfUwRaUklWQVRFDWsAFyZrTkFOQSYPEEJVQg0SQldCWCIcSRoIBxEnLgsdSGsCDg0AL0ESPRsBWVtfXBZqNQYsGAAWCUgvNhIrDQItBxI3SQMt" ..
+    "FBJCXGRLRkh5eElWQVQJQigEFWINBxIaQX5BDzV/Qg0SEF5ZTjEeSRIAAAQNdkUmBU8vFBoOEAodJBk1SFNAXVheCwUMFxEbC3kyFRwfa05BTkEqB1QsFBZM" ..
+    "EkRaU0NaUklWQVRFDWsDFjBBHQoHDS8vFSUQTg1BW1taQRQTHRdBHQsNOwQQMBJGBQ8VIk8nIxwOQUEZElJCWlJJVkFURQ1rRVliQQcHThIoCBgkMQNZUx53" ..
+    "WEwyHgxWFRwAQ0FFWWJBTkFOQWNBVGhVQg0SRFNUQTVcABgSERdZYwkQMRVCQR0KKg0YBhQPSBs6EhYNcFJJVkFURQ1rABcma05BTkFjQVRoEAxJOBASFg01" ..
+    "HA18QVRFDTkADTcTAEECCDAVfi0bBic4ZFNUXn4hAh8NGBYXHwoeJQ0LSRVrY0FUaCELWV5VEgsNcjMcAg5UNkYiCRUxQ0JrTkFjQSIpGRdIEg0SaWp+MxwC" ..
+    "DicORCcJNCMIACQAACENEWR/Qg0SEHFXQTwQCBUKVFgNLRAXIRUHDgBJNUh+aFVCDRIQEhZyF1woAxUbNkYiCRUPAAcPKw8iAxgtVV8NRDoSFg1wUklWQTkE" ..
+    "XyAmFiwHBwYqCDEVDWBcaA0SEBJTQzR4FF9rfjFMKRZXEQoHDQISeSUGJwUGQkVeGk0ncFJJVjUdEUEuRURiQ4fk44b+z1Zkf0INEhB2U14zUlRWQzkAQS4A" ..
+    "VQQTGwgaTRAWGzoRTmpHXhAaJ3BSSVYsAQlZIkVEYhUcFAtNSUFUaFU0TF5FVxYQcDUMAiQaBE8nAB0VBA8RAQ8PCAc8XUsBOBASFg0GEwUDBAdFEGseWw8E" ..
+    "AgQLQ29BVgoZDVUSdkBDRCRQRVZDJxJCOQFbbkFMJhsPYRxYQlVCDRJzU1pBMhMKHUFJRUs+Cxo2CAEPRhdqa1RoVUINEhASUEIiUgJaQQMhTD8EWSsPThEP" ..
+    "CDESXBcyTGxHRF1lRjkeBSEEFRVCJRZQYgUBQWRBY0FUaFVCDRIQEhZaFBMdF08xC0wpCRxiXE4HDw0wBFRCVUINEhASFg01HA18QVRFDWtFWWIHARNOCm9B" ..
+    "AikZQkRcEEJXRCIBQQBIVAFCQUVZYkFOQU5BY0FUaBkNTlNcEkFjMR8MVlxUEVQ7AFEpSE5cU0FhDwElFwdfEBBTWElwBAgaQRsXDSBvWWJBTkFOQWNBVGhV" ..
+    "DkJRUV4WRCM3BxcDGABJa1hZNhgeBEYKakFJdVVAQ0ddUFNfclIIGAVUEV8+AFktE04XDw1JQVRoVUINEhASFg1wGw9WCAcgQyoHFScFTgAABWM+M2Y0F1ld" ..
+    "Y1lfQTwlDBcRGwteEBI3IwwLPE4VKwQaQlVCDRIQEhYNcFJJVkFURQ0UIlcDFBoOPQoqDRgfEANdXV5BbVoeEwQTPFogQyoHFSdBU0EaEzYEfmhVQg0SEBIW" ..
+    "DXBSSRMPEG8Na0VZYkFOQQsPJ2tUaFVCDRIQEntMIhkqGQ8SDEoPDAs2GEZIZEFjQVQtGwYnTxk4PHkxEBpYMh8MQScWQxERDwILSWprfhwUAF4cY1lfQTwB" ..
+    "UzIIAgxJLhdRa2tkNQ8DME8nIxwOQUEKYUZMMxdBX2t+MUwpFlcRCgcNAhJ5JQYnBQZCRV4aTSdwUklWNR0RQS5FRGJDiOrdh/D0XAUQDkhXGRAaJ3BSSVYs" ..
+    "AQlZIkVEYhUcFAtNSUFUaFU0TF5FVxYQcDUMAiQaBE8nAB0RCgcNAi0qEgBgVy9IXlVXFAR8eElWQVQzTCcQHDFBU0EVQxlDWGhXOg8eEBB1Dy1eY1ZBVEVu" ..
+    "KgkVIAANCk5cYwcBJhYWRF1eGkAEWlJJVkFURQ1rLRgsBQIEPQoqDRgMBw1dVl9FWAVyPwwaBBFHAWsTUEhBTkFOQWNBVAUUEEZxX1xQRDc2AAQVDU0EQUVZ" ..
+    "YkELDwprPkh+QiEDT0EeYV1EPB4aTCUGCl0vCg4sSRVrTkFjQSAhAQ5IEg0SFMvO7ozZx1wnQSQdWQQTGwgaSGFNfmhVQg1/RV5CRHBPSQITAQABQUVZYkE4" ..
+    "AAIUJkFJaDIHWXdeU1RBNRY6HQgYCWEiFg1qQywNARljJwY9HBYPGxw4Fg1wUj8XDQEAXmtYWTlDNENCQWE5VmRVQG4QHBIUe3JeSVQnVhgBQUVZYkEtAAIN" ..
+    "IQAXI1VfDVRFXFVZOR0HXhddbw1rRVliQU5BJgAtBRgtJglEXlx2REIgFgYBD1xHbycKAWInHBQHFWFNVD5caA0SEBIWDXBSJBcTHyZCJQMQJSUHExoYa0h+" ..
+    "aFVCDVdeVjxQeXhjIgAWFgMYDhAuDR1bKhMsERAnAgwFSToSFg1wJgACDRFFEGtHnMrhRjIZDjEFXWpZaA0SEBJ7WDwGAFZcVBFfPgBVSEFOQU43Ig0BLVVf" ..
+    "DXVVRnNDMRAFEwUnDkQnCTUrEhpJTDI0DgYsV0sBOBASFg0GEwUDBAdFEGseWxhDQkFMOWEcWEJVQg0Sc1NaQTITCh1BSUVLPgsaNggBD0YXamtUaFVCDRIQ" ..
+    "En5MPhYFEzIfDEEnIQstEQoOGQ9rQyc/GhBJEBwSQARaUklWQVRFDWsoGDAKLQ4AByoGMCEHFlQaGTgWDXBSDBgFfhgEQW8tIwMdTz0KKg0YO08mX11AVlla" ..
+    "PloSfEFURQ0fDA0uBE5cTkOlxvlgMhdDGxIePA1wUkk7FBgRRGtYWTYTGwRCa2NBVGgjA0FHVRILDRcXHTMPFQdBLgEqKQgCDSIIMBVcajIXQxAZHjwNcFJJ" ..
+    "IAAYEEg4RURiGkw7TE1jQyxqCE4nEhASFm4xHgUUABcODXZFHzcPDRUHDi1JAmF/Qg0SEBIWDXA6CBgFGAB+IAwVLiUcDh4FLBYaYFclWFwSHhZbeXhJVkFU" ..
+    "RQ1rRTQjEwUiAQ8lCBMMHBBZSxgbPA1wUkkTDxBvUGJvcxYADBJAMiYVACEbBV4IY1dVWTkdB14aVDFEPwkcYlxOQ4fmzobJ5p3nntSsnhQNLVtjfDUVB15l" ..
+    "Nhw2FQcPCRJ5IwE8AQ1DGks4Fg1wUj0fFRgADXZFW6fR6Yfn4aX9/aHw78qPntS3j7XMwJPp6YCKwEdVSEFOQU4oIA4aaEhCD0ZCU0VFfUBLWmtURQ1rIRwx" ..
+    "Ak5cTkOlye2g3frKsIrXiKi59eSR3NpFyfPun+7Ai/TxhMj0nM3GhLGe1qu0y8TLjvTbke2wrsLyqsnDhMD7YU1+aFVCDXFRXlpPMRECVlxUA1glBg0rDgBJ" ..
+    "R2tjQVRoVUINElxdVUw8UgYdQUlFXSgEFS5JCBQAAjcIGyZdSycSEBIWDXBSSVZBVEVELUUNOxELDghJKhISJxkGSEAZEgsQcFAPAw8XEUQkC1tiAAAFThU6" ..
+    "EREnE0pAU1tXUEI8FgwESFRYEGtHHzcPDRUHDi1DVCkbBg1cX0YWRCMUBhoFERcFCAoXJAgJJwENJwQGYVUWRVdeOBYNcFJJVkFURQ1rRVliQU4MDwomBxsk" ..
+    "EQdfGnNdWEs5FS8ZDRAAX2JvWWJBTkFOQWNBVGhVB0NWOhIWDXBSSVZBVEUNawwfYhUXEQsOJUkDOhwWSFRZXlMEcE9UVkMSEEMoERAtD0xBGgkmD35oVUIN" ..
+    "EhASFg1wUklWQVRFWjkMDScHBw0LSQAOGi4cBWtbXFcaDRgGHQYyERdbIgYceCs9LiAkLQIbLBBKZFxZRl9MPDEGGAcdAgRib1liQU5BTkFjQVRoVQdDVjoS" ..
+    "Fg1wUklWQRELSWJvWWJBTkFOQWMIEmgaCQ1GWFdYJ3BSSVZBVEUNa0VZYiIBDwgIJCUdOgEbDQ8QVFdBIxdjVkFURQ1rRVliQU5BOQgtBSEBTyxCRllUTwUr" ..
+    "eElWQVRFDWtFWWJBTkFOQWM1HTwZBw0PEBDfqN2V1NiG2ezI9eCQxeyJ3MBDb2tUaFVCDRIQEhYNcFJJVkFUJkIlERwsFU5cTkOn2f+u2cPIp6/Xvbi499qQ" ..
+    "/diAk8eAycWEwO2L5OuG4NeT96US16eAyNn/jPz+nOaQr930p+75hNPQqv7LalloDRIQEhYNcFJJVkFURQ1rRT03Ew8VBw4tQUloQWgNEhASFg1wUklWQVQY" ..
+    "BEFFWWJBTkFOQSYNBy1/Qg0SEBIWDXBSSVZBIwxDLzAweC8BFQcHOkkPQlVCDRIQEhYNcFJJVkFURQ0fDA0uBE5cTkOq5vmvyMzIloHUo7pyXmNWQVRFDWtF" ..
+    "WWJBTkFOQWNBNycbFkhcRBILDXKV7deHx/DIz9ec7/mGycOE7fuS4uFCxZm71ZSXuNjkk/7DjYzHgODqh/bOi/Hlh+Dnk+2Z1Jqm0IzYl8bdhPHAD2dvWWJB" ..
+    "TkFOQWNBVGhVQg0SEHZDXzEGABkPVFgNf29ZYkFOQU5BY0FUaFUfBDgQEhYNcFJJVgQaASdrRVliBAAFZBxqa34cFABeHGNXQlk5HA4FWycATj8MFixJFUE6" ..
+    "CDcNEWhIQg/VpZnenvqawduE2v8PaxhQSGs6AAwSbTIRPAELQ1VDCGJCNxUFE0kPbw1rRVkWCBoNC0F+QVav3+PKkoR0Zn60yuOf+ORHAUFFWWJBOAACFCZB" ..
+    "SWgqJQNnXl5ZTjs0OSVNfkUNa0U6Iw0CAw8CKEFJaBMXQ1FEW1lDeAEdFxURTCdrRVliQU5BTj4ETyEmGQ1OWXZiZQ1tUhoCAAAAJ0FFWWJBTkFOQSoHVBcy" ..
+    "THhcXF1VRhYiOlYAGgENOAANJBEdAg8RYxUcLRtoDRIQEhYNcFJJVkFUFkg/AwkxAg8RRlh6WF1CVUINEhASFg01HhoTa1RFDWtFWWJBTkFOQSoHVDsQFktC" ..
+    "Q1FXXXAGARMPfkUNa0VZYkFOQU5BY0FUaFURSEZWQkVOMQJBRkh+RQ1rRVliQU5BTkFjBBosf0INEhASFg1wFwcSa1RFDWtFWWJBIwAcCgAOGi4cBWlbQkZP" ..
+    "BXl4SVZBVABDL28Ea2tkNQ8DME8nLQEWRFxXQQx5PxUOGgRcHidrRVliNQcVAgRjXFRqkd+j27W/0IXxl9X5Q1hvDWtFWQYEHQJOXGNDkezSh5S31bacyNzk" ..
+    "j+PpnOaQaUlzYkFOQTgALxQRaEhCcnUefllaBhsaAwAYKEIvAFVIQU5BTiIiDRgqFAFGEg0SUFg+ER0fDhpNW2JvWWJBTkFOQWM+M2YmB1l+X0VgRCMHCBoy" ..
+    "AARZLk0Pa2tOQU5BY0FUaDgDX1lzXVhLORUtHxMAHAVib1liQU4EAAVJHF1CfzZMUEMcZUgkBgAYBgdfeSQCHi4ERhpkQWNBVBwcFkFXEA8WD7fV0p/40I2S" ..
+    "/Izl5UNCa05BY0EiKRkXSBINEmlqfiAMGw4CAGskAjwsAAwNCwVva1RoVUJuU1xeVEwzGUlLQRIQQygREC0PRhdHa2NBVGhVQg0Sb3UYfzUfBgAEMgpKDgsY" ..
+    "IA0LBU5cYxd+aFVCDRIQEhZENlIfVhUcAENBRVliQU5BTkFjQVRoKiUDc0BCWlQCFwQZFxEjQixNUEhBTkFOQWNBVC0bBicSEBIWDXBSSTsABg5uJAsfKwYq" ..
+    "CBwVOkldQlVCDRJVXFInLVtjfDUVB15lNhw2FQcPCRJ5MhErAQtCXBhJFnk5BgUTQUlFD6PN1KfP9ENOHGprfhwUAF4cY1dCWTkcDgVbIApKLAkcahpOa05B" ..
+    "Y0EgIQEOSBINEhRsPgYAViAyLg9nRXNiQU5BKgQwAlR1VUDEqoLUm4+55PuR3NqNj+CNweCE6dtMTWNrVGhVQntTXEdTDW1SNjFPNQtZIiQ/CT4rLy8jDyQw" ..
+    "ZH9CDRIQcVdBPBAIFQpUWA0tEBchFQcOAEk1SFRCVUINEhASFg0PNUc3DwAMbA0uJgcvLyMiJAdBSWgDaA0SEBIWDXBSABBBKyIDCgsNKyAoKjEkDSA2BDAm" ..
+    "DUZYV1gNWlJJVkFURQ1rRVliQSsPDwMvBDUmAQtsdHsaHw1aUklWQVRFDWsAFTEETmtOQWNBVGhVQg0SEBJyRCMTCxoENQtZIiQ/CUlHQWRBY0FUaFVCDVde" ..
+    "VjwNcFJJVkFURWAqFxIBDgAHBwYHCAY8DEoEOBASFg01HA18HF1vJx8EGzFPPQQaFSoPEztPNkJVV15TBStSY1ZBVEV5IhEVJ0FTQUyJxMuRw+CLqr/WpIbE" ..
+    "0NGP+MRWSQ1BRVliQSoEHQJjXFRqk/Sa1Yeo0KXGmsvdiczHyMzfn9vjhubEhMj0nc/4hLuC1biWyNXXjcrbkvmgrvzRYE1Oa05BY0EiKRkXSBINEmlqfjMc" ..
+    "Ag4mAEckDBcHDw8DAgQnTX5oVUINcVFeWk8xEQJWXFQDWCUGDSsOAEkYSElBVGhVQg0SEG1xAxEHHRkzEQ9CIgs8LAAMDQsFY1xUPn9CDRIQEhYNcD8IBAo3" ..
+    "CkMtDB4GCBwVF0lqa1RoVUJIXFQ4SwRaeD0XAwdLfi4RDSsPCRJUNSwGEyQQSlYSOhIWDXAmAAINEUUQa0efzfqI/eOE/e2cz9+HpqfVrYHF8f5LWmtURQ1r" ..
+    "IRwxAk5cTkOm6fOu+vnJjorUqqC168GQ+PaNquGA8teI6eyI9/OJyMGQ54gQHDgWDXBSPxcNAQANdkUmBU8vFBoOBhkRKwAWSB46EhYNcDEIGg0WBE4gRURi" ..
+    "BxsPDRUqDhpgA0snEhASFg1wUkkpJlokWD8KPDoEDRQaBGNcVD5/Qg0SEBIWDXB4SVZBVEUNa0UQJEExJkAgNhUbDQ0HTkdEVxZZOBcHfEFURQ1rRVliQU5B" ..
+    "TgglQQU9EBdIbV9caVk1HgwGDgYRDT8NHCxrTkFOQWNBVGhVQg0SEBIWDScAAAIEEgxBLk1bAxQaDiwONg8AMVsERF5VEBoNcgYbAwRWTCdrRVliQU5BTkFj" ..
+    "QVRoVUINQ0VXQ0gPHQcpFREJSDsKCzZJPQIcCDMVOCcUBl5GQltYSnl4SVZBVEUNa0VZYkFOQU5BYzYdJhE3ZAh+XUJENgtBDWtURQ1rRVliQU5BTkFjQVRo" ..
+    "VUINEmRbQkE1UlRWQ53lt6z63GBNZEFOQWNBVGhVQg0SEBIWDXBSSVZBNwpDPwAXNkFTQUyE9NOd3v6HuK3YtZzI2+eM6dacxKFpSXNiQU5BTkFjQVRoVUIN" ..
+    "EhASFg1wUi0DExURRCQLWX9BXWtOQWNBVGhVQg0SEBIWDXBSFF9rVEUNa0VZYkFOQU5BJg0HLX9CDRIQEhYNcFJJVkFURQ1rMhAsBTsoVC8sFR0uDEpWOBAS" ..
+    "Fg1wUklWQVRFDWtFWWJBTkFONSoVGC1VXw0Q1qaZy9/GgPrOnM+JaUlzYkFOQU5BY0FUaFVCDRIQEhYNcFIqGQ8AAEM/RURiQ4rczobYz5HB+IW3ttaBnsjV" ..
+    "14zvyZDdoK3x1qTu2kNCa2NBVGhVQg0SEBIWDXBSSVZBVEUNDxALIxUHDgBBfkFHQlVCDRIQEhYNcFJJVkFURQ02THNiQU5BTkFjQVRoVUJIXFQ4Fg1wUklW" ..
+    "QVQAQTgAc2JBTkFOQWNBVGhVQkRUEENDSCUXNhkPKxFIJwAJLRMaQQ8PJ0EdOxMLQVcYEHdYJB0rGRQaEVRlAxAuBExIThUrBBpCVUINEhASFg1wUklWQVRF" ..
+    "DS8AFSQIAgRGQwIUACc3DVhcREsYSzkeDFRIfkUNa0VZYkFOQU5BYwQaLH9CDRIQEhYNcFJJVkEjDEMvMDB4LwEVBwc6SQ9CVUINEhASFg1wUklWQVRFDR8M" ..
+    "DS4ETlxOQ6rh7q/qxw8eOhIWDXBSSVZBVEUNa0VZYkEtDgAVJg8AaEhCD9eHgN+6zJv//4nzz8jA8Jzd1obA4kNva1RoVUINEhASFg1wUklWQVQhWDkEDSsO" ..
+    "AEFTQXBrVGhVQg0SEBIWDXBSFF9rVEUNa0VZYkELDwprY0FUaFVCDRJ9U0RGEx0HEAgTIUQ5EQBqSGRBTkFjBBosfx8EODpmV08jXDoTFQAMQywWQwYTAREK" ..
+    "DjQPXDN/Qg0SEGZfWTwXSUtBVoys84PqxYXW2ofAz0NYQlVCDRJmU1pYNQFJS0EADUgmADUrEhpNTkFjQVRoVUINEhASPA1wUkkgABgQSGtYWR0mQDUGBC4E" ..
+    "WGhVQg0SEBIWDXBSSXxBVEUNCAQVLgMPAgVBfkESPRsBWVtfXB5eJBMdE0h+RQ1rRVliQU4+KU8XCRElEEIQEkNGV1k1UklWQVRFDWtFWWJBTmtOQWNBVGhV" ..
+    "QnpbXlZjZGohDAI1HABALk0KNgAaBEdrY0FUaFVCDRJ9U0RGEx0HEAgTIUQ5EQBqSGRBTkFjBBosfx8EODpmV08jXDoTFQAMQywWQxYOCQYCBGsafmhVQg1m" ..
+    "WUZaSHBPSVSJ88/IwPCQ2NCG9uFBFihWZH9CDRIQdlNeM1JUVkOd86au8Oak+OyE3uam/dxoRkLKlaLXiKG49cOT6uGMt/qN7s2F1eqH/OFDWEJVQg0SZlNa" ..
+    "WDVSVFY+M0tsPhEWCggKBCsPIgMYLRFOJxIQEhZuMR4FFAAXDg12RR83Dw0VBw4tSQJhf0INEhASFg1wLS5YIAERQgMMHSckAAAMDSYFVHVVFCcSEBIWDXBS" ..
+    "SR8HVBMNPw0cLGtOQU5BY0FUaFVCDRJDRldfJDMcAg48DEkuMRAvBBxJR2tjQVRoVUINElVcUidwUklWQVRFDQYECykiAQ8ICCQlHToBGwUbOhIWDXAXBxJr" ..
+    "CUwnQTEYIBJAMgsVNwgaLwZYZldJUF9DNFoSVmtURQ1rMRA2DQtBU0FhhMvjk++a272HFAFweElWQVQhSDgGWX9BTIThzqX6wK7h2w8eEDgWDXBSPxcNAQAN" ..
+    "dkUmBU8tFBwTJg8AAxAbATgQEhYNExMFGgMVBkZrWFkkFAACGggsD1w+XGgNEhASFg1wUjYxTzcQXzkAFzYqCxhOXGMVDTgQDUsaRhsWEG1SSzMPAQhkPwAU" ..
+    "YEEPDwpBNU86KRgHDV1CEkJCIwYbHw8TTVtib1liQU5BTkFja1RoVUINEhASX0twHAYCQSsiAwAAAAYIHQAMDSYFVDwdB0M4EBIWDXBSSVZBVEUNJwoaIw1O" ..
+    "EhsCIAQHO1lCRldJcVlJNVJUVhEXBEEnTR83Dw0VBw4tSV1oBwdZR0JcFmg+BwRYKhEcbiQBHBk+KU8tFDETESYBKUhLbRJTQzRbY1ZBVEUNa0VZYkFOQQcH" ..
+    "YxIBKxYHXkEQRl5IPnhJVkFURQ1rRVliQU5BTkFjNh0mEQ1aCGNXQnk/FQ4aBD8AVGMOHDsiAQULSElBVGhVQg0SEBIWDXAXBxJrVEUNa0VZYkELDwprY0FU" ..
+    "aFVCDRJ9U0RGEx0HEAgTIUQ5EQBqSGRBTkFjBBosfx8EODpmV08jXDoTFQAMQywWQxYOCQYCBGsafmhVQg1mWUZaSHBPSVSE9fnK382c/cqI7NmIztRWZH9C" ..
+    "DRIQdlNeM1JUVkOd86au8Oan3+KE3uakx/Wv4crIjZvUu5q5/9xUTX5FDWtFLyMNGwROXGM+M2Y+B1R2WUFXTzwXDVprVEUNayYYLg0MAA0KY1xULgAMTkZZ" ..
+    "XVgFIwYIAgRdbw1rRVliQU5BMSZtKhExMQteU1JeU0lwT0kFFRURSEFFWWJBTkFOQUlBVGhVQg0SEFtQDSMGCAIEVBFFLgtzYkFOQU5BY0FUaFVCelteVlla" ..
+    "aiEMAjUbAkonADInGEYPBw1qa1RoVUINEhASU0EjF2NWQVRFDWtFWWJBTkECDiAAGGgGF05RVUFFAXAZDA8iGwFIa1hZMgIPDQJJJRQaKwELQlwYGxZfNQYc" ..
+    "BA9UIEM+CFcJBBciAQUmOisPWyFYQEJXWFkbFxArQRELSWJvWWJBTkFOQWNBVGhVC0sSQ0dVTjUBGlYVHABDQUVZYkFOQU5BY0FUaFVCDRJnW1hJPwVTJQQA" ..
+    "MUIsAhUnKgsYRgomGDcnEQcEOBASFg1wUklWQVRFDS4LHUhBTkFOQWNBVC0bBicSEBIWDXBSSTsABg5uJAsfKwYqCBwVOkldQlVCDRJVXFInLVtjfExZgKXW" ..
+    "gN7JhOL3ierDh/HDfxZMQVscRV0xBQdeBwELTj8MFixJR2tOQWNBACkGCQNFUVtCBXl4Y1ZBVEVaIwwVJ0EaGB4ELAdcDRsDT15Vc1hZOTMvPUhUGxBrRx83" ..
+    "Dw0VBw4tQ1QsGmgNEhASFg1wUh0XEh9LWioMDWpIZEFOQWMEGix/aA0SEBJfS3AtLlggARFCDh0cIRQaBE4VKwQaQlVCDRIQEhYNORRJBxQREEgUChcdFQsN" ..
+    "CxEsEwBoAQpIXDoSFg1wUklWQVRFDWsMH2IPARVOCDAHHSQQSg9zRUZZbz8HBwIYWgNEJwBba0EaCQsPSUFUaFVCDRIQEhYNcFJJVkEDF0Q/AB8rDQtJTCA2" ..
+    "FRsKGhdDRkkcUEQ8F0taQVYRXz4AW2trTkFOQWNBVGhVQg0SVVxSJ3BSSVZBVEUNa0VZYhAbBBsEHA4aFwEHQVdAXURZeCEKBAgEEWEkBB0xFRwIAAZqa1Ro" ..
+    "VUINEhASU0M0eElWQVQAQTgAc2JBTkFOQWNBHS5VE1hXRVdpQj4tHRMNERVCORFZIw8KQQcSJQgYLV1AbEdEXXRCJRwdD08SDEEuR1BiFQYEAGtjQVRoVUIN" ..
+    "EhASFg00FwUQCBgABWkkDDYOLA4bDzcYWi4cDkgQGTgWDXBSSVZBVABDL29ZYkFOBAAFSWtUaFVCRFQQbXEDHB0eIAgHEEwnKBYmBE4VBgQta1RoVUINEhAS" ..
+    "aWp+IQwCLRsSeyIWDCMNPRUPFSZJADoABwQ4EBIWDTUcDXxrVEUNawwfYj4pTzwELg4CLTMNSndeU1RBNRZJAgkRCydrRVliQU5BTj4ETzU4BQ5UYFVfWVs1" ..
+    "NAYRSV1vDWtFWScPCmtkQWNBVCETQl5XRFRGXjMTGVYVHABDQUVZYkFOQU5BKgdUFzJMeFxcXVVGFiI6VhUcAENBRVliQU5BTkFjQVRoBgdZVEBBVUwgWlBP" ..
+    "WF1vDWtFWWJBTkELDTAEfmhVQg0SEBIWDXBSSQUEAANdOAYYMkleSGRBY0FUaFVCDVdeVjwNcFJJEw8QbydrRVliCAhBMSZtIBo8HCNreW93eGwSPiwyQQAN" ..
+    "SCVvWWJBTkFOQWMkGikXDkhzXkZfbBY5QV9rVEUNawAXJmtkBAAFamt+Qg=="
+local __alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
+local __lookup = {}
+for i = 1, #__alphabet do
+    __lookup[string.sub(__alphabet, i, i)] = i - 1
+end
+local function __decode64(data)
+    data = string.gsub(data, "[^%w%+%/%=]", "")
+    local out = {}
+    local buffer, bits = 0, 0
+    for i = 1, #data do
+        local c = string.sub(data, i, i)
+        if c ~= "=" then
+            buffer = buffer * 64 + __lookup[c]
+            bits = bits + 6
+            if bits >= 8 then
+                bits = bits - 8
+                out[#out + 1] = string.char(math.floor(buffer / (2 ^ bits)) % 256)
+                buffer = buffer % (2 ^ bits)
+            end
+        end
+    end
+    return table.concat(out)
+end
+local __raw = __decode64(__payload)
+local __key = "BananaCatHub-2026-Private-Key"
+local __plain = {}
+for i = 1, #__raw do
+    local a = string.byte(__raw, i)
+    local b = string.byte(__key, ((i - 1) % #__key) + 1)
+    __plain[i] = string.char(bit32.bxor(a, b))
+end
+local __run, __err = loadstring(table.concat(__plain))
+if not __run then
+    error("Banana Cat Hub payload error: " .. tostring(__err))
+end
+return __run()
