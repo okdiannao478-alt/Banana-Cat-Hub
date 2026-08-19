@@ -430,13 +430,15 @@ BananaCatHubOpenAsset = BananaCatHubLoadAsset(BananaCatHubOpenUrl, BananaCatHubO
 local BananaCatHubToggleButton = Instance.new("ImageButton")
 BananaCatHubToggleButton.Name = "BananaCatToggle"
 BananaCatHubToggleButton.AnchorPoint = Vector2.new(0, 1)
-BananaCatHubToggleButton.Position = UDim2.new(0, 8, 1, -8)
+-- 避開 Roblox 手機原生搖桿區域；保留左下位置但放在搖桿上方
+BananaCatHubToggleButton.Position = UDim2.new(0, 8, 1, -150)
 BananaCatHubToggleButton.Size = UDim2.fromOffset(40, 40)
 BananaCatHubToggleButton.BackgroundTransparency = 1
 BananaCatHubToggleButton.BorderSizePixel = 0
 BananaCatHubToggleButton.Image = BananaCatHubClosedAsset or ""
 BananaCatHubToggleButton.ScaleType = Enum.ScaleType.Fit
 BananaCatHubToggleButton.AutoButtonColor = false
+BananaCatHubToggleButton.Selectable = false
 BananaCatHubToggleButton.ZIndex = 20
 BananaCatHubToggleButton.Parent = BananaCatHubToggleGui
 
@@ -476,8 +478,9 @@ BananaCatHubWelcome.BorderSizePixel = 0
 BananaCatHubWelcome.AutoButtonColor = false
 BananaCatHubWelcome.Text = ""
 BananaCatHubWelcome.ZIndex = 30
-BananaCatHubWelcome.Visible = true
-BananaCatHubWelcome.Active = true
+-- 手機上不顯示可攔截觸控的寬幅歡迎按鈕；它會覆蓋左下原生搖桿。
+BananaCatHubWelcome.Visible = not UserInputService.TouchEnabled
+BananaCatHubWelcome.Active = not UserInputService.TouchEnabled
 BananaCatHubWelcome.Parent = BananaCatHubToggleGui
 
 local BananaCatHubWelcomeSize = Instance.new("UISizeConstraint")
