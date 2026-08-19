@@ -431,7 +431,7 @@ local BananaCatHubToggleButton = Instance.new("ImageButton")
 BananaCatHubToggleButton.Name = "BananaCatToggle"
 BananaCatHubToggleButton.AnchorPoint = Vector2.new(0, 1)
 BananaCatHubToggleButton.Position = UDim2.new(0, 8, 1, -8)
-BananaCatHubToggleButton.Size = UDim2.fromOffset(50, 50)
+BananaCatHubToggleButton.Size = UDim2.fromOffset(40, 40)
 BananaCatHubToggleButton.BackgroundTransparency = 1
 BananaCatHubToggleButton.BorderSizePixel = 0
 BananaCatHubToggleButton.Image = BananaCatHubClosedAsset or ""
@@ -468,8 +468,8 @@ BananaCatHubToggleGui.Parent = game:GetService("CoreGui")
 local BananaCatHubWelcome = Instance.new("TextButton")
 BananaCatHubWelcome.Name = "BananaCatHubWelcome"
 BananaCatHubWelcome.AnchorPoint = Vector2.new(0, 1)
-BananaCatHubWelcome.Position = UDim2.new(0, 8, 1, -76)
-BananaCatHubWelcome.Size = UDim2.new(0.82, 0, 0, 64)
+BananaCatHubWelcome.Position = UDim2.new(0, 8, 1, -64)
+BananaCatHubWelcome.Size = UDim2.new(0.82, 0, 0, 56)
 BananaCatHubWelcome.BackgroundColor3 = Color3.fromRGB(32, 32, 32)
 BananaCatHubWelcome.BackgroundTransparency = 0.08
 BananaCatHubWelcome.BorderSizePixel = 0
@@ -481,8 +481,8 @@ BananaCatHubWelcome.Active = true
 BananaCatHubWelcome.Parent = BananaCatHubToggleGui
 
 local BananaCatHubWelcomeSize = Instance.new("UISizeConstraint")
-BananaCatHubWelcomeSize.MinSize = Vector2.new(220, 64)
-BananaCatHubWelcomeSize.MaxSize = Vector2.new(286, 64)
+BananaCatHubWelcomeSize.MinSize = Vector2.new(210, 56)
+BananaCatHubWelcomeSize.MaxSize = Vector2.new(276, 56)
 BananaCatHubWelcomeSize.Parent = BananaCatHubWelcome
 
 local BananaCatHubWelcomeCorner = Instance.new("UICorner")
@@ -492,8 +492,8 @@ BananaCatHubWelcomeCorner.Parent = BananaCatHubWelcome
 local BananaCatHubWelcomeIcon = Instance.new("ImageLabel")
 BananaCatHubWelcomeIcon.Name = "BananaCatIcon"
 BananaCatHubWelcomeIcon.BackgroundTransparency = 1
-BananaCatHubWelcomeIcon.Position = UDim2.fromOffset(9, 13)
-BananaCatHubWelcomeIcon.Size = UDim2.fromOffset(38, 38)
+BananaCatHubWelcomeIcon.Position = UDim2.fromOffset(8, 11)
+BananaCatHubWelcomeIcon.Size = UDim2.fromOffset(32, 32)
 BananaCatHubWelcomeIcon.Image = BananaCatHubClosedAsset or ""
 BananaCatHubWelcomeIcon.ScaleType = Enum.ScaleType.Fit
 BananaCatHubWelcomeIcon.ZIndex = 31
@@ -2914,7 +2914,7 @@ local function FlyToTargetLogic2(plr)
     -- 觸控裝置有手動搖桿輸入時，手動方向優先；避免自動追擊方向把前進反轉成後退。
     local inputHumanoid = myChar:FindFirstChildOfClass("Humanoid")
     local manualMoveDirection = inputHumanoid and inputHumanoid.MoveDirection or Vector3.zero
-    local hasManualTouchInput = UserInputService.TouchEnabled and manualMoveDirection.Magnitude > 0.05
+    local hasManualTouchInput = UserInputService.TouchEnabled and manualMoveDirection.Magnitude > 0.02
 
     -- 手機玩家一旦推動搖桿，完全交還 Roblox 原生移動；
     -- 不再用 LinearVelocity 疊加速度，也不讓追蹤方向覆蓋玩家輸入。
