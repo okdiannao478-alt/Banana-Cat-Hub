@@ -3137,9 +3137,23 @@ local function StartFTPFlight2()
 
         if type(_G.SetNoclipState) == "function" then _G.SetNoclipState(true) end
 
+        local manualMove = false
+        pcall(function()
+            local manualChar = LocalPlayer.Character
+            local manualHum = manualChar and manualChar:FindFirstChildOfClass("Humanoid")
+            manualMove = manualHum and manualHum.MoveDirection.Magnitude > 0.08 or false
+            if manualMove and manualHum then
+                -- 手機搖桿／電腦手動輸入優先，恢復 Roblox 原生姿態。
+                manualHum.PlatformStand = false
+                manualHum.AutoRotate = true
+                if manualHum:GetState() == Enum.HumanoidStateType.Physics then
+                    manualHum:ChangeState(Enum.HumanoidStateType.Running)
+                end
+            end
+        end)
         pcall(function()
             local myChar = LocalPlayer.Character
-            if myChar then
+            if myChar and not manualMove then
                 local myHum = myChar:FindFirstChildOfClass("Humanoid")
                 local myHRP = myChar:FindFirstChild("HumanoidRootPart")
 
@@ -3165,6 +3179,11 @@ local function StartFTPFlight2()
             end
         end)
 
+        if manualMove then
+            -- 手動輸入時清除飛行物理約束，不覆蓋搖桿速度或 CFrame。
+            ClearFTP2FlightComponents()
+            return
+        end
         if _G.FTP2_CurrentTarget then
             if not IsValidTargetFast(_G.FTP2_CurrentTarget) then
                 _G.FTP2_Blacklist[_G.FTP2_CurrentTarget] = true
