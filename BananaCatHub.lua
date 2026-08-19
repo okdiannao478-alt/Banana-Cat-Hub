@@ -2911,6 +2911,11 @@ local function FlyToTargetLogic2(plr)
 
     local dir = targetPos - myHRP.Position
 
+    -- 觸控裝置有手動搖桿輸入時，手動方向優先；避免自動追擊方向把前進反轉成後退。
+    local inputHumanoid = myChar:FindFirstChildOfClass("Humanoid")
+    local manualMoveDirection = inputHumanoid and inputHumanoid.MoveDirection or Vector3.zero
+    local hasManualTouchInput = UserInputService.TouchEnabled and manualMoveDirection.Magnitude > 0.05
+
     local flySpeed = _G.FTP2_FlySpeed
 
     local distToTargetCenter = (rawTargetPos - myHRP.Position).Magnitude
@@ -2981,7 +2986,11 @@ local function FlyToTargetLogic2(plr)
     local needSetup = not _G.FTP2_LinearVelocity or _G.FTP2_LinearVelocity.Parent ~= myHRP
     if needSetup then SetupFTP2FlightComponents(myHRP) end
 
-    _G.FTP2_LinearVelocity.VectorVelocity = dir.Unit * flySpeed
+    local velocityDirection = dir.Magnitude > 0.01 and dir.Unit or Vector3.zero
+    if hasManualTouchInput then
+        velocityDirection = manualMoveDirection.Unit
+    end
+    _G.FTP2_LinearVelocity.VectorVelocity = velocityDirection * flySpeed
 
     -- 觸控裝置不要每幀強制旋轉角色；否則 Roblox 會重算 TouchControl 的前進方向，造成搖桿閃爍或前後顛倒。
     if not UserInputService.TouchEnabled then
@@ -3095,9 +3104,16 @@ local function StartFTPFlight2()
         local currentChar = LocalPlayer.Character
         local currentHum = currentChar and currentChar:FindFirstChildOfClass("Humanoid")
 
-        -- 只有真的坐下或進入 PlatformStand 才恢復狀態；不要每幀重設輸入控制。
-        if currentHum and (currentHum.Sit or currentHum.PlatformStand) then
-            ForceStandUp()
+        -- 手機輸入期間不要呼叫 ChangeState(GettingUp)，避免虛擬搖桿閃爍或短暫失去焦點。
+        if currentHum and currentHum.Sit then
+            currentHum.Sit = false
+        end
+        if currentHum and currentHum.PlatformStand then
+            if UserInputService.TouchEnabled then
+                currentHum.PlatformStand = false
+            else
+                ForceStandUp()
+            end
         end
 
         if _G.AutoFlee and currentHum and currentHum.Health > 0 then
