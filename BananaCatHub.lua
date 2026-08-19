@@ -629,13 +629,12 @@ _G.Hitbox_Size = 1
 _G.Hitbox_Transparency = 0.5
 
 --Auto Flee
-_G.AutoFlee = false
+_G.AutoFlee = true
 _G.AutoFleeHP = 30
 _G.AutoFleeConn = nil
 
 -- 移除動作
--- 移除動作：預設關閉，避免停止 Roblox 內建走路／跳躍動畫造成腿部僵硬。
-_G.RemoveAnim = false
+_G.RemoveAnim = true
 _G.RemoveAnimCharConn = nil
 _G.RemoveAnimTrackConn = nil
 
@@ -920,12 +919,6 @@ LoadConfig()
 if type(Settings) == "table" then
     ApplyConfig(Settings)
 end
-
--- 角色安全預設：不從舊設定自動恢復任何自動移動或鎖定。
--- 使用者必須在 UI 中明確開啟自動獵賞後，才允許 FTP2 接管角色。
-_G.AutoFlee = false
-_G.FTP2_Enabled = false
-
 ConfigReady = true
 
 SelectTeam()
@@ -3016,13 +3009,10 @@ local function ForceStandUp()
     if not myHum or myHum.Health <= 0 then return end
 
     if myHum.Sit then
-        -- 只解除坐姿，不要強制 Jump/Physics，避免切斷正常走路與技能動畫。
         myHum.Sit = false
-        pcall(function()
-            myHum.AutoRotate = true
-        -- 保持原生自然移動姿態
-            myHum:ChangeState(Enum.HumanoidStateType.GettingUp)
-        end)
+        pcall(function() myHum.Jump = true end)
+        pcall(function() myHum:ChangeState(Enum.HumanoidStateType.GettingUp) end)
+        pcall(function() myHum:ChangeState(Enum.HumanoidStateType.Physics) end)
     end
 
     if myHRP then
