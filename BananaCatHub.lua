@@ -2916,6 +2916,21 @@ local function FlyToTargetLogic2(plr)
     local manualMoveDirection = inputHumanoid and inputHumanoid.MoveDirection or Vector3.zero
     local hasManualTouchInput = UserInputService.TouchEnabled and manualMoveDirection.Magnitude > 0.05
 
+    -- 手機玩家一旦推動搖桿，完全交還 Roblox 原生移動；
+    -- 不再用 LinearVelocity 疊加速度，也不讓追蹤方向覆蓋玩家輸入。
+    if hasManualTouchInput then
+        -- 歸零仍會讓 LinearVelocity 以無限力量鎖住角色；手機輸入期間必須停用約束。
+        if _G.FTP2_LinearVelocity then
+            _G.FTP2_LinearVelocity.VectorVelocity = Vector3.zero
+            _G.FTP2_LinearVelocity.Enabled = false
+        end
+        return
+    end
+
+    if _G.FTP2_LinearVelocity then
+        _G.FTP2_LinearVelocity.Enabled = true
+    end
+
     local flySpeed = _G.FTP2_FlySpeed
 
     local distToTargetCenter = (rawTargetPos - myHRP.Position).Magnitude
@@ -2987,9 +3002,6 @@ local function FlyToTargetLogic2(plr)
     if needSetup then SetupFTP2FlightComponents(myHRP) end
 
     local velocityDirection = dir.Magnitude > 0.01 and dir.Unit or Vector3.zero
-    if hasManualTouchInput then
-        velocityDirection = manualMoveDirection.Unit
-    end
     _G.FTP2_LinearVelocity.VectorVelocity = velocityDirection * flySpeed
 
     -- 觸控裝置不要每幀強制旋轉角色；否則 Roblox 會重算 TouchControl 的前進方向，造成搖桿閃爍或前後顛倒。
@@ -3104,14 +3116,13 @@ local function StartFTPFlight2()
         local currentChar = LocalPlayer.Character
         local currentHum = currentChar and currentChar:FindFirstChildOfClass("Humanoid")
 
-        -- 手機輸入期間不要呼叫 ChangeState(GettingUp)，避免虛擬搖桿閃爍或短暫失去焦點。
-        if currentHum and currentHum.Sit then
-            currentHum.Sit = false
-        end
-        if currentHum and currentHum.PlatformStand then
-            if UserInputService.TouchEnabled then
-                currentHum.PlatformStand = false
-            else
+        -- 觸控期間不寫入 Sit／PlatformStand／GettingUp；任何每幀狀態重設
+        -- 都可能讓 Roblox TouchControl 失去焦點。桌面端才執行舊的站立清理。
+        if not UserInputService.TouchEnabled then
+            if currentHum and currentHum.Sit then
+                currentHum.Sit = false
+            end
+            if currentHum and currentHum.PlatformStand then
                 ForceStandUp()
             end
         end
@@ -3425,6 +3436,12 @@ RunService.RenderStepped:Connect(function()
         return
     end
     camlockWasEnabled = true
+
+    -- Camlock 在觸控裝置上完全不接管鏡頭；只要它每幀寫入 Camera.CFrame，
+    -- Roblox 便可能重新解讀手機前進方向，造成反向、閃爍與輸入卡死。
+    if UserInputService.TouchEnabled then
+        return
+    end
 
     if not _G.FTP2_CurrentTarget then return end
     if not _G.FTP2_CurrentTarget.Character then return end
