@@ -4495,3 +4495,5 @@ task.spawn(function()
 end)
 
 
+
+-- Strict key validation update
