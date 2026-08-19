@@ -325,9 +325,9 @@ WindUI:AddTheme({
     Slider = Color3.fromRGB(255, 198, 42),
     Checkbox = Color3.fromRGB(255, 214, 64),
     PanelBackground = Color3.fromRGB(255, 255, 255),
-    PanelBackgroundTransparency = 0.93,
+    PanelBackgroundTransparency = 0.97,
     ElementBackground = Color3.fromRGB(42, 38, 27),
-    ElementBackgroundTransparency = 0.08,
+    ElementBackgroundTransparency = 0.16,
 })
 WindUI:SetTheme("BananaYellow")
 
@@ -340,7 +340,7 @@ local Window = WindUI:CreateWindow({
     Size          = UDim2.fromOffset(700, 405),
     Transparent   = true,
     Theme         = "BananaYellow",
-    Acrylic       = false,
+    Acrylic       = true,
     Resizable     = false,
     HideSearchBar = false,
     SideBarWidth  = 185,
@@ -367,6 +367,16 @@ pcall(function()
                 child.Visible = false
                 child.Active = false
             end
+        end
+    end
+
+    -- 讓頂部與外框更透明、柔和，接近參考圖的半透明長面板效果。
+    for _, obj in ipairs(Window.UIElements.Main.Main:GetDescendants()) do
+        if obj:IsA("UIStroke") then
+            obj.Thickness = math.min(obj.Thickness, 1)
+            obj.Transparency = math.max(obj.Transparency, 0.48)
+        elseif obj:IsA("GuiObject") and obj.Name == "Topbar" then
+            obj.BackgroundTransparency = 0.28
         end
     end
 end)
