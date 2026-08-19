@@ -3017,6 +3017,8 @@ local function FlyToTargetLogic2(plr)
 end
 
 local function FleeUpLogic()
+    -- 觸控裝置完全交還 Roblox 原生移動，避免逃跑速度接管造成搖桿閃爍。
+    if UserInputService.TouchEnabled then return end
     pcall(function()
         local char = LocalPlayer.Character
         local hum = char and char:FindFirstChildOfClass("Humanoid")
@@ -3064,6 +3066,11 @@ local function ForceStandUp()
 end
 
 local function StartFTPFlight2()
+    -- 手機模式不啟動 FTP2 飛行接管；保留原生搖桿、方向與動畫優先。
+    if UserInputService.TouchEnabled then
+        _G.FTP2_Enabled = false
+        return
+    end
     if _G.FTP2_FlightConn ~= nil then return end 
 
     local char = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
@@ -4157,6 +4164,15 @@ Tabs.Skills:Toggle({
     Title = "自動列賞", 
     Value = _G.FTP2_Enabled,
     Callback = function(v)
+        -- 手機模式不允許自動飛行接管輸入，避免搖桿閃爍或走到一半失效。
+        if v and UserInputService.TouchEnabled then
+            _G.FTP2_Enabled = false
+            if WindUI then
+                WindUI:Notify({ Title = "自動列賞", Content = "手機模式保留原生搖桿，未啟動自動移動", duration = 3 })
+            end
+            MarkConfigDirty()
+            return
+        end
         _G.FTP2_Enabled = v
         if v then
             if _G.FTP_Enabled and type(StopFTPFlight) == "function" then 
