@@ -634,7 +634,8 @@ _G.AutoFleeHP = 30
 _G.AutoFleeConn = nil
 
 -- 移除動作
-_G.RemoveAnim = true
+-- 移除動作：預設關閉，避免停止 Roblox 內建走路／跳躍動畫造成腿部僵硬。
+_G.RemoveAnim = false
 _G.RemoveAnimCharConn = nil
 _G.RemoveAnimTrackConn = nil
 
