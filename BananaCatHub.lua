@@ -241,18 +241,11 @@ local function showKeyPrompt()
     return accepted
 end
 
--- 严格验证执行前设置的 getgenv().BananaCatHubKey；不接受脚本内默认卡密
--- 若换服务器导致 getgenv() 被重置，则尝试从执行器本地保存的卡密恢复
+-- 嚴格要求 loader 明確提供 getgenv().BananaCatHubKey。
+-- 初次載入不從本地檔案自動回讀，避免刪除 loader 卡密行後繞過驗證。
+-- 自動換服的 queue loader 會先回讀檔案，再明確設定 getgenv() 後重新載入。
 local KeyFileName = "BananaCatHub.key"
 local suppliedKey = normalizeKey(getgenv().BananaCatHubKey)
-
-if suppliedKey == "" and isfile and readfile then
-    pcall(function()
-        if isfile(KeyFileName) then
-            suppliedKey = normalizeKey(readfile(KeyFileName))
-        end
-    end)
-end
 
 if suppliedKey == "" or not AuthorizedKeys[suppliedKey] then
     kickForKey("卡密错误，请先设置有效 BananaCatHubKey\n请至官方 Discord 索取卡密：https://discord.gg/dgh7qJ4wA")
