@@ -629,12 +629,12 @@ _G.Hitbox_Size = 1
 _G.Hitbox_Transparency = 0.5
 
 --Auto Flee
-_G.AutoFlee = true
+_G.AutoFlee = false
 _G.AutoFleeHP = 30
 _G.AutoFleeConn = nil
 
 -- 移除動作
-_G.RemoveAnim = true
+_G.RemoveAnim = false
 _G.RemoveAnimCharConn = nil
 _G.RemoveAnimTrackConn = nil
 
@@ -919,6 +919,10 @@ LoadConfig()
 if type(Settings) == "table" then
     ApplyConfig(Settings)
 end
+-- Character safety: saved settings must not auto-start movement or suppress native animations.
+-- The user can still enable these features explicitly from the UI.
+_G.AutoFlee = false
+_G.RemoveAnim = false
 ConfigReady = true
 
 SelectTeam()
