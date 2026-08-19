@@ -1,4 +1,4 @@
------v0.014(修復重置腳本)
+f-----v0.014(修復重置腳本)
 ---------------------------------------
 --服務
 ----------------------------------------
@@ -739,10 +739,14 @@ else
     _G.AutoExecute = true
 end
 
-local ScriptLoadstring = [[if isfile("AutoBounty.file") then
-    if readfile("AutoBounty.file") == "true" then
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/okdiannao478-alt/Banana-Cat-Hub/main/BananaCatHub.lua"))()
+local ScriptLoadstring = [[if isfile("AutoBounty.file") and readfile("AutoBounty.file") == "true" then
+    local savedKey = ""
+    if isfile("BananaCatHub.key") then
+        local ok, value = pcall(function() return readfile("BananaCatHub.key") end)
+        if ok and type(value) == "string" then savedKey = value end
     end
+    getgenv().BananaCatHubKey = savedKey
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/okdiannao478-alt/Banana-Cat-Hub/main/BananaCatHub.lua"))()
 end]]
 
 --主題
