@@ -3014,6 +3014,7 @@ local function ForceStandUp()
         myHum.Sit = false
         pcall(function()
             myHum.AutoRotate = true
+        -- 保持原生自然移動姿態
             myHum:ChangeState(Enum.HumanoidStateType.GettingUp)
         end)
     end
