@@ -629,7 +629,7 @@ _G.Hitbox_Size = 1
 _G.Hitbox_Transparency = 0.5
 
 --Auto Flee
-_G.AutoFlee = true
+_G.AutoFlee = false
 _G.AutoFleeHP = 30
 _G.AutoFleeConn = nil
 
@@ -920,6 +920,12 @@ LoadConfig()
 if type(Settings) == "table" then
     ApplyConfig(Settings)
 end
+
+-- 角色安全預設：不從舊設定自動恢復任何自動移動或鎖定。
+-- 使用者必須在 UI 中明確開啟自動獵賞後，才允許 FTP2 接管角色。
+_G.AutoFlee = false
+_G.FTP2_Enabled = false
+
 ConfigReady = true
 
 SelectTeam()
