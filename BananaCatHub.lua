@@ -1492,6 +1492,10 @@ local function PerformAttackMode2()
     if not char then return end
     local hasTool = char:FindFirstChildOfClass("Tool") or char:FindFirstChild("EquippedWeapon")
     if not hasTool then return end
+
+    -- 使用同一組已掃描並快取的遠端，避免模式二引用未初始化的全域變數
+    local _, _, mode2RegisterAttack, mode2RegisterHit = M1_CheckAndGetCoreComponents()
+    if not mode2RegisterAttack or not mode2RegisterHit then return end
     
     local targets = GetMode2Targets()
     if #targets == 0 then return end
@@ -1502,11 +1506,11 @@ local function PerformAttackMode2()
         table.insert(hitList, {target.Model, target.Root}) 
     end
     
-    RegisterAttack:FireServer(0)
+    mode2RegisterAttack:FireServer(0)
     
     local fakeHash = tostring(LocalPlayer.UserId):sub(2,4) .. tostring(math.random(10000, 99999))
     pcall(function()
-        RegisterHit:FireServer(mainTarget.Head, hitList, {}, fakeHash)
+        mode2RegisterHit:FireServer(mainTarget.Head, hitList, {}, fakeHash)
     end)
     
     if State.FoundRemote and State.FoundRemoteId then
@@ -3014,10 +3018,9 @@ local function ForceStandUp()
 
     if myHum.Sit then
         myHum.Sit = false
-        pcall(function() myHum.Jump = true end)
         pcall(function() myHum:ChangeState(Enum.HumanoidStateType.GettingUp) end)
-        pcall(function() myHum:ChangeState(Enum.HumanoidStateType.Physics) end)
     end
+    pcall(function() myHum.AutoRotate = true end)
 
     if myHRP then
         for _, child in ipairs(myHRP:GetChildren()) do
@@ -3066,10 +3069,10 @@ local function StartFTPFlight2()
     FTP2_OrbitOffset = nil
     FTP2_NextOrbitTime = 0
 
-    if type(setPlatformStand) == "function" then setPlatformStand(true) end
+    -- 不在啟動時接管 Humanoid 的 PlatformStand；保留正常輸入與動畫
+    if type(setPlatformStand) == "function" then setPlatformStand(false) end
     
     local hum = char and char:FindFirstChildOfClass("Humanoid")
-    if hum then hum:ChangeState(Enum.HumanoidStateType.Physics) end
     if type(_G.SetNoclipState) == "function" then _G.SetNoclipState(true) end
 
     _G.FTP2_PlayerLeaveConn = Players.PlayerRemoving:Connect(function(plr)
@@ -3159,8 +3162,10 @@ local function StartFTPFlight2()
                     end
                 end
 
-                if myHum and not myHum.PlatformStand then
-                    myHum.PlatformStand = true
+                -- LinearVelocity 負責 FTP2 位移；不要每幀強制 PlatformStand，否則手機搖桿會被重置
+                if myHum and myHum.PlatformStand then
+                    myHum.PlatformStand = false
+                    pcall(function() myHum:ChangeState(Enum.HumanoidStateType.GettingUp) end)
                 end
             end
         end)
