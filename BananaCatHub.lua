@@ -261,6 +261,131 @@ end
 getgenv().BananaCatHubKey = suppliedKey
 
 
+
+----------------------------------------
+-- Discord Embed：自用自動賞金進度（可選、非阻塞）
+-- 請在這一行把 XXX_WEBHOOK_URL_請填這裡 替換成你重新生成的私有 Webhook。
+-- 不要把真實 Webhook 貼到聊天；XXX 佔位符會讓回報功能保持停用。
+-- 不傳送卡密、輸入值或輸入次數。
+----------------------------------------
+local BananaCatWebhookURL = "XXX_WEBHOOK_URL_請填這裡"
+local BananaCatWebhookEnabled = BananaCatWebhookURL ~= "" and BananaCatWebhookURL ~= "XXX_WEBHOOK_URL_請填這裡"
+local BananaCatWebhookStats = {Kills = 0, Deaths = 0, ServerHops = 0, Kicks = 0, LastStatus = "已載入"}
+local BananaCatBoundTarget = nil
+local BananaCatBoundHumanoid = nil
+local BananaCatLastHopState = false
+
+local BananaCatSendEmbed
+
+local function BananaCatBindLocalDeath()
+    local character = LocalPlayer.Character
+    local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+    if humanoid and humanoid ~= BananaCatBoundHumanoid then
+        BananaCatBoundHumanoid = humanoid
+        humanoid.Died:Connect(function()
+            BananaCatWebhookStats.Deaths = BananaCatWebhookStats.Deaths + 1
+            BananaCatSendEmbed("角色死亡")
+        end)
+    end
+end
+
+local function BananaCatBindTarget(target)
+    if not target or target == BananaCatBoundTarget then return end
+    BananaCatBoundTarget = target
+    local character = target.Character
+    local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+    if humanoid then
+        humanoid.Died:Connect(function()
+            BananaCatWebhookStats.Kills = BananaCatWebhookStats.Kills + 1
+            BananaCatSendEmbed("目標已擊敗")
+        end)
+    end
+end
+
+local function BananaCatFindBounty()
+    local containers = {LocalPlayer:FindFirstChild("Data"), LocalPlayer:FindFirstChild("leaderstats")}
+    local wanted = {bounty = true, honor = true, playerbounty = true, playerhonor = true}
+    for _, container in ipairs(containers) do
+        if container then
+            for _, item in ipairs(container:GetDescendants()) do
+                local key = string.lower(item.Name:gsub("[%s_%-]", ""))
+                if wanted[key] and (item:IsA("IntValue") or item:IsA("NumberValue") or item:IsA("StringValue")) then
+                    local n = tonumber(item.Value)
+                    if n then return n end
+                end
+            end
+        end
+    end
+    return nil
+end
+
+local function BananaCatStatusText()
+    BananaCatBindLocalDeath()
+    local hopState = getgenv().IsServerHopping == true
+    if hopState and not BananaCatLastHopState then
+        BananaCatWebhookStats.ServerHops = BananaCatWebhookStats.ServerHops + 1
+    end
+    BananaCatLastHopState = hopState
+    local target = _G.FTP2_CurrentTarget
+    BananaCatBindTarget(target)
+    local targetText = target and "已鎖定" or "無"
+    local pvpText = _G.AutoEnablePVP and "開啟" or "關閉"
+    return string.format("自動賞金：%s\n目前目標：%s\nPVP：%s", BananaCatWebhookStats.LastStatus, targetText, pvpText)
+end
+
+BananaCatSendEmbed = function(status)
+    if not BananaCatWebhookEnabled then return end
+    BananaCatWebhookStats.LastStatus = tostring(status or BananaCatWebhookStats.LastStatus)
+    local bounty = BananaCatFindBounty()
+    local payload = {
+        username = "Banana Cat Hub",
+        embeds = {{
+            title = "自動賞金進度",
+            description = BananaCatStatusText(),
+            color = 16766784,
+            fields = {
+                {name = "使用者名稱", value = tostring(LocalPlayer.Name), inline = true},
+                {name = "顯示名稱", value = tostring(LocalPlayer.DisplayName), inline = true},
+                {name = "User ID", value = tostring(LocalPlayer.UserId), inline = true},
+                {name = "目前賞金", value = bounty and tostring(bounty) or "未知", inline = true},
+                {name = "擊殺數", value = tostring(BananaCatWebhookStats.Kills), inline = true},
+                {name = "死亡數", value = tostring(BananaCatWebhookStats.Deaths), inline = true},
+                {name = "換服次數", value = tostring(BananaCatWebhookStats.ServerHops), inline = true},
+                {name = "被踢次數", value = tostring(BananaCatWebhookStats.Kicks), inline = true},
+                {name = "卡密狀態", value = "已驗證（不回傳卡密）", inline = false},
+            },
+            footer = {text = "Banana Cat Hub"},
+        }},
+    }
+    local body = HttpService:JSONEncode(payload)
+    local requestFn = request or http_request or (syn and syn.request)
+    if not requestFn then return end
+    task.spawn(function()
+        pcall(function()
+            requestFn({Url = BananaCatWebhookURL, Method = "POST", Headers = {["Content-Type"] = "application/json"}, Body = body})
+        end)
+    end)
+end
+
+task.spawn(function()
+    while task.wait(1) do
+        if not LocalPlayer or not LocalPlayer:IsDescendantOf(Players) then break end
+        BananaCatBindLocalDeath()
+        BananaCatBindTarget(_G.FTP2_CurrentTarget)
+    end
+end)
+
+if BananaCatWebhookEnabled then
+    task.spawn(function()
+        task.wait(2)
+        BananaCatSendEmbed("已啟動")
+        while task.wait(90) do
+            if not LocalPlayer or not LocalPlayer:IsDescendantOf(Players) then break end
+            BananaCatSendEmbed(_G.AutoEnablePVP and "列賞運行中" or "等待開啟自動賞金")
+        end
+    end)
+end
+
 -- Fast Attack Serve
 local Modules = ReplicatedStorage:WaitForChild("Modules", 10)
 local Net = Modules and Modules:WaitForChild("Net", 10)
