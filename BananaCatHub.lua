@@ -268,8 +268,7 @@ getgenv().BananaCatHubKey = suppliedKey
 -- 不要把真實 Webhook 貼到聊天；XXX 佔位符會讓回報功能保持停用。
 -- 不傳送卡密、輸入值或輸入次數。
 ----------------------------------------
-local BananaCatWebhookURL = "https://discord.com/api/webhooks/1539839972784209920/pPQSFrtjiuJuGQU8NPEkpmSq0aIZJzjPwCDSuttUMh0t_rJmIvlCAjhsJycbb2zrm6ZG
-"
+local BananaCatWebhookURL = "XXX_WEBHOOK_URL_請填這裡"
 local BananaCatWebhookEnabled = BananaCatWebhookURL ~= "" and BananaCatWebhookURL ~= "XXX_WEBHOOK_URL_請填這裡"
 local BananaCatWebhookStats = {Kills = 0, Deaths = 0, ServerHops = 0, Kicks = 0, LastStatus = "已載入"}
 local BananaCatBoundTarget = nil
