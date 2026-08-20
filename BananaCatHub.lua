@@ -431,8 +431,8 @@ local BananaCatHubToggleButton = Instance.new("ImageButton")
 BananaCatHubToggleButton.Name = "BananaCatToggle"
 BananaCatHubToggleButton.AnchorPoint = Vector2.new(0, 1)
 -- 避開 Roblox 手機原生搖桿區域；保留左下位置但放在搖桿上方
-BananaCatHubToggleButton.Position = UDim2.new(0, 8, 1, -150)
-BananaCatHubToggleButton.Size = UDim2.fromOffset(40, 40)
+BananaCatHubToggleButton.Position = UDim2.new(0, 18, 1, -18)
+BananaCatHubToggleButton.Size = UDim2.fromOffset(50, 50)
 BananaCatHubToggleButton.BackgroundTransparency = 1
 BananaCatHubToggleButton.BorderSizePixel = 0
 BananaCatHubToggleButton.Image = BananaCatHubClosedAsset or ""
@@ -632,7 +632,7 @@ _G.Hitbox_Size = 1
 _G.Hitbox_Transparency = 0.5
 
 --Auto Flee
-_G.AutoFlee = false
+_G.AutoFlee = true
 _G.AutoFleeHP = 30
 _G.AutoFleeConn = nil
 
@@ -2208,6 +2208,17 @@ local function StartAutoFlee()
         while _G.AutoFlee do
             task.wait(0.05)
             pcall(function()
+                -- 手機玩家主動推動原生搖桿時，暫停 AutoFlee 的速度約束；
+                -- 不關閉功能，放開搖桿後仍可在低血量時自動逃跑。
+                local touchHum = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+                if UserInputService.TouchEnabled and touchHum and touchHum.MoveDirection.Magnitude > 0.05 then
+                    if wasFleeing then
+                        wasFleeing = false
+                        ClearFleeComponents()
+                        SetCharNoclip(LocalPlayer.Character, false)
+                    end
+                    return
+                end
                 -- 自動列賞開啟時不接管，讓自動列賞自己處理逃跑
                 if _G.FTP2_Enabled then
                     if wasFleeing then
@@ -2915,25 +2926,6 @@ local function FlyToTargetLogic2(plr)
     local dir = targetPos - myHRP.Position
 
     -- 觸控裝置有手動搖桿輸入時，手動方向優先；避免自動追擊方向把前進反轉成後退。
-    local inputHumanoid = myChar:FindFirstChildOfClass("Humanoid")
-    local manualMoveDirection = inputHumanoid and inputHumanoid.MoveDirection or Vector3.zero
-    local hasManualTouchInput = UserInputService.TouchEnabled and manualMoveDirection.Magnitude > 0.02
-
-    -- 手機玩家一旦推動搖桿，完全交還 Roblox 原生移動；
-    -- 不再用 LinearVelocity 疊加速度，也不讓追蹤方向覆蓋玩家輸入。
-    if hasManualTouchInput then
-        -- 歸零仍會讓 LinearVelocity 以無限力量鎖住角色；手機輸入期間必須停用約束。
-        if _G.FTP2_LinearVelocity then
-            _G.FTP2_LinearVelocity.VectorVelocity = Vector3.zero
-            _G.FTP2_LinearVelocity.Enabled = false
-        end
-        return
-    end
-
-    if _G.FTP2_LinearVelocity then
-        _G.FTP2_LinearVelocity.Enabled = true
-    end
-
     local flySpeed = _G.FTP2_FlySpeed
 
     local distToTargetCenter = (rawTargetPos - myHRP.Position).Magnitude
@@ -3005,20 +2997,15 @@ local function FlyToTargetLogic2(plr)
     if needSetup then SetupFTP2FlightComponents(myHRP) end
 
     local velocityDirection = dir.Magnitude > 0.01 and dir.Unit or Vector3.zero
-    _G.FTP2_LinearVelocity.VectorVelocity = velocityDirection * flySpeed
+    _G.FTP2_LinearVelocity.VectorVelocity = dir.Unit * flySpeed
 
-    -- 觸控裝置不要每幀強制旋轉角色；否則 Roblox 會重算 TouchControl 的前進方向，造成搖桿閃爍或前後顛倒。
-    if not UserInputService.TouchEnabled then
-        local lookAt = Vector3.new(rawTargetPos.X, myHRP.Position.Y, rawTargetPos.Z)
-        if (lookAt - myHRP.Position).Magnitude > 0.1 then
-            myHRP.CFrame = CFrame.new(myHRP.Position, lookAt)
-        end
+    local lookAt = Vector3.new(rawTargetPos.X, myHRP.Position.Y, rawTargetPos.Z)
+    if (lookAt - myHRP.Position).Magnitude > 0.1 then
+        myHRP.CFrame = CFrame.new(myHRP.Position, lookAt)
     end
 end
 
 local function FleeUpLogic()
-    -- 觸控裝置完全交還 Roblox 原生移動，避免逃跑速度接管造成搖桿閃爍。
-    if UserInputService.TouchEnabled then return end
     pcall(function()
         local char = LocalPlayer.Character
         local hum = char and char:FindFirstChildOfClass("Humanoid")
@@ -3047,9 +3034,10 @@ local function ForceStandUp()
 
     if myHum.Sit then
         myHum.Sit = false
+        pcall(function() myHum.Jump = true end)
         pcall(function() myHum:ChangeState(Enum.HumanoidStateType.GettingUp) end)
+        pcall(function() myHum:ChangeState(Enum.HumanoidStateType.Physics) end)
     end
-    pcall(function() myHum.AutoRotate = true end)
 
     if myHRP then
         for _, child in ipairs(myHRP:GetChildren()) do
@@ -3066,11 +3054,6 @@ local function ForceStandUp()
 end
 
 local function StartFTPFlight2()
-    -- 手機模式不啟動 FTP2 飛行接管；保留原生搖桿、方向與動畫優先。
-    if UserInputService.TouchEnabled then
-        _G.FTP2_Enabled = false
-        return
-    end
     if _G.FTP2_FlightConn ~= nil then return end 
 
     local char = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
@@ -3103,11 +3086,13 @@ local function StartFTPFlight2()
     FTP2_OrbitOffset = nil
     FTP2_NextOrbitTime = 0
 
-    -- 不在啟動時接管 Humanoid 的 PlatformStand；保留正常輸入與動畫
-    if type(setPlatformStand) == "function" then setPlatformStand(false) end
+    if type(setPlatformStand) == "function" then setPlatformStand(true) end
     
     local hum = char and char:FindFirstChildOfClass("Humanoid")
-        _G.FTP2_PlayerLeaveConn = Players.PlayerRemoving:Connect(function(plr)
+    if hum then hum:ChangeState(Enum.HumanoidStateType.Physics) end
+    if type(_G.SetNoclipState) == "function" then _G.SetNoclipState(true) end
+
+    _G.FTP2_PlayerLeaveConn = Players.PlayerRemoving:Connect(function(plr)
         _G.TargetHistory[plr] = nil
         _G.FTP2_Blacklist[plr] = nil
         if _G.FTP2_CurrentTarget == plr then
@@ -3126,16 +3111,21 @@ local function StartFTPFlight2()
         local currentChar = LocalPlayer.Character
         local currentHum = currentChar and currentChar:FindFirstChildOfClass("Humanoid")
 
-        -- 觸控期間不寫入 Sit／PlatformStand／GettingUp；任何每幀狀態重設
-        -- 都可能讓 Roblox TouchControl 失去焦點。桌面端才執行舊的站立清理。
-        if not UserInputService.TouchEnabled then
-            if currentHum and currentHum.Sit then
-                currentHum.Sit = false
+        -- 手機推動原生搖桿時，暫停本幀的飛行速度與強制轉向；
+        -- 放開搖桿後 Auto Bounty 會繼續追蹤，不改變其啟動功能。
+        local inputHumanoid = currentHum
+        if UserInputService.TouchEnabled and inputHumanoid and inputHumanoid.MoveDirection.Magnitude > 0.05 then
+            if _G.FTP2_LinearVelocity then
+                _G.FTP2_LinearVelocity.VectorVelocity = Vector3.zero
+                _G.FTP2_LinearVelocity.Enabled = false
             end
-            if currentHum and currentHum.PlatformStand then
-                ForceStandUp()
-            end
+            return
         end
+        if _G.FTP2_LinearVelocity then
+            _G.FTP2_LinearVelocity.Enabled = true
+        end
+
+        ForceStandUp()
 
         if _G.AutoFlee and currentHum and currentHum.Health > 0 then
             local hpPercent = (currentHum.Health / currentHum.MaxHealth) * 100
@@ -3174,11 +3164,11 @@ local function StartFTPFlight2()
         end
 
         local now = os.clock()
-        if now - lastHistoryUpdate >= 0.1 then
+                if now - lastHistoryUpdate >= 0.1 then
             lastHistoryUpdate = now
             UpdatePositionHistory()
         end
-
+        if type(_G.SetNoclipState) == "function" then _G.SetNoclipState(true) end
         pcall(function()
             local myChar = LocalPlayer.Character
             if myChar then
@@ -3201,7 +3191,9 @@ local function StartFTPFlight2()
                     end
                 end
 
-                -- 不在每幀循環中切換 PlatformStand 或 GettingUp，避免重置手機輸入狀態。
+                if myHum and not myHum.PlatformStand then
+                    myHum.PlatformStand = true
+                end
             end
         end)
 
@@ -4164,15 +4156,6 @@ Tabs.Skills:Toggle({
     Title = "自動列賞", 
     Value = _G.FTP2_Enabled,
     Callback = function(v)
-        -- 手機模式不允許自動飛行接管輸入，避免搖桿閃爍或走到一半失效。
-        if v and UserInputService.TouchEnabled then
-            _G.FTP2_Enabled = false
-            if WindUI then
-                WindUI:Notify({ Title = "自動列賞", Content = "手機模式保留原生搖桿，未啟動自動移動", duration = 3 })
-            end
-            MarkConfigDirty()
-            return
-        end
         _G.FTP2_Enabled = v
         if v then
             if _G.FTP_Enabled and type(StopFTPFlight) == "function" then 
