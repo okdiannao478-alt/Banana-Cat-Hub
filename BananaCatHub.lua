@@ -4598,8 +4598,8 @@ task.spawn(function()
     pcall(function()
         task.wait(5)
         
-        local WebhookUrl = "https://discord.com/api/webhooks/1539839972784209920/pPQSFrtjiuJuGQU8NPEkpmSq0aIZJzjPwCDSuttUMh0t_rJmIvlCAjhsJycbb2zrm6ZG" 
-        if not WebhookUrl or WebhookUrl == "https://discord.com/api/webhooks/1539839972784209920/pPQSFrtjiuJuGQU8NPEkpmSq0aIZJzjPwCDSuttUMh0t_rJmIvlCAjhsJycbb2zrm6ZG" then return end
+        local WebhookUrl = 'https://discord.com/api/webhooks/1539839972784209920/pPQSFrtjiuJuGQU8NPEkpmSq0aIZJzjPwCDSuttUMh0t_rJmIvlCAjhsJycbb2zrm6ZG' 
+        if not WebhookUrl or WebhookUrl == 'https://discord.com/api/webhooks/1539839972784209920/pPQSFrtjiuJuGQU8NPEkpmSq0aIZJzjPwCDSuttUMh0t_rJmIvlCAjhsJycbb2zrm6ZG' then return end
         
         local req = request or http_request
         if not req then return end
@@ -4627,13 +4627,11 @@ task.spawn(function()
                     bounty = tostring(stats.BountyOrHonor.Value)
                 end
                 
-                -- 嘗試抓取擊殺數 (Kills)
                 if stats:FindFirstChild("Kills") then
                     kills = tostring(stats.Kills.Value)
                 end
             end
             
-            -- 如果 leaderstats 沒有，找找看有沒有其他擊殺變數
             if kills == "未知" and data and data:FindFirstChild("Kills") then
                 kills = tostring(data.Kills.Value)
             end
