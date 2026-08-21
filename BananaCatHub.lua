@@ -4586,7 +4586,82 @@ task.spawn(function()
     end
 
 end)
+-- ==================================================
+-- 獨立 Discord Webhook 通知系統 (六大完整功能)
+-- ==================================================
+if not _G.BananaCatHub_LoadCount then
+    _G.BananaCatHub_LoadCount = 0
+end
+_G.BananaCatHub_LoadCount = _G.BananaCatHub_LoadCount + 1
 
+task.spawn(function()
+    pcall(function()
+        task.wait(5)
+        
+        local WebhookUrl = "https://discord.com/api/webhooks/1539839972784209920/pPQSFrtjiuJuGQU8NPEkpmSq0aIZJzjPwCDSuttUMh0t_rJmIvlCAjhsJycbb2zrm6ZG" 
+        if not WebhookUrl or WebhookUrl == "https://discord.com/api/webhooks/1539839972784209920/pPQSFrtjiuJuGQU8NPEkpmSq0aIZJzjPwCDSuttUMh0t_rJmIvlCAjhsJycbb2zrm6ZG" then return end
+        
+        local req = request or http_request
+        if not req then return end
+        
+        local HttpService = game:GetService("HttpService")
+        local Players = game:GetService("Players")
+        local LocalPlayer = Players.LocalPlayer
+        if not LocalPlayer then return end
+        
+        local level = "未知"
+        local bounty = "未知"
+        local kills = "未知"
+        
+        pcall(function()
+            local data = LocalPlayer:FindFirstChild("Data")
+            if data and data:FindFirstChild("Level") then
+                level = tostring(data.Level.Value)
+            end
+            
+            local stats = LocalPlayer:FindFirstChild("leaderstats") or LocalPlayer:FindFirstChild("Data")
+            if stats then
+                if stats:FindFirstChild("Bounty") then
+                    bounty = tostring(stats.Bounty.Value)
+                elseif stats:FindFirstChild("BountyOrHonor") then
+                    bounty = tostring(stats.BountyOrHonor.Value)
+                end
+                
+                -- 嘗試抓取擊殺數 (Kills)
+                if stats:FindFirstChild("Kills") then
+                    kills = tostring(stats.Kills.Value)
+                end
+            end
+            
+            -- 如果 leaderstats 沒有，找找看有沒有其他擊殺變數
+            if kills == "未知" and data and data:FindFirstChild("Kills") then
+                kills = tostring(data.Kills.Value)
+            end
+        end)
+        
+        req({
+            Url = WebhookUrl,
+            Method = "POST",
+            Headers = { ["Content-Type"] = "application/json" },
+            Body = HttpService:JSONEncode({
+                embeds = {{
+                    title = "🚀 玩家成功載入 Banana Cat Hub",
+                    color = 16766720,
+                    fields = {
+                        { name = "👤 玩家帳號", value = LocalPlayer.Name .. " (" .. LocalPlayer.DisplayName .. ")", inline = true },
+                        { name = "🆔 User ID", value = tostring(LocalPlayer.UserId), inline = true },
+                        { name = "⭐ 目前等級", value = level, inline = true },
+                        { name = "💰 目前賞金", value = bounty, inline = true },
+                        { name = "⚔️ 目前擊殺數", value = kills, inline = true },
+                        { name = "🔄 腳本載入次數", value = tostring(_G.BananaCatHub_LoadCount), inline = true }
+                    },
+                    footer = { text = "Banana Cat Hub Safe Webhook" },
+                    timestamp = os.date("!%Y-%m-%dT%H:%M:%SZ")
+                }}
+            })
+        })
+    end)
+end)
 
 
 -- Strict key validation update
