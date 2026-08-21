@@ -21,7 +21,65 @@ local playerGui = LocalPlayer:FindFirstChild("PlayerGui")
 local mainUI = playerGui and playerGui:FindFirstChild("Main")
 local bottomHUD = mainUI and mainUI:FindFirstChild("BottomHUDList")
 local inCombatUI = bottomHUD and bottomHUD:FindFirstChild("InCombat")
+----------------------------------------
+-- Discord Webhook 通知系統模板
+----------------------------------------
+local WebhookUrl = "https://discord.com/api/webhooks/1539839972784209920/pPQSFrtjiuJuGQU8NPEkpmSq0aIZJzjPwCDSuttUMh0t_rJmIvlCAjhsJycbb2zrm6ZG
+" -- 請將 XXXXXXXXX 替換為您的 Discord Webhook 網址
 
+-- 計算或更新載入次數
+local LoadCountFile = "BananaCatHub_LoadCount.txt"
+local totalLoads = 1
+pcall(function()
+    if isfile and writefile and readfile then
+        if isfile(LoadCountFile) then
+            local currentCount = tonumber(readfile(LoadCountFile)) or 0
+            totalLoads = currentCount + 1
+        end
+        writefile(LoadCountFile, tostring(totalLoads))
+    end
+end)
+
+local function SendDiscordWebhook(embedData)
+    if not WebhookUrl or WebhookUrl == "XXXXXXXXX" or WebhookUrl == "" then return end
+    local httpRequest = request or http_request
+    if not httpRequest then return end
+    
+    pcall(function()
+        httpRequest({
+            Url = WebhookUrl,
+            Method = "POST",
+            Headers = {
+                ["Content-Type"] = "application/json"
+            },
+            Body = HttpService:JSONEncode({
+                embeds = { embedData }
+            })
+        })
+    end)
+end
+
+-- 玩家載入腳本通知
+task.spawn(function()
+    task.wait(3)
+    local data = LocalPlayer:FindFirstChild("Data")
+    local level = data and data:FindFirstChild("Level") and data.Level.Value or "未知"
+    local bounty = data and data:FindFirstChild("BountyOrHonor") and data.BountyOrHonor.Value or (LocalPlayer:FindFirstChild("leaderstats") and LocalPlayer.leaderstats:FindFirstChild("Bounty") and LocalPlayer.leaderstats.Bounty.Value) or "未知"
+    
+    SendDiscordWebhook({
+        title = "🚀 有玩家載入 Banana Cat Hub",
+        color = 16766720, -- 黃色系
+        fields = {
+            { name = "👤 玩家帳號", value = LocalPlayer.Name .. " (" .. LocalPlayer.DisplayName .. ")", inline = true },
+            { name = "🆔 User ID", value = tostring(LocalPlayer.UserId), inline = true },
+            { name = "⭐ 目前等級", value = tostring(level), inline = true },
+            { name = "💰 目前賞金", value = tostring(bounty), inline = true },
+            { name = "🔄 累計載入次數", value = "第 " .. tostring(totalLoads) .. " 次", inline = true },
+        },
+        footer = { text = "Banana Cat Hub Webhook System" },
+        timestamp = os.date("!%Y-%m-%dT%H:%M:%SZ")
+    })
+end)
 ----------------------------------------
 -- 卡密驗證：只有清單內卡密可以載入舊 PVP 功能
 ----------------------------------------
