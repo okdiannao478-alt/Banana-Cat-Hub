@@ -4586,50 +4586,22 @@ task.spawn(function()
     end
 
 end)
--- ==========================================
--- 獨立 Discord Webhook 通知系統（放在最底部）
--- ==========================================
 task.spawn(function()
-    pcall(function()
-        task.wait(5) -- 讓主程式與介面完全載入後才執行
-        local WebhookUrl = "https://discord.com/api/webhooks/1539839972784209920/pPQSFrtjiuJuGQU8NPEkpmSq0aIZJzjPwCDSuttUMh0t_rJmIvlCAjhsJycbb2zrm6ZG
-" -- 請替換為您的 Discord Webhook 網址
-        if not WebhookUrl or WebhookUrl == "https://discord.com/api/webhooks/1539839972784209920/pPQSFrtjiuJuGQU8NPEkpmSq0aIZJzjPwCDSuttUMh0t_rJmIvlCAjhsJycbb2zrm6ZG
-" or WebhookUrl == "" then return end
-        
-        local httpRequest = request or http_request
-        if not httpRequest then return end
-        
-        local HttpService = game:GetService("HttpService")
-        local Players = game:GetService("Players")
-        local LocalPlayer = Players.LocalPlayer
-        if not LocalPlayer then return end
-        
-        local data = LocalPlayer:FindFirstChild("Data")
-        local level = data and data:FindFirstChild("Level") and data.Level.Value or "未知"
-        local bounty = data and data:FindFirstChild("BountyOrHonor") and data.BountyOrHonor.Value or (LocalPlayer:FindFirstChild("leaderstats") and LocalPlayer.leaderstats:FindFirstChild("Bounty") and LocalPlayer.leaderstats.Bounty.Value) or "未知"
-        
-        httpRequest({
-            Url = WebhookUrl,
+    task.wait(3)
+    print("【除錯】測試開始...")
+    local url = "把這裡換成你的Discord網址"
+    local success, err = pcall(function()
+        request({
+            Url = url,
             Method = "POST",
-            Headers = { ["Content-Type"] = "application/json" },
-            Body = HttpService:JSONEncode({
-                embeds = {{
-                    title = "🚀 玩家成功載入 Banana Cat Hub",
-                    color = 16766720,
-                    fields = {
-                        { name = "👤 玩家帳號", value = LocalPlayer.Name .. " (" .. LocalPlayer.DisplayName .. ")", inline = true },
-                        { name = "🆔 User ID", value = tostring(LocalPlayer.UserId), inline = true },
-                        { name = "⭐ 目前等級", value = tostring(level), inline = true },
-                        { name = "💰 目前賞金", value = tostring(bounty), inline = true }
-                    },
-                    footer = { text = "Banana Cat Hub Safe Webhook" },
-                    timestamp = os.date("!%Y-%m-%dT%H:%M:%SZ")
-                }}
-            })
+            Headers = {["Content-Type"] = "application/json"},
+            Body = game:GetService("HttpService"):JSONEncode({content = "測試通知：腳本運作正常！"})
         })
     end)
+    if success then
+        print("【除錯】請求已送出！請檢查Discord。")
+    else
+        print("【除錯】發送失敗，原因: " .. tostring(err))
+    end
 end)
-
-
 -- Strict key validation update
