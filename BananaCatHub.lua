@@ -4586,22 +4586,7 @@ task.spawn(function()
     end
 
 end)
-task.spawn(function()
-    task.wait(3)
-    print("【除錯】測試開始...")
-    local url = "把這裡換成你的Discord網址"
-    local success, err = pcall(function()
-        request({
-            Url = url,
-            Method = "POST",
-            Headers = {["Content-Type"] = "application/json"},
-            Body = game:GetService("HttpService"):JSONEncode({content = "測試通知：腳本運作正常！"})
-        })
-    end)
-    if success then
-        print("【除錯】請求已送出！請檢查Discord。")
-    else
-        print("【除錯】發送失敗，原因: " .. tostring(err))
-    end
-end)
+
+
+
 -- Strict key validation update
