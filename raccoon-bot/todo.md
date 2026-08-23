@@ -1,0 +1,41 @@
+# Raccoon Discord Bot TODO
+
+- [x] 改為純 Node.js Discord Bot 原始碼專案，不建立網站
+- [x] 建立 `.env.example`，敏感欄位保留 `XXX`
+- [x] 建立 Discord Bot 啟動、斜線指令註冊與錯誤處理骨架
+- [x] 建立 SQLite 持久化資料庫
+- [x] 保存短購買碼、玩家 Discord ID、長 Key 雜湊、設備雜湊、重置時間與兌換頻道
+- [x] 實作 Administrator／指定版主身分組權限判定
+- [x] 實作設定或更新永久兌換面板頻道
+- [x] 切換兌換頻道時嘗試移除舊面板並限制舊頻道互動
+- [x] 實作管理員／版主新增一次性短購買兌換碼
+- [x] 實作短碼唯一性、一次性兌換與兌換後作廢
+- [x] 實作玩家私密輸入短碼與 ephemeral 兌換結果
+- [x] 實作固定 25 位英數隨機永久專屬長 Key
+- [x] 確保完整長 Key 只在兌換成功的本人私密回覆中顯示
+- [x] 實作長 Key 加設備識別值的私密綁定流程
+- [x] 實作同一長 Key 單一設備綁定
+- [x] 實作已授權玩家每 20 分鐘自助重置設備
+- [x] 確保未兌換玩家不能綁定或重置設備
+- [x] 加入 README、部署說明與敏感檔案忽略規則
+- [x] 加入 8 項核心資料層與權限測試
+- [x] 通過 `pnpm check`、`pnpm test` 與 `pnpm build`
+- [x] 後續接入腳本入口與腳本本身的授權驗證
+- [ ] 後續依使用者的 GitHub repository 需求提交原始碼
+- [ ] 確認使用者自行登入 GitHub 並指定要使用的 repository
+- [ ] 確認 Discord Bot Token 只由使用者自行填入本機 `.env`，不進入聊天或 GitHub
+- [ ] 將 Raccoon Bot 原始碼提交前重新檢查是否包含敏感資料
+- [ ] 依使用者確認提交原始碼到指定 GitHub repository
+- [ ] 只使用 GitHub 帳號 `okdiannao478`
+- [ ] 禁止讀取、修改或提交到 `oobg755-ops` 帳號下的 repository
+- [ ] 以唯讀方式確認 `okdiannao478` 的目標 repository
+- [ ] 僅操作 `okdiannao478` 帳號下使用者指定的既有 repository
+- [ ] 比較兩個既有專案後，等待使用者指定目標 repository 再修改
+- [ ] 保留目標專案所有原有功能，採最小範圍替換授權邏輯
+- [ ] 將原有限時／卡密驗證改為永久 Key 規則
+- [ ] 加入 Railway 持續運行設定與部署說明
+- [ ] 確認 Railway Variables 不包含於 GitHub 原始碼
+- [ ] 讓原有內嵌與重複使用卡密全部失效，不保留舊 Key 授權
+- [ ] 讓 Discord 兌換／開通紀錄成為腳本使用的唯一授權來源
+- [ ] 確保無有效長 Key 或未完成 Discord 開通者無法使用腳本
+- [ ] 在不改動其他 Lua 功能的前提下替換舊授權閘門
