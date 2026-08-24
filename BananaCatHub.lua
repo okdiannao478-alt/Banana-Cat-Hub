@@ -31,8 +31,8 @@ local inCombatUI = bottomHUD and bottomHUD:FindFirstChild("InCombat")
 	pcall(function()
 	    deviceId = game:GetService("RbxAnalyticsService"):GetClientId()
 	end)
-			if not suppliedKey:match("^[A-Za-z0-9]+$") or #suppliedKey ~= 25 then
-		    warn("[Raccoon] BananaCatHubKey must be exactly 25 letters/numbers")
+			if not suppliedKey:match("^[A-Za-z0-9]+$") or (#suppliedKey ~= 24 and #suppliedKey ~= 25) then
+		    warn("[Raccoon] BananaCatHubKey must be 24 or 25 letters/numbers")
 		    return
 		end
 		local responseBody = nil
