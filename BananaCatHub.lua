@@ -25,7 +25,7 @@ local inCombatUI = bottomHUD and bottomHUD:FindFirstChild("InCombat")
 ----------------------------------------
 	-- Raccoon 永久授權驗證：啟動器只需提供 BananaCatHubKey。
 	----------------------------------------
-	local RaccoonLicenseApi = "http://fi12.bot-hosting.cloud:25881"
+	local RaccoonLicenseApi = "https://raclicense-csuvv4jd.manus.space/api/raccoon"
 	local suppliedKey = tostring(getgenv().BananaCatHubKey or "")
 	local deviceId = "unknown-device"
 	pcall(function()
@@ -114,9 +114,21 @@ end
 ----------------------------------------
 -- WindUI
 ----------------------------------------
-local WindUI = loadstring(request({
-    Url = "https://raw.githubusercontent.com/Footagesus/WindUI/main/dist/main.lua"
-}).Body)()
+local windUiSource
+local windUiRequest = request or http_request or (syn and syn.request)
+if windUiRequest then
+    pcall(function()
+        local response = windUiRequest({
+            Url = "https://raw.githubusercontent.com/Footagesus/WindUI/main/dist/main.lua",
+            Method = "GET",
+        })
+        if response then windUiSource = response.Body or response.body end
+    end)
+end
+if not windUiSource then
+    windUiSource = game:HttpGet("https://raw.githubusercontent.com/Footagesus/WindUI/main/dist/main.lua")
+end
+local WindUI = loadstring(windUiSource)()
 
 -- 最後一張參考圖的 Banana Cat Hub 黃色／淺黃色主題：只調整外觀，不改動功能。
 WindUI:AddTheme({
