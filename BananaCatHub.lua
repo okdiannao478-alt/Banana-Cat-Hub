@@ -23,32 +23,18 @@ local bottomHUD = mainUI and mainUI:FindFirstChild("BottomHUDList")
 local inCombatUI = bottomHUD and bottomHUD:FindFirstChild("InCombat")
 
 ----------------------------------------
--- Raccoon 永久授權驗證
--- 舊版內嵌 AuthorizedKeys 全部失效；只有 Discord 開通的 25 位長 Key 才能載入。
+-- Raccoon 永久授權驗證：啟動器只需提供 BananaCatHubKey。
 ----------------------------------------
-local HttpService = game:GetService("HttpService")
-local RaccoonLicenseApi = getgenv().RaccoonLicenseApi or "XXX"
-local suppliedKey = normalizeKey(getgenv().RaccoonLicenseKey)
+local RaccoonLicenseApi = "http://fi12.bot-hosting.cloud:25881"
+local suppliedKey = tostring(getgenv().BananaCatHubKey or "")
 local deviceId = "unknown-device"
 pcall(function()
     deviceId = game:GetService("RbxAnalyticsService"):GetClientId()
 end)
-
-local function rejectRaccoonLicense(reason)
-    kickForKey(reason or "Raccoon 授權無效，請先在 Discord 完成兌換")
-end
-
-if suppliedKey == "" or not suppliedKey:match("^[A-Za-z0-9]+$") or #suppliedKey ~= 25 or RaccoonLicenseApi == "XXX" then
-    rejectRaccoonLicense("Raccoon 授權未開通：請先在 Discord 兌換並設定 25 位永久專屬 Key")
-    return
-end
-
 local requestFn = request or http_request or (syn and syn.request)
-if not requestFn then
-    rejectRaccoonLicense("目前執行器不支援 Raccoon 授權驗證")
+if not suppliedKey:match("^[A-Za-z0-9]+$") or #suppliedKey ~= 25 or not requestFn then
     return
 end
-
 local ok, response = pcall(function()
     return requestFn({
         Url = RaccoonLicenseApi .. "/api/v1/license/validate",
@@ -58,12 +44,11 @@ local ok, response = pcall(function()
     })
 end)
 if not ok or not response or response.StatusCode ~= 200 then
-    rejectRaccoonLicense("Raccoon 授權驗證失敗：請確認你已在 Discord 開通，或稍後再試")
     return
 end
-
-getgenv().RaccoonLicenseKey = suppliedKey
+getgenv().BananaCatHubKey = suppliedKey
 ----------------------------------------
+
 -- Fast Attack Serve
 local Modules = ReplicatedStorage:WaitForChild("Modules", 10)
 local Net = Modules and Modules:WaitForChild("Net", 10)
