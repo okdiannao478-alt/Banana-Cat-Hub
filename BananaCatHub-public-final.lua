@@ -23,31 +23,50 @@ local bottomHUD = mainUI and mainUI:FindFirstChild("BottomHUDList")
 local inCombatUI = bottomHUD and bottomHUD:FindFirstChild("InCombat")
 
 ----------------------------------------
--- Raccoon 永久授權驗證：啟動器只需提供 BananaCatHubKey。
-----------------------------------------
-local RaccoonLicenseApi = "http://fi12.bot-hosting.cloud:25881"
-local suppliedKey = tostring(getgenv().BananaCatHubKey or "")
-local deviceId = "unknown-device"
-pcall(function()
-    deviceId = game:GetService("RbxAnalyticsService"):GetClientId()
-end)
-local requestFn = request or http_request or (syn and syn.request)
-if not suppliedKey:match("^[A-Za-z0-9]+$") or #suppliedKey ~= 25 or not requestFn then
-    return
-end
-local ok, response = pcall(function()
-    return requestFn({
-        Url = RaccoonLicenseApi .. "/api/v1/license/validate",
-        Method = "POST",
-        Headers = { ["Content-Type"] = "application/json" },
-        Body = HttpService:JSONEncode({ longKey = suppliedKey, deviceId = deviceId }),
-    })
-end)
-if not ok or not response or response.StatusCode ~= 200 then
-    return
-end
-getgenv().BananaCatHubKey = suppliedKey
-----------------------------------------
+	-- Raccoon 永久授權驗證：啟動器只需提供 BananaCatHubKey。
+	----------------------------------------
+	local RaccoonLicenseApi = "https://raclicense-csuvv4jd.manus.space/api/raccoon"
+	local suppliedKey = tostring(getgenv().BananaCatHubKey or "")
+	local deviceId = "unknown-device"
+	pcall(function()
+	    deviceId = game:GetService("RbxAnalyticsService"):GetClientId()
+	end)
+			if not suppliedKey:match("^[A-Za-z0-9]+$") or (#suppliedKey ~= 24 and #suppliedKey ~= 25) then
+		    warn("[Raccoon] BananaCatHubKey must be 24 or 25 letters/numbers")
+		    return
+		end
+		local responseBody = nil
+		local requestSucceeded = false
+		pcall(function()
+		    local requestFn = request or http_request or (syn and syn.request)
+		    if requestFn then
+		        local response = requestFn({
+		            Url = RaccoonLicenseApi .. "/api/v1/license/validate",
+		            Method = "POST",
+		            Headers = { ["Content-Type"] = "application/json" },
+		            Body = HttpService:JSONEncode({ longKey = suppliedKey, deviceId = deviceId }),
+		        })
+		        if response then responseBody = response.Body or response.body end
+		        requestSucceeded = responseBody ~= nil
+		    end
+		end)
+		if not requestSucceeded then
+		    pcall(function()
+		        responseBody = game:HttpGet(RaccoonLicenseApi .. "/api/v1/license/validate?longKey=" .. suppliedKey .. "&deviceId=" .. deviceId)
+		    end)
+		end
+		local decodedOk, decoded = pcall(function()
+		    return HttpService:JSONDecode(responseBody or "")
+		end)
+		if not decodedOk or not decoded or decoded.ok ~= true then
+		    local reason = decoded and decoded.reason or "network-or-response-error"
+		    warn("[Raccoon] License validation failed: " .. tostring(reason))
+		    return
+		end
+		getgenv().BananaCatHubKey = suppliedKey
+		getgenv().RaccoonLicenseKey = suppliedKey
+
+	----------------------------------------
 
 -- Fast Attack Serve
 local Modules = ReplicatedStorage:WaitForChild("Modules", 10)
@@ -95,9 +114,21 @@ end
 ----------------------------------------
 -- WindUI
 ----------------------------------------
-local WindUI = loadstring(request({
-    Url = "https://raw.githubusercontent.com/Footagesus/WindUI/main/dist/main.lua"
-}).Body)()
+local windUiSource
+local windUiRequest = request or http_request or (syn and syn.request)
+if windUiRequest then
+    pcall(function()
+        local response = windUiRequest({
+            Url = "https://raw.githubusercontent.com/Footagesus/WindUI/main/dist/main.lua",
+            Method = "GET",
+        })
+        if response then windUiSource = response.Body or response.body end
+    end)
+end
+if not windUiSource then
+    windUiSource = game:HttpGet("https://raw.githubusercontent.com/Footagesus/WindUI/main/dist/main.lua")
+end
+local WindUI = loadstring(windUiSource)()
 
 -- 最後一張參考圖的 Banana Cat Hub 黃色／淺黃色主題：只調整外觀，不改動功能。
 WindUI:AddTheme({
