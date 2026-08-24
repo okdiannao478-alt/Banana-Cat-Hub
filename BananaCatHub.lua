@@ -60,12 +60,10 @@ local inCombatUI = bottomHUD and bottomHUD:FindFirstChild("InCombat")
 		end)
 			if not decodedOk or not decoded or decoded.ok ~= true then
 			    local reason = decoded and decoded.reason or "network-or-response-error"
-			    if reason == "different-device" then
-			        pcall(function()
-			            game:Kick("Chuoi Hub: Hardware ID mismatch")
-			        end)
-			        return
-			    end
+if reason == "different-device" then
+				        game:Kick("raccoon: Hardware ID mismatch")
+				        return
+				    end
 			    warn("[Raccoon] License validation failed: " .. tostring(reason))
 			    return
 			end
