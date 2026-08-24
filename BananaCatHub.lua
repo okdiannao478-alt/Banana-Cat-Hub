@@ -25,7 +25,7 @@ local inCombatUI = bottomHUD and bottomHUD:FindFirstChild("InCombat")
 ----------------------------------------
 	-- Raccoon 永久授權驗證：啟動器只需提供 BananaCatHubKey。
 	----------------------------------------
-	local RaccoonLicenseApi = "https://raclicense-csuvv4jd.manus.space/api/raccoon"
+	local RaccoonLicenseApi = "http://fi12.bot-hosting.cloud:25881"
 	local suppliedKey = tostring(getgenv().BananaCatHubKey or "")
 	local deviceId = "unknown-device"
 	pcall(function()
