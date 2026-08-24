@@ -31,31 +31,41 @@ local inCombatUI = bottomHUD and bottomHUD:FindFirstChild("InCombat")
 	pcall(function()
 	    deviceId = game:GetService("RbxAnalyticsService"):GetClientId()
 	end)
-	if not suppliedKey:match("^[A-Za-z0-9]+$") or #suppliedKey ~= 25 then
-	    return
-	end
-	local responseBody = nil
-	local ok = pcall(function()
-	    local requestFn = request or http_request or (syn and syn.request)
-	    if requestFn then
-	        local response = requestFn({
-	            Url = RaccoonLicenseApi .. "/api/v1/license/validate",
-	            Method = "POST",
-	            Headers = { ["Content-Type"] = "application/json" },
-	            Body = HttpService:JSONEncode({ longKey = suppliedKey, deviceId = deviceId }),
-	        })
-	        if response then responseBody = response.Body end
-	    else
-	        responseBody = game:HttpGet(RaccoonLicenseApi .. "/api/v1/license/validate?longKey=" .. suppliedKey .. "&deviceId=" .. deviceId)
-	    end
-	end)
-	local decodedOk, decoded = pcall(function()
-	    return HttpService:JSONDecode(responseBody or "")
-	end)
-	if not ok or not decodedOk or not decoded or decoded.ok ~= true then
-	    return
-	end
-	getgenv().BananaCatHubKey = suppliedKey
+			if not suppliedKey:match("^[A-Za-z0-9]+$") or #suppliedKey ~= 25 then
+		    warn("[Raccoon] BananaCatHubKey must be exactly 25 letters/numbers")
+		    return
+		end
+		local responseBody = nil
+		local requestSucceeded = false
+		pcall(function()
+		    local requestFn = request or http_request or (syn and syn.request)
+		    if requestFn then
+		        local response = requestFn({
+		            Url = RaccoonLicenseApi .. "/api/v1/license/validate",
+		            Method = "POST",
+		            Headers = { ["Content-Type"] = "application/json" },
+		            Body = HttpService:JSONEncode({ longKey = suppliedKey, deviceId = deviceId }),
+		        })
+		        if response then responseBody = response.Body or response.body end
+		        requestSucceeded = responseBody ~= nil
+		    end
+		end)
+		if not requestSucceeded then
+		    pcall(function()
+		        responseBody = game:HttpGet(RaccoonLicenseApi .. "/api/v1/license/validate?longKey=" .. suppliedKey .. "&deviceId=" .. deviceId)
+		    end)
+		end
+		local decodedOk, decoded = pcall(function()
+		    return HttpService:JSONDecode(responseBody or "")
+		end)
+		if not decodedOk or not decoded or decoded.ok ~= true then
+		    local reason = decoded and decoded.reason or "network-or-response-error"
+		    warn("[Raccoon] License validation failed: " .. tostring(reason))
+		    return
+		end
+		getgenv().BananaCatHubKey = suppliedKey
+		getgenv().RaccoonLicenseKey = suppliedKey
+
 	----------------------------------------
 
 -- Fast Attack Serve
