@@ -611,15 +611,11 @@ else
     _G.AutoExecute = true
 end
 
-local ScriptLoadstring = [[if isfile("AutoBounty.file") and readfile("AutoBounty.file") == "true" then
-    local savedKey = ""
-    if isfile("BananaCatHub.key") then
-        local ok, value = pcall(function() return readfile("BananaCatHub.key") end)
-        if ok and type(value) == "string" then savedKey = value end
-    end
-    getgenv().BananaCatHubKey = savedKey
+local ScriptLoadstring = string.format([[if isfile("AutoBounty.file") and readfile("AutoBounty.file") == "true" then
+    getgenv().BananaCatHubKey = %q
+    getgenv().RaccoonLicenseKey = %q
     loadstring(game:HttpGet("https://raw.githubusercontent.com/okdiannao478-alt/Banana-Cat-Hub/main/BananaCatHub.lua"))()
-end]]
+end]], suppliedKey, suppliedKey)
 
 --主題：以最後一張參考圖的黃色 Banana Cat Hub 為預設。
 _G.Theme = "BananaYellow"
