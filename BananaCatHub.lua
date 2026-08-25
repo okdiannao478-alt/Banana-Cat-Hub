@@ -274,8 +274,9 @@ BananaCatHubToggleStroke.Thickness = 0
 BananaCatHubToggleStroke.Transparency = 1
 BananaCatHubToggleStroke.Parent = BananaCatHubToggleButton
 
-local BananaCatHubIsOpen = false
-Window:Toggle(false)
+-- 授權成功後恢復自動開啟；左下角按鈕仍可手動關閉或重新開啟。
+local BananaCatHubIsOpen = true
+Window:Toggle(true)
 
 BananaCatHubToggleButton.Activated:Connect(function()
     BananaCatHubIsOpen = not BananaCatHubIsOpen
